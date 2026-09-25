@@ -15,13 +15,15 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- INICIALIZACIÓN DE LA BASE DE DATOS (AHORA CON USUARIOS) ---
+# --- INICIALIZACIÓN DE LA BASE DE DATOS (NUEVA DB LIMPIA) ---
 def obtener_conexion():
-    return sqlite3.connect("portafolio_incentivos.db", check_same_thread=False)
+    # Cambiamos el nombre del archivo para forzar una base de datos limpia
+    return sqlite3.connect("bd_incentivos.db", check_same_thread=False)
 
 def inicializar_db():
     conn = obtener_conexion()
     cursor = conn.cursor()
+    
     # Tabla de Proyectos
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS proyectos (
@@ -30,19 +32,19 @@ def inicializar_db():
             resumen_estatus TEXT, carpeta_url TEXT, plan_url TEXT, ultima_actualizacion TEXT
         )
     """)
+    
     # Tabla de Usuarios
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
-            usuario TEXT PRIMARY KEY, password TEXT NOT NULL, rol TEXT NOT NULL
+            usuario TEXT PRIMARY KEY, password TEXT NOT NULL, rol TEXT NOT NULL, correo TEXT
         )
     """)
     
-    # Crear usuarios por defecto si la tabla está vacía
+    # Crear usuarios reales por defecto si la tabla está vacía
     cursor.execute("SELECT COUNT(*) FROM usuarios")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO usuarios (usuario, password, rol) VALUES ('moderador', 'admin123', 'Moderador')")
-        cursor.execute("INSERT INTO usuarios (usuario, password, rol) VALUES ('lider1', 'user123', 'Usuario')")
-        cursor.execute("INSERT INTO usuarios (usuario, password, rol) VALUES ('lider2', 'user123', 'Usuario')")
+        cursor.execute("INSERT INTO usuarios (usuario, password, rol, correo) VALUES ('leonardo.castillo', 'Coppel2026', 'Moderador', 'leonardo.castillo@coppel.com')")
+        cursor.execute("INSERT INTO usuarios (usuario, password, rol, correo) VALUES ('ivan.salazar', 'Coppel2026', 'Usuario', 'ivan.salazar@coppel.com')")
         
     conn.commit()
     conn.close()
@@ -63,7 +65,7 @@ if not st.session_state.autenticado:
         
         with st.form("login_form"):
             st.subheader("🔒 Inicio de Sesión")
-            usuario_input = st.text_input("Usuario (ej. moderador, lider1)")
+            usuario_input = st.text_input("Usuario (ej. leonardo.castillo)")
             password_input = st.text_input("Contraseña", type="password")
             submit = st.form_submit_button("Ingresar al Sistema", use_container_width=True)
             
@@ -122,7 +124,7 @@ with st.sidebar:
                         try:
                             conn = obtener_conexion()
                             cursor = conn.cursor()
-                            cursor.execute("INSERT INTO usuarios (usuario, password, rol) VALUES (?, ?, ?)", (n_user, n_pass, n_rol))
+                            cursor.execute("INSERT INTO usuarios (usuario, password, rol, correo) VALUES (?, ?, ?, ?)", (n_user, n_pass, n_rol, ""))
                             conn.commit()
                             conn.close()
                             st.success("Usuario creado.")
