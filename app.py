@@ -432,7 +432,7 @@ with tabs[1]:
           fig.update_layout(height=160 + (len(df_tareas_calc) * 35), margin=dict(l=0, r=0, t=10, b=0), font=dict(family="Inter"), xaxis=dict(showgrid=True, gridcolor="#F1F5F9"), yaxis=dict(showgrid=False, title=""), coloraxis_colorbar=dict(title="% Avance"))
           st.plotly_chart(fig, use_container_width=True)
 
-          st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#05297A;'>✏️ Actualizar Avance de Tarea Específica</p>", unsafe_allow_html=True)
+          st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#05297A;'>✏️ Actualizar Avance por Tarea</p>", unsafe_allow_html=True)
           with st.form(f"upd_t_{p_id}", clear_on_submit=True):
             col_sel, col_val, col_btn = st.columns([2, 1, 1])
             opciones_tareas = df_tareas_calc.apply(lambda x: f"{x['id']} - {x['nombre_tarea']}", axis=1).tolist()
@@ -483,7 +483,7 @@ with tabs[3]:
       c1, c2, c3 = st.columns(3); folio = c1.text_input("Folio Interno"); nombre = c2.text_input("Nombre de la Iniciativa *"); lider = c3.selectbox("Responsable del Proyecto *", lista_lideres_registrados)
       c4, c5, c6 = st.columns(3); area = c4.selectbox("Área Solicitante", OPCIONES_AREAS); tipo = c5.selectbox("Categoría Principal", OPCIONES_TIPOS); subtipo = c6.selectbox("Sub-categoría", OPCIONES_SUBTIPOS)
       c7, c8, c9 = st.columns(3); gerente = c7.selectbox("Gerente Sponsor", OPCIONES_GERENTES); etapa = c8.selectbox("Fase de Arranque", OPCIONES_ETAPAS); estatus_inicial = c9.selectbox("Estado Inicial", OPCIONES_ESTATUS, index=0)
-      if st.form_submit_button("Crear Proyecto", type="primary"):
+      if st.form_submit_button("Crear Iniciativa", type="primary"):
         if nombre.strip():
           engine = obtener_engine()
           with engine.begin() as conn: conn.execute(sqlalchemy.text("""INSERT INTO proyectos (folio, nombre, area_negocio, tipo_proyecto, subtipo, gerente, lider_asignado, etapa_actual, estatus_tiempo, avance_real) VALUES (:f, :n, :a, :t, :s, :g, :l, :e, :st, 0)"""), {"f": folio, "n": nombre, "a": area, "t": tipo, "s": subtipo, "g": gerente, "l": lider, "e": etapa, "st": estatus_inicial})
@@ -529,14 +529,13 @@ if es_moderador:
 
 
 # ==============================================================================
-# --- MOTOR NLP PROJECT IA (AMIGABLE Y INTELIGENTE) ---
+# --- MOTOR NLP PROJECT IA (AVANZADO & FLUIDO) ---
 # ==============================================================================
 def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
   p_lower = prompt.lower().strip()
-  
-  # 1. INTERCEPTOR DE CORTESÍA (Small Talk)
   p_clean = p_lower.replace("?", "").replace("¿", "").replace("!", "").replace("¡", "").strip()
   
+  # --- 1. INTERCEPTOR DE CORTESÍA (Small Talk) ---
   if p_clean in ["gracias", "muchas gracias", "excelente", "perfecto", "ok", "entendido", "vale", "va", "listo"]:
       return "¡Con mucho gusto! 🚀 Quedo por aquí por si necesitas consultar algo más."
       
@@ -544,7 +543,7 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       return f"¡Hola **{usuario_nombre}**, operando al 100%! ✨ ¿De qué proyecto o colaborador te gustaría conocer los avances hoy?"
       
   if any(x in p_clean for x in ["quien eres", "que haces", "para que sirves", "quien sos"]):
-      return "Soy **Project IA**, tu asistente inteligente dentro de Heading 360. Mi función es ayudarte a buscar información del portafolio en tiempo real.\n\nPuedes preguntarme:\n* *¿Qué proyectos tenemos retrasados?*\n* *¿Quién tiene más proyectos a su cargo?*\n* *¿Cómo van los proyectos de Banco o Retail?*"
+      return "Soy **Project IA**, tu asistente inteligente dentro de Heading 360. Mi función es ayudarte a consultar información del portafolio en tiempo real.\n\nPuedes preguntarme:\n* *¿En qué estatus están los proyectos?*\n* *¿Qué proyectos tenemos retrasados?*\n* *¿Quién tiene más proyectos asignados?*"
 
   if p_clean in ["hola", "buenas", "buenos dias", "buenas tardes", "buenas noches", "saludos", "hola bot", "hola project ia"]:
       tot = len(dataframe)
@@ -554,50 +553,53 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       else: resp += "Por fortuna, no tenemos ningún proyecto retrasado. ¿Qué te gustaría consultar hoy?"
       return resp
 
-  # 2. EVALUACIÓN Y BÚSQUEDA DE DATOS
+  # --- 2. BÚSQUEDA Y EVALUACIÓN DE CONSULTAS ---
   p_analizar = p_lower
   for s in ["hola ", "buenos dias ", "buenas tardes ", "por favor ", "dime ", "quiero saber ", "quisiera saber ", "me puedes decir "]:
       if p_analizar.startswith(s): p_analizar = p_analizar[len(s):].strip()
 
-  if len(p_analizar) <= 2 or dataframe.empty:
-      if dataframe.empty: return "Actualmente no hay proyectos registrados en el portafolio."
-      return "No entendí muy bien tu pregunta. Intenta preguntarme por un área, un responsable o proyectos retrasados."
+  if dataframe.empty:
+      return "Actualmente no tenemos proyectos registrados en el portafolio."
 
-  # Variables y filtros
-  area_obj = next((a for a in OPCIONES_AREAS if a.lower() in p_analizar), None)
-  lideres_y_gerentes = set(obtener_lista_usuarios(df_users_raw) + OPCIONES_GERENTES)
-  persona_obj = next((p for p in lideres_y_gerentes if len(p) > 3 and p.lower() in p_analizar), None)
-  
+  # A. INTENCIÓN: Pregunta directa por ESTATUS / ETAPAS generales ("en que estatus estan", "como van", etc.)
+  busca_estatus_general = any(k in p_analizar for k in ["estatus", "estado", "etapa", "fase", "como van"])
   busca_retrasos = any(k in p_analizar for k in ["retras", "riesgo", "deteni", "critico", "problema", "urgente", "foco rojo"])
-  busca_top_gerente = any(k in p_analizar for k in ["gerente", "sponsor", "patrocinador"]) and any(k in p_analizar for k in ["mas", "mayor", "top"])
-  busca_top_lider = any(k in p_analizar for k in ["quien", "quién", "lider", "líder", "responsable", "persona", "encargado", "colaborador"]) and any(k in p_analizar for k in ["mas", "más", "mayor", "top", "tiene", "carga"])
-  busca_top_area = any(k in p_analizar for k in ["area", "área", "departamento"]) and any(k in p_analizar for k in ["mas", "más", "mayor", "top", "tiene"])
-  busca_resumen = any(k in p_analizar for k in ["como vamos", "resumen", "estatus global", "estado", "cuantos proyectos", "total"])
+  
+  # Si el usuario pregunta explícitamente "en que estatus estan" o "en que etapa van" sin especificar filtros
+  if busca_estatus_general and not busca_retrasos and not any(a.lower() in p_analizar for a in OPCIONES_AREAS):
+      res = f"📌 **Estatus actual de los proyectos en el portafolio ({len(dataframe)}):**\n\n"
+      for _, r in dataframe.iterrows():
+          pct = int((r['avance_real'] or 0) * 100)
+          badge = "🟢" if r['estatus_tiempo'] == "En tiempo" else ("⚠️" if r['estatus_tiempo'] in ["Retrasado", "Detenido"] else "⚪")
+          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n"
+          res += f"  * {badge} **Estatus:** `{r['estatus_tiempo']}` | 📍 **Fase:** {r['etapa_actual']}\n"
+          res += f"  * 👤 **Líder:** {r['lider_asignado']} | 📈 **Avance:** {pct}%\n\n"
+      return res
 
-  # 3. RESPUESTAS CONTEXTUALES FLUIDAS
+  # B. INTENCIÓN: Preguntas de Carga / Quién tiene más proyectos
+  busca_top_lider = any(k in p_analizar for k in ["quien", "quién", "lider", "líder", "responsable", "persona", "encargado", "colaborador"]) and any(k in p_analizar for k in ["mas", "más", "mayor", "top", "tiene", "carga"])
   if busca_top_lider and not busca_retrasos:
       counts = dataframe["lider_asignado"].value_counts()
       if not counts.empty:
           top_l = counts.index[0]; top_val = counts.iloc[0]
-          res = f"¡Claro! Analizando la base de datos, veo que **{top_l}** es la persona con mayor carga operativa, teniendo **{top_val} iniciativas** bajo su responsabilidad.\n\n📌 **Aquí está el top de colaboradores:**\n"
+          res = f"¡Claro! Analizando la base de datos, **{top_l}** es la persona con mayor carga operativa, teniendo **{top_val} iniciativas** bajo su responsabilidad.\n\n📌 **Distribución de proyectos por líder:**\n"
           for l_name, val in counts.items(): res += f"* **{l_name}**: {val} proyecto(s)\n"
           return res
 
+  # C. INTENCIÓN: Áreas / Gerentes
+  busca_top_area = any(k in p_analizar for k in ["area", "área", "departamento"]) and any(k in p_analizar for k in ["mas", "más", "mayor", "top", "tiene"])
   if busca_top_area:
       counts = dataframe["area_negocio"].value_counts()
       if not counts.empty:
           top_a = counts.index[0]; top_val = counts.iloc[0]
-          res = f"¡Listo! El área que actualmente concentra más proyectos es **{top_a}**, liderando con **{top_val} iniciativas**.\n\n📌 **Desglose por área:**\n"
+          res = f"¡Listo! El área que actualmente concentra más proyectos es **{top_a}**, con **{top_val} iniciativas**.\n\n📌 **Desglose por área:**\n"
           for a_name, val in counts.items(): res += f"* **{a_name}**: {val} proyectos\n"
           return res
-          
-  if busca_top_gerente:
-      counts = dataframe["gerente"].value_counts()
-      if not counts.empty:
-          top_g = counts.index[0]; top_val = counts.iloc[0]
-          res = f"El Gerente con más proyectos a su cargo es **{top_g}**, patrocinando **{top_val} iniciativas**.\n\n📌 **Lista completa:**\n"
-          for g_name, val in counts.items(): res += f"* **{g_name}**: {val} proyectos\n"
-          return res
+
+  # D. FILTROS COMBINADOS (Área, Persona, Retrasos)
+  area_obj = next((a for a in OPCIONES_AREAS if a.lower() in p_analizar), None)
+  lideres_y_gerentes = set(obtener_lista_usuarios(df_users_raw) + OPCIONES_GERENTES)
+  persona_obj = next((p for p in lideres_y_gerentes if len(p) > 3 and p.lower() in p_analizar), None)
 
   df_result = dataframe.copy()
   criterios = []
@@ -616,23 +618,25 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       if df_result.empty:
           return f"🔍 Estuve buscando, pero no encontré proyectos que coincidan con tus filtros: " + " | ".join(criterios)
       
-      res = f"🔍 **¡Aquí tienes la información!** (" + " | ".join(criterios) + f")\n\nEncontré **{len(df_result)}** proyectos:\n\n"
+      res = f"🔍 **Resultados de la búsqueda** (" + " | ".join(criterios) + f"):\n\nEncontré **{len(df_result)}** proyectos:\n\n"
       for _, r in df_result.iterrows():
-          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 🏢 **Área:** {r['area_negocio']}\n  * 📌 **Estatus:** `{r['estatus_tiempo']}` | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
+          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 🏢 **Área:** {r['area_negocio']}\n  * 📌 **Estatus:** `{r['estatus_tiempo']}` | 📍 **Fase:** {r['etapa_actual']} | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
       return res
 
-  if busca_resumen:
-      tot = len(dataframe); en_t = len(dataframe[dataframe["estatus_tiempo"] == "En tiempo"]); ret = len(dataframe[dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])])
-      return f"📊 **Aquí tienes el estatus global:**\n* **Total:** {tot} proyectos\n* 🟢 **En tiempo:** {en_t}\n* 🚨 **Retrasados:** {ret}\n\n¿Deseas consultar algún área o colaborador específico?"
-
+  # E. FALLBACK INTELIGENTE (Búsqueda por coincidencia de texto libre o mostrar lista limpia)
   coincidencias = dataframe[dataframe["nombre"].str.lower().str.contains(p_analizar, na=False) | dataframe["folio"].str.lower().str.contains(p_analizar, na=False)]
   if not coincidencias.empty:
-      res = f"🔍 Encontré **{len(coincidencias)} proyectos** que coinciden con tu búsqueda:\n\n"
+      res = f"🔍 Encontré **{len(coincidencias)} proyectos** asociados a tu consulta:\n\n"
       for _, r in coincidencias.iterrows():
           res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 📌 **Estatus:** `{r['estatus_tiempo']}` | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
       return res
 
-  return f"Lo siento, **{usuario_nombre}**. No encontré registros para esa instrucción. Pregúntame algo como: *'¿Quién tiene más proyectos?'* o *'Proyectos de Retail'*."
+  # Si la pregunta fue algo vaga pero hay proyectos, les mostramos el resumen interactivo en lugar de dar error
+  res_general = f"📋 **Aquí está el desglose actual de tus proyectos ({len(dataframe)}):**\n\n"
+  for _, r in dataframe.iterrows():
+      pct = int((r['avance_real'] or 0) * 100)
+      res_general += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}** — `{r['estatus_tiempo']}` ({pct}% avance)\n"
+  return res_general
 
 
 # --- BOTÓN FLOTANTE "PROJECT IA" ---
