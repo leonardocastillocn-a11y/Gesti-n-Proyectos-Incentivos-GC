@@ -13,46 +13,44 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS INSTITUCIONAL COPPEL (SIN BOTONES ROJOS Y SIN TEXTOS EXTRAÑOS) ---
+# --- CSS ANTI-ROJO (Sobrescribe variables de raíz e IDs de Streamlit) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
     
-    .stApp { background-color: #F8F9FA !important; }
+    /* Variables raíz de Streamlit */
+    :root, [data-testid="stAppViewContainer"], .stApp {
+        --primary-color: #05297A !important;
+        background-color: #F8F9FA !important;
+        font-family: 'Inter', sans-serif !important;
+    }
 
-    /* ELIMINACIÓN TOTAL DEL BOTÓN ROJO DE STREAMLIT */
-    button[data-testid="baseButton-primary"], 
-    .stButton > button[kind="primary"],
-    div.stButton > button {
-        background-color: #05297A !important; /* Azul Coppel */
+    /* SOBREESCRITURA DIRECTA DE BOTONES DE FORMULARIO Y GENERALES */
+    div[data-testid="stFormSubmitButton"] button,
+    button[data-testid="baseButton-primary"],
+    button[data-testid="baseButton-secondary"],
+    .stButton button,
+    .stFormSubmitButton button,
+    button[kind="primary"],
+    button[kind="secondary"] {
+        background-color: #05297A !important;
+        background: #05297A !important;
         color: #FFFFFF !important;
         border: none !important;
         border-radius: 6px !important;
         font-weight: 600 !important;
-        transition: all 0.2s ease !important;
+        transition: all 0.2s ease-in-out !important;
     }
     
-    button[data-testid="baseButton-primary"]:hover, 
-    .stButton > button[kind="primary"]:hover,
-    div.stButton > button:hover {
-        background-color: #1C42E8 !important; /* Azul Coppel Brillante */
-        color: #FFFFFF !important;
-        box-shadow: 0 4px 10px rgba(28, 66, 232, 0.2) !important;
-    }
-
-    button[data-testid="baseButton-secondary"],
-    .stButton > button[kind="secondary"] {
-        background-color: #FFFFFF !important;
-        border: 1px solid #C9C9C9 !important;
-        color: #4A4A4A !important;
-        border-radius: 6px !important;
-    }
+    div[data-testid="stFormSubmitButton"] button:hover,
+    button[data-testid="baseButton-primary"]:hover,
     button[data-testid="baseButton-secondary"]:hover,
-    .stButton > button[kind="secondary"]:hover {
-        border-color: #05297A !important;
-        color: #05297A !important;
-        background-color: #F8F9FA !important;
+    .stButton button:hover,
+    .stFormSubmitButton button:hover {
+        background-color: #1C42E8 !important;
+        background: #1C42E8 !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 4px 12px rgba(28, 66, 232, 0.25) !important;
     }
 
     /* INPUTS Y SELECTS */
