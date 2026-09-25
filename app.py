@@ -138,9 +138,6 @@ st.markdown(
     .kanban-title { font-weight: 700; color: #0F172A; font-size: 0.95rem; margin-bottom: 8px; }
     .kanban-meta { font-size: 0.8rem; color: #64748B; margin-bottom: 4px; }
     
-    /* LOGIN LIMPIO */
-    .login-box { background-color: #FFFFFF; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid #E2E8F0; }
-    
     /* BOTÓN FLOTANTE "PROJECT IA" */
     div[data-testid="stPopover"] { position: fixed !important; bottom: 30px !important; right: 30px !important; z-index: 999999 !important; }
     div[data-testid="stPopover"] > button { 
@@ -183,14 +180,12 @@ def obtener_engine():
 def inicializar_db():
   engine = obtener_engine()
   
-  # 1. Crear tablas estructurales
   with engine.begin() as conn:
     conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS proyectos (id SERIAL PRIMARY KEY, folio TEXT, nombre TEXT NOT NULL, area_negocio TEXT, tipo_proyecto TEXT, subtipo TEXT, gerente TEXT, lider_asignado TEXT, etapa_actual TEXT, estatus_tiempo TEXT, avance_real REAL, resumen_estatus TEXT, carpeta_url TEXT, plan_url TEXT, ultima_actualizacion TEXT, presupuesto REAL DEFAULT 0.0, roi_estimado REAL DEFAULT 0.0)"""))
     conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS usuarios (correo TEXT PRIMARY KEY, password TEXT NOT NULL, rol TEXT NOT NULL, nombre TEXT)"""))
     conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS tareas (id SERIAL PRIMARY KEY, proyecto_id INTEGER, nombre_tarea TEXT NOT NULL, responsable TEXT, fecha_inicio TEXT, duracion_dias INTEGER, fecha_fin TEXT, porcentaje_avance REAL, predecesoras TEXT)"""))
     conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS bitacora (id SERIAL PRIMARY KEY, proyecto_id INTEGER, usuario_nombre TEXT, fecha_hora TEXT, comentario TEXT)"""))
     
-  # 2. Migraciones en transacciones individuales totalmente aisladas (Evita aborted transactions en PostgreSQL)
   for col_sql in [
       "ALTER TABLE proyectos ADD COLUMN presupuesto REAL DEFAULT 0.0",
       "ALTER TABLE proyectos ADD COLUMN roi_estimado REAL DEFAULT 0.0"
@@ -201,7 +196,6 @@ def inicializar_db():
       except Exception:
           pass
 
-  # 3. Usuario administrador por defecto
   with engine.begin() as conn:
     res = conn.execute(sqlalchemy.text("SELECT COUNT(*) FROM usuarios")).fetchone()
     if res[0] == 0:
@@ -363,9 +357,11 @@ m4.metric("PRESUPUESTO", f"${presupuesto_total:,.2f}")
 m5.metric("IMPACTO / ROI EST.", f"${roi_total:,.2f}")
 st.write("")
 
-# --- PESTAÑAS CORPORATIVAS ---
-if es_moderador: tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban", "➕ Nuevo Proyecto", "📜 Bitácora General", "👥 Directorio de Accesos"])
-else: tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban", "➕ Nuevo Proyecto", "📜 Bitácora General"])
+# --- PESTAÑAS CORPORATIVAS CON CONTROL DE ROL ---
+if es_moderador: 
+  tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban", "➕ Nuevo Proyecto", "📜 Bitácora General", "👥 Directorio de Accesos"])
+else: 
+  tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban"])
 
 # PESTAÑA 1: DASHBOARD CON MATRIZ DE CARGA
 with tabs[0]:
@@ -389,12 +385,12 @@ with tabs[0]:
     fig_carga.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", xaxis_title="Líder Operativo", yaxis_title="Número de Proyectos")
     st.plotly_chart(fig_carga, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (CON ELIMINACIÓN MASIVA)
+# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (PERMISOS DE EDICIÓN GRANULARES)
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
     if es_moderador:
-      with st.expander("🗑️ Eliminación Masiva de Proyectos", expanded=False):
+      with st.expander("🗑️ Eliminación Masiva de Proyectos (Solo Moderadores)", expanded=False):
         st.write("Selecciona los proyectos que deseas eliminar de forma permanente de la base de datos:")
         opciones_proyectos_borrar = df.apply(lambda x: f"{x['id']} - [{x['folio'] or 'S/F'}] {x['nombre']}", axis=1).tolist()
         proyectos_a_borrar = st.multiselect("Marcar proyectos para eliminar", opciones_proyectos_borrar)
@@ -446,48 +442,65 @@ with tabs[1]:
       p_id = row["id"]
       badge_status = "status-green" if row["estatus_tiempo"] == "En tiempo" else ("status-yellow" if row["estatus_tiempo"] == "Detenido" else "status-gray")
       tag_estancado = " <span class='status-badge status-red'>⚠️ Estancado (>20d)</span>" if row.get("es_estancado", False) else ""
+      
+      # VALIDACIÓN DE PERMISO DE EDICIÓN
+      es_mi_proyecto = (row["lider_asignado"] == st.session_state.nombre_actual)
+      puedo_editar = es_moderador or es_mi_proyecto
 
       with st.expander(f"[{row['folio'] or 'S/F'}] {row['nombre']} — Avance: {int((row['avance_real'] or 0)*100)}%"):
         st.progress(float(row["avance_real"] or 0.0))
 
-        with st.form(f"update_{p_id}"):
+        if puedo_editar:
+          with st.form(f"update_{p_id}"):
+            c1, c2, c3 = st.columns(3)
+            c1.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#64748B;'>Responsable:</span> <b style='color:#0F172A;'>{row['lider_asignado']}</b></p>", unsafe_allow_html=True)
+            c2.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#64748B;'>Estatus Actual:</span> <span class='status-badge {badge_status}'>{row['estatus_tiempo']}</span>{tag_estancado}</p>", unsafe_allow_html=True)
+            c3.markdown(f"<p style='margin:0; font-size:0.88rem; text-align:right;'><span style='color:#64748B;'>Últ. Actualización:</span> <b style='color:#05297A;'>{row['ultima_actualizacion'] or 'N/A'}</b></p>", unsafe_allow_html=True)
+            st.divider()
+
+            c_form1, c_form2, c_form3 = st.columns(3)
+            u_etapa = c_form1.selectbox("Fase del Proyecto", OPCIONES_ETAPAS, index=(OPCIONES_ETAPAS.index(row["etapa_actual"]) if row["etapa_actual"] in OPCIONES_ETAPAS else 0))
+            u_estatus = c_form2.selectbox("Estatus de Tiempo", OPCIONES_ESTATUS, index=(OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0))
+            u_avance = c_form3.slider("Progreso General (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
+            
+            f1, f2 = st.columns(2)
+            u_presupuesto = f1.number_input("Presupuesto Asignado ($)", min_value=0.0, value=float(row.get("presupuesto", 0.0)), step=1000.0)
+            u_roi = f2.number_input("Impacto / ROI Estimado ($)", min_value=0.0, value=float(row.get("roi_estimado", 0.0)), step=1000.0)
+
+            st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#334155; margin-top:8px; margin-bottom:4px;'>AÑADIR COMENTARIO A BITÁCORA</p>", unsafe_allow_html=True)
+            u_comentario = st.text_input("Escribe el estatus de la semana...", placeholder="Ej. Se finalizó la fase de documentación...")
+            
+            l1, l2 = st.columns(2)
+            u_carpeta = l1.text_input("Carpeta Drive (URL)", row["carpeta_url"] or "")
+            u_plan = l2.text_input("Link a Plan Anexo (Opcional)", row["plan_url"] or "")
+            
+            st.write("")
+            btn1, btn2, btn3 = st.columns([3, 3, 6])
+            if btn1.form_submit_button("Guardar Cambios", type="primary"):
+              ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+              engine = obtener_engine()
+              with engine.begin() as conn:
+                conn.execute(sqlalchemy.text("""UPDATE proyectos SET etapa_actual=:e, estatus_tiempo=:s, avance_real=:a, carpeta_url=:c, plan_url=:p, ultima_actualizacion=:u, presupuesto=:pr, roi_estimado=:ro WHERE id=:id"""), 
+                             {"e": u_etapa, "s": u_estatus, "a": u_avance, "c": u_carpeta, "p": u_plan, "u": ahora, "pr": u_presupuesto, "ro": u_roi, "id": p_id})
+                if u_comentario.strip(): conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), {"p_id": p_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": u_comentario.strip()})
+              limpiar_cache_y_recargar(); st.rerun()
+
+            if es_moderador and btn2.form_submit_button("Eliminar Proyecto", type="secondary"):
+              engine = obtener_engine()
+              with engine.begin() as conn: conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id=:id"), {"id": p_id})
+              limpiar_cache_y_recargar(); st.rerun()
+        else:
+          # MODO LECTURA PARA PROYECTOS AJENOS
+          st.info(f"🔒 **Modo Lectura:** Perteneces al perfil de Usuario. Solo el responsable asignado (**{row['lider_asignado']}**) o un Moderador pueden realizar cambios en este proyecto.")
           c1, c2, c3 = st.columns(3)
-          c1.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#64748B;'>Responsable:</span> <b style='color:#0F172A;'>{row['lider_asignado']}</b></p>", unsafe_allow_html=True)
-          c2.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#64748B;'>Estatus Actual:</span> <span class='status-badge {badge_status}'>{row['estatus_tiempo']}</span>{tag_estancado}</p>", unsafe_allow_html=True)
-          c3.markdown(f"<p style='margin:0; font-size:0.88rem; text-align:right;'><span style='color:#64748B;'>Últ. Actualización:</span> <b style='color:#05297A;'>{row['ultima_actualizacion'] or 'N/A'}</b></p>", unsafe_allow_html=True)
-          st.divider()
-
-          c_form1, c_form2, c_form3 = st.columns(3)
-          u_etapa = c_form1.selectbox("Fase del Proyecto", OPCIONES_ETAPAS, index=(OPCIONES_ETAPAS.index(row["etapa_actual"]) if row["etapa_actual"] in OPCIONES_ETAPAS else 0))
-          u_estatus = c_form2.selectbox("Estatus de Tiempo", OPCIONES_ESTATUS, index=(OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0))
-          u_avance = c_form3.slider("Progreso General (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
+          c1.write(f"**Área:** {row['area_negocio']}")
+          c2.write(f"**Estatus:** `{row['estatus_tiempo']}`")
+          c3.write(f"**Fase Actual:** {row['etapa_actual']}")
           
-          f1, f2 = st.columns(2)
-          u_presupuesto = f1.number_input("Presupuesto Asignado ($)", min_value=0.0, value=float(row.get("presupuesto", 0.0)), step=1000.0)
-          u_roi = f2.number_input("Impacto / ROI Estimado ($)", min_value=0.0, value=float(row.get("roi_estimado", 0.0)), step=1000.0)
-
-          st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#334155; margin-top:8px; margin-bottom:4px;'>AÑADIR COMENTARIO A BITÁCORA</p>", unsafe_allow_html=True)
-          u_comentario = st.text_input("Escribe el estatus de la semana...", placeholder="Ej. Se finalizó la fase de documentación...")
-          
-          l1, l2 = st.columns(2)
-          u_carpeta = l1.text_input("Carpeta Drive (URL)", row["carpeta_url"] or "")
-          u_plan = l2.text_input("Link a Plan Anexo (Opcional)", row["plan_url"] or "")
-          
-          st.write("")
-          btn1, btn2, btn3 = st.columns([3, 3, 6])
-          if btn1.form_submit_button("Guardar Cambios", type="primary"):
-            ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            engine = obtener_engine()
-            with engine.begin() as conn:
-              conn.execute(sqlalchemy.text("""UPDATE proyectos SET etapa_actual=:e, estatus_tiempo=:s, avance_real=:a, carpeta_url=:c, plan_url=:p, ultima_actualizacion=:u, presupuesto=:pr, roi_estimado=:ro WHERE id=:id"""), 
-                           {"e": u_etapa, "s": u_estatus, "a": u_avance, "c": u_carpeta, "p": u_plan, "u": ahora, "pr": u_presupuesto, "ro": u_roi, "id": p_id})
-              if u_comentario.strip(): conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), {"p_id": p_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": u_comentario.strip()})
-            limpiar_cache_y_recargar(); st.rerun()
-
-          if es_moderador and btn2.form_submit_button("Eliminar Proyecto", type="secondary"):
-            engine = obtener_engine()
-            with engine.begin() as conn: conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id=:id"), {"id": p_id})
-            limpiar_cache_y_recargar(); st.rerun()
+          c4, c5, c6 = st.columns(3)
+          c4.write(f"**Gerente Sponsor:** {row['gerente']}")
+          c5.write(f"**Presupuesto:** ${float(row.get('presupuesto', 0.0)):,.2f}")
+          c6.write(f"**Última Actualización:** {row['ultima_actualizacion'] or 'N/A'}")
 
         # Historial de Bitácora
         historial_proyecto = df_bitacora[df_bitacora["proyecto_id"] == p_id]
@@ -513,34 +526,36 @@ with tabs[1]:
           fig.update_layout(height=160 + (len(df_tareas_calc) * 35), margin=dict(l=0, r=0, t=10, b=0), font=dict(family="Inter"), xaxis=dict(showgrid=True, gridcolor="#F1F5F9"), yaxis=dict(showgrid=False, title=""), coloraxis_colorbar=dict(title="% Avance"))
           st.plotly_chart(fig, use_container_width=True)
 
-          st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#05297A;'>✏️ Actualizar Avance por Tarea</p>", unsafe_allow_html=True)
-          with st.form(f"upd_t_{p_id}", clear_on_submit=True):
-            col_sel, col_val, col_btn = st.columns([2, 1, 1])
-            opciones_tareas = df_tareas_calc.apply(lambda x: f"{x['id']} - {x['nombre_tarea']}", axis=1).tolist()
-            t_sel = col_sel.selectbox("Selecciona la tarea", opciones_tareas)
-            t_val = col_val.number_input("Nuevo Avance (%)", min_value=0, max_value=100, step=10)
-            st.write("")
-            if col_btn.form_submit_button("Guardar % Avance", type="secondary"):
-              if t_sel:
-                t_id_real = int(t_sel.split(" - ")[0])
-                engine = obtener_engine()
-                with engine.begin() as conn: conn.execute(sqlalchemy.text("UPDATE tareas SET porcentaje_avance=:a WHERE id=:id"), {"a": t_val, "id": t_id_real})
-                limpiar_cache_y_recargar(); st.rerun()
+          if puedo_editar:
+            st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#05297A;'>✏️ Actualizar Avance por Tarea</p>", unsafe_allow_html=True)
+            with st.form(f"upd_t_{p_id}", clear_on_submit=True):
+              col_sel, col_val, col_btn = st.columns([2, 1, 1])
+              opciones_tareas = df_tareas_calc.apply(lambda x: f"{x['id']} - {x['nombre_tarea']}", axis=1).tolist()
+              t_sel = col_sel.selectbox("Selecciona la tarea", opciones_tareas)
+              t_val = col_val.number_input("Nuevo Avance (%)", min_value=0, max_value=100, step=10)
+              st.write("")
+              if col_btn.form_submit_button("Guardar % Avance", type="secondary"):
+                if t_sel:
+                  t_id_real = int(t_sel.split(" - ")[0])
+                  engine = obtener_engine()
+                  with engine.begin() as conn: conn.execute(sqlalchemy.text("UPDATE tareas SET porcentaje_avance=:a WHERE id=:id"), {"a": t_val, "id": t_id_real})
+                  limpiar_cache_y_recargar(); st.rerun()
         else: st.info("No has agregado tareas al plan de trabajo todavía.")
 
-        with st.expander("➕ Agregar Nueva Tarea"):
-          with st.form(f"ft_{p_id}", clear_on_submit=True):
-            t_nom = st.text_input("Nombre de la Tarea *")
-            c_t1, c_t2, c_t3, c_t4 = st.columns(4)
-            t_res = c_t1.selectbox("Responsable", lista_lideres_registrados)
-            t_ini = c_t2.date_input("Fecha de Inicio")
-            t_dur = c_t3.number_input("Duración (Días)", 1, value=5)
-            t_pre = c_t4.text_input("Predecesoras (Ej. 1, 2)")
-            if st.form_submit_button("Añadir a Gantt"):
-              if t_nom.strip():
-                engine = obtener_engine()
-                with engine.begin() as conn: conn.execute(sqlalchemy.text("""INSERT INTO tareas (proyecto_id, nombre_tarea, responsable, fecha_inicio, duracion_dias, fecha_fin, porcentaje_avance, predecesoras) VALUES (:pid, :n, :r, :fi, :d, :ff, 0.0, :p)"""), {"pid": p_id, "n": t_nom, "r": t_res, "fi": str(t_ini), "d": t_dur, "ff": str(pd.to_datetime(t_ini) + timedelta(days=t_dur - 1)), "p": t_pre})
-                limpiar_cache_y_recargar(); st.rerun()
+        if puedo_editar:
+          with st.expander("➕ Agregar Nueva Tarea"):
+            with st.form(f"ft_{p_id}", clear_on_submit=True):
+              t_nom = st.text_input("Nombre de la Tarea *")
+              c_t1, c_t2, c_t3, c_t4 = st.columns(4)
+              t_res = c_t1.selectbox("Responsable", lista_lideres_registrados)
+              t_ini = c_t2.date_input("Fecha de Inicio")
+              t_dur = c_t3.number_input("Duración (Días)", 1, value=5)
+              t_pre = c_t4.text_input("Predecesoras (Ej. 1, 2)")
+              if st.form_submit_button("Añadir a Gantt"):
+                if t_nom.strip():
+                  engine = obtener_engine()
+                  with engine.begin() as conn: conn.execute(sqlalchemy.text("""INSERT INTO tareas (proyecto_id, nombre_tarea, responsable, fecha_inicio, duracion_dias, fecha_fin, porcentaje_avance, predecesoras) VALUES (:pid, :n, :r, :fi, :d, :ff, 0.0, :p)"""), {"pid": p_id, "n": t_nom, "r": t_res, "fi": str(t_ini), "d": t_dur, "ff": str(pd.to_datetime(t_ini) + timedelta(days=t_dur - 1)), "p": t_pre})
+                  limpiar_cache_y_recargar(); st.rerun()
 
 # PESTAÑA 3: VISTA KANBAN
 with tabs[2]:
@@ -555,10 +570,11 @@ with tabs[2]:
         for _, k_row in df_k.iterrows():
           st.markdown(f"<div class='kanban-card'><div class='kanban-title'>{k_row['nombre']}</div><div class='kanban-meta'>👤 {k_row['lider_asignado']}</div><div class='kanban-meta'>📈 {int((k_row['avance_real'] or 0)*100)}% Completado</div><div class='kanban-meta' style='margin-top:6px;'><i>Folio: {k_row['folio'] or 'S/F'}</i></div></div>", unsafe_allow_html=True)
 
-# PESTAÑA 4: NUEVO PROYECTO
-with tabs[3]:
-  st.write("")
-  if es_moderador:
+# PESTAÑAS ADMINISTRATIVAS (SOLO MODERADORES)
+if es_moderador:
+  # PESTAÑA 4: NUEVO PROYECTO
+  with tabs[3]:
+    st.write("")
     sub_tab1, sub_tab2 = st.tabs(["📝 Alta Individual", "📥 Carga Masiva desde Excel"])
     
     with sub_tab1:
@@ -655,23 +671,22 @@ with tabs[3]:
           except Exception as e:
               st.error(f"Error al leer el archivo. Asegúrate de usar la plantilla oficial. Detalle: {e}")
 
-# PESTAÑA 5: BITÁCORA GLOBAL DE ACTIVIDAD
-with tabs[4]:
-  st.write("")
-  st.markdown("<h3 style='color:#0F172A;'>📜 Feed Global de Actividad y Auditoría</h3>", unsafe_allow_html=True)
-  st.write("Historial centralizado en tiempo real de todas las actualizaciones ejecutadas en la plataforma.")
-  
-  if df_bitacora.empty:
-      st.info("Aún no hay movimientos registrados en la bitácora global.")
-  else:
-      df_bitacora_ext = df_bitacora.merge(df[["id", "nombre", "folio"]], left_on="proyecto_id", right_on="id", how="left")
-      for _, b_row in df_bitacora_ext.head(30).iterrows():
-          p_nombre = b_row.get("nombre", "Proyecto General")
-          p_folio = b_row.get("folio", "S/F")
-          st.markdown(f"<div class='timeline-item'><div class='timeline-date'>{b_row['fecha_hora']} | Autor: <b>{b_row['usuario_nombre']}</b> | Proyecto: <b>[{p_folio}] {p_nombre}</b></div><div class='timeline-text'>{b_row['comentario']}</div></div>", unsafe_allow_html=True)
+  # PESTAÑA 5: BITÁCORA GLOBAL DE ACTIVIDAD
+  with tabs[4]:
+    st.write("")
+    st.markdown("<h3 style='color:#0F172A;'>📜 Feed Global de Actividad y Auditoría</h3>", unsafe_allow_html=True)
+    st.write("Historial centralizado en tiempo real de todas las actualizaciones ejecutadas en la plataforma.")
+    
+    if df_bitacora.empty:
+        st.info("Aún no hay movimientos registrados en la bitácora global.")
+    else:
+        df_bitacora_ext = df_bitacora.merge(df[["id", "nombre", "folio"]], left_on="proyecto_id", right_on="id", how="left")
+        for _, b_row in df_bitacora_ext.head(30).iterrows():
+            p_nombre = b_row.get("nombre", "Proyecto General")
+            p_folio = b_row.get("folio", "S/F")
+            st.markdown(f"<div class='timeline-item'><div class='timeline-date'>{b_row['fecha_hora']} | Autor: <b>{b_row['usuario_nombre']}</b> | Proyecto: <b>[{p_folio}] {p_nombre}</b></div><div class='timeline-text'>{b_row['comentario']}</div></div>", unsafe_allow_html=True)
 
-# PESTAÑA 6: USUARIOS (Solo Moderador)
-if es_moderador:
+  # PESTAÑA 6: USUARIOS
   with tabs[5]:
     st.write("")
     df_users = df_users_raw.copy()
@@ -709,7 +724,7 @@ if es_moderador:
 
 
 # ==============================================================================
-# --- MOTOR NLP PROJECT IA (AVANZADO & FLUIDO) ---
+# --- MOTOR NLP PROJECT IA ---
 # ==============================================================================
 def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
   p_lower = prompt.lower().strip()
