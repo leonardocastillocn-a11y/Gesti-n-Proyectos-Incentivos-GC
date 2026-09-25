@@ -1,5 +1,4 @@
 import io
-import re
 from datetime import datetime, timedelta
 import tempfile
 from fpdf import FPDF
@@ -10,8 +9,8 @@ import streamlit as st
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
-    page_title="Portafolio de Incentivos | Coppel",
-    page_icon="💼",
+    page_title="Heading 360 | Project Steering Engine",
+    page_icon="🧭",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -20,11 +19,11 @@ st.set_page_config(
 URL_ROBOT = "https://cdn-icons-png.flaticon.com/512/8943/8943377.png" 
 URL_USER = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
 
-# --- CSS UX FRIENDLY & SAAS PREMIUM ---
+# --- CSS ENTERPRISE SAAS (HEADING 360 THEME) ---
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     
     html, body, [class*="css"], .stApp { 
         font-family: 'Inter', sans-serif !important; 
@@ -52,7 +51,7 @@ st.markdown(
         letter-spacing: 0.03em; 
     }
     
-    /* INPUTS LIMPIOS Y REDONDEADOS */
+    /* INPUTS LIMPIOS */
     .stTextInput > div > div, .stSelectbox > div > div, .stTextArea > div > div { 
         border-radius: 8px !important; 
         border: 1px solid #CBD5E1 !important; 
@@ -74,7 +73,7 @@ st.markdown(
         padding: 24px !important;
     }
 
-    /* BOTONES PRIMARIOS: DEGRADADO VIBRANTE */
+    /* BOTONES PRIMARIOS: AZUL NAVEGACIÓN */
     div[data-testid="stFormSubmitButton"] button, .stButton > button[kind="primary"] { 
         background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important; 
         color: #FFFFFF !important; 
@@ -117,7 +116,7 @@ st.markdown(
     div[data-testid="metric-container"] label { color: #64748B !important; font-size: 0.85rem !important; font-weight: 600 !important; }
     div[data-testid="metric-container"] [data-testid="stMetricValue"] div { color: #0F172A !important; font-size: 2.2rem !important; font-weight: 800 !important; letter-spacing: -0.02em; }
     
-    /* PESTAÑAS (TABS) AMIGABLES */
+    /* PESTAÑAS (TABS) */
     .stTabs [data-baseweb="tab-list"] { gap: 32px; border-bottom: 2px solid #E2E8F0; }
     .stTabs [aria-selected="true"] { border-bottom: 3px solid #05297A !important; font-weight: 700 !important; color: #05297A !important; background-color: transparent !important; }
     .stTabs [aria-selected="false"] { color: #64748B !important; font-weight: 500 !important; }
@@ -126,7 +125,7 @@ st.markdown(
     .streamlit-expanderHeader { background-color: #FFFFFF !important; color: #0F172A !important; font-weight: 600 !important; border-radius: 10px !important; border: 1px solid #E2E8F0 !important; padding: 1rem !important; box-shadow: 0 2px 4px rgba(0,0,0,0.01) !important; }
     .streamlit-expanderContent { border: 1px solid #E2E8F0 !important; border-top: none !important; background-color: #FFFFFF !important; padding: 24px !important; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; }
     
-    /* BADGES STATUS REDONDEADAS */
+    /* BADGES STATUS */
     .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; letter-spacing: 0.02em; }
     .status-green { background-color: #DCFCE7; color: #166534 !important; border: 1px solid #BBF7D0;}
     .status-yellow { background-color: #FEF9C3; color: #854D0E !important; border: 1px solid #FEF08A;}
@@ -138,10 +137,7 @@ st.markdown(
     .kanban-title { font-weight: 700; color: #0F172A; font-size: 0.95rem; margin-bottom: 8px; }
     .kanban-meta { font-size: 0.8rem; color: #64748B; margin-bottom: 4px; }
     
-    /* LOGIN LIMPIO */
-    .login-box { background-color: #FFFFFF; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid #E2E8F0; }
-    
-    /* BOTÓN FLOTANTE "PROJECT IA" AMIGABLE */
+    /* BOTÓN FLOTANTE "PROJECT IA" (COPILOTO) */
     div[data-testid="stPopover"] { position: fixed !important; bottom: 30px !important; right: 30px !important; z-index: 999999 !important; }
     div[data-testid="stPopover"] > button { 
         background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important; 
@@ -230,7 +226,7 @@ def calcular_fechas_tarea_df(df_tareas_proyecto):
     df_t.at[idx, "avance_txt"] = f"{int(row['porcentaje_avance'])}%"
   return df_t
 
-# --- LOGIN LIMPIO Y AMIGABLE ---
+# --- LOGIN GATEWAY ---
 if "autenticado" not in st.session_state:
   st.session_state.autenticado = False; st.session_state.correo_actual = None; st.session_state.nombre_actual = None; st.session_state.rol = None
 
@@ -238,27 +234,27 @@ if not st.session_state.autenticado:
   col_izq, col_centro, col_der = st.columns([1, 1.4, 1])
   with col_centro:
     st.write(""); st.write(""); st.write("")
-    st.markdown("<h1 style='text-align: center; color:#05297A !important; font-size: 2.4rem; letter-spacing: -1px;'>Portafolio de Incentivos</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #64748B; margin-bottom: 30px; font-size: 1.1rem;'>Coppel Corporativo</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color:#05297A !important; font-size: 2.5rem; letter-spacing: -1px;'>HEADING 360</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #64748B; margin-bottom: 30px; font-size: 1.1rem; font-weight: 500;'>Project Steering Engine</p>", unsafe_allow_html=True)
     
     with st.form("login_form"):
-      st.markdown("<h3 style='color:#0F172A !important; font-size: 1.2rem; margin-bottom: 20px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;'>Iniciar Sesión</h3>", unsafe_allow_html=True)
+      st.markdown("<h3 style='color:#0F172A !important; font-size: 1.1rem; margin-bottom: 20px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;'>Autorización de Vuelo</h3>", unsafe_allow_html=True)
       correo_input = st.text_input("Correo Institucional", placeholder="tu.nombre@coppel.com")
       password_input = st.text_input("Contraseña", type="password")
       st.write("")
-      if st.form_submit_button("Ingresar a la plataforma", type="primary", use_container_width=True):
-        if correo_input.strip() == "": st.warning("Por favor ingresa tu correo.")
+      if st.form_submit_button("Ingresar a Torre de Control", type="primary", use_container_width=True):
+        if correo_input.strip() == "": st.warning("ID de usuario requerido.")
         else:
           engine = obtener_engine()
           with engine.connect() as conn:
             res = conn.execute(sqlalchemy.text("SELECT password, rol, nombre FROM usuarios WHERE LOWER(correo)=:c"), {"c": correo_input.strip().lower()}).fetchone()
             if res and res[0] == password_input:
               st.session_state.autenticado = True; st.session_state.correo_actual = correo_input.strip().lower(); st.session_state.rol = res[1]; st.session_state.nombre_actual = res[2]; st.rerun()
-            else: st.error("Tus credenciales no coinciden. Intenta de nuevo.")
+            else: st.error("Credenciales de acceso rechazadas.")
     
     st.write("")
     if st.button("¿Olvidaste tu contraseña?", type="secondary", use_container_width=True):
-        st.info("🔒 **Seguridad de la cuenta:** Para recuperar tu contraseña, por favor envía un correo al administrador del sistema (Leonardo Castillo) para que genere una nueva clave.")
+        st.info("🔒 **Protocolo de Seguridad:** Para reasignación de clave de acceso, contacta al Administrador del sistema (Leonardo Castillo) vía correo institucional.")
   st.stop()
 
 # --- CARGA DE DATOS EN MEMORIA ---
@@ -270,28 +266,28 @@ lista_lideres_registrados = obtener_lista_usuarios(df_users_raw)
 if not df.empty:
   proyectos_retrasados = df[df["estatus_tiempo"].isin(["Retrasado", "Detenido"])]
   if not proyectos_retrasados.empty and "alerta_mostrada" not in st.session_state:
-    st.toast(f"¡Hola! Tienes {len(proyectos_retrasados)} iniciativas que requieren atención por retraso.", icon="🚨")
+    st.toast(f"Reporte de Radar: {len(proyectos_retrasados)} iniciativas fuera del rumbo proyectado.", icon="🚨")
     st.session_state.alerta_mostrada = True
 
-# --- SIDEBAR AMIGABLE ---
+# --- SIDEBAR DE TRIPULACIÓN ---
 with st.sidebar:
   st.markdown(f"<div style='background-color:#FFFFFF; padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);'><h3 style='margin:0 0 4px 0; font-size:1.1rem; color:#0F172A;'>👤 {st.session_state.nombre_actual}</h3><p style='margin:0 0 10px 0; color:#64748B; font-size:0.85rem;'>{st.session_state.correo_actual}</p><span class='status-badge {'status-green' if es_moderador else 'status-gray'}'>{st.session_state.rol}</span></div>", unsafe_allow_html=True)
-  with st.expander("⚙️ Mi Perfil y Seguridad", expanded=False):
+  with st.expander("⚙️ Credenciales de Vuelo", expanded=False):
     with st.form("form_cambio_pass"):
       nueva_pass = st.text_input("Nueva Contraseña", type="password"); confirmar_pass = st.text_input("Confirmar Contraseña", type="password")
-      if st.form_submit_button("Guardar Cambios", use_container_width=True):
+      if st.form_submit_button("Actualizar Clave", use_container_width=True):
         if nueva_pass == confirmar_pass and nueva_pass:
           engine = obtener_engine()
           with engine.begin() as conn: conn.execute(sqlalchemy.text("UPDATE usuarios SET password=:p WHERE correo=:c"), {"p": nueva_pass, "c": st.session_state.correo_actual})
-          limpiar_cache_y_recargar(); st.success("¡Contraseña actualizada!")
-        else: st.error("Las contraseñas no coinciden.")
+          limpiar_cache_y_recargar(); st.success("Clave de acceso guardada.")
+        else: st.error("No coinciden las claves.")
   st.write("")
-  st.markdown("<h4 style='color:#0F172A; font-size: 0.9rem;'>📥 Descargar Información</h4>", unsafe_allow_html=True)
+  st.markdown("<h4 style='color:#0F172A; font-size: 0.9rem;'>📥 Reportes de Navegación</h4>", unsafe_allow_html=True)
   if not df.empty:
     def generar_pdf(dataframe):
       pdf = FPDF(orientation="L", unit="mm", format="A4"); pdf.set_auto_page_break(auto=True, margin=15); pdf.add_page(); pdf.set_font("Arial", "B", 16); pdf.set_text_color(5, 41, 122)
-      pdf.cell(0, 8, "Reporte Ejecutivo - Portafolio de Incentivos", ln=True, align="L"); pdf.set_font("Arial", "", 9); pdf.set_text_color(100, 100, 100)
-      pdf.cell(0, 6, f"Generado el: {datetime.now().strftime('%d/%m/%Y a las %H:%M')}", ln=True, align="L"); pdf.ln(4)
+      pdf.cell(0, 8, "Heading 360 - Executive Steering Report", ln=True, align="L"); pdf.set_font("Arial", "", 9); pdf.set_text_color(100, 100, 100)
+      pdf.cell(0, 6, f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align="L"); pdf.ln(4)
       pdf.set_font("Arial", "B", 8); pdf.set_fill_color(241, 245, 249); pdf.set_text_color(15, 23, 42)
       pdf.cell(22, 8, "Folio", 1, 0, "C", True); pdf.cell(60, 8, "Iniciativa", 1, 0, "L", True); pdf.cell(30, 8, "Area", 1, 0, "L", True); pdf.cell(35, 8, "Responsable", 1, 0, "L", True); pdf.cell(25, 8, "Estatus", 1, 0, "C", True); pdf.cell(18, 8, "Avance", 1, 0, "C", True); pdf.cell(42, 8, "Ult. Act.", 1, 0, "C", True); pdf.cell(45, 8, "Fase Actual", 1, 1, "L", True)
       pdf.set_font("Arial", "", 8); pdf.set_text_color(40, 40, 40)
@@ -299,65 +295,65 @@ with st.sidebar:
         pdf.cell(22, 7, str(row["folio"])[:12], 1, 0, "C"); pdf.cell(60, 7, str(row["nombre"])[:35], 1, 0, "L"); pdf.cell(30, 7, str(row["area_negocio"])[:18], 1, 0, "L"); pdf.cell(35, 7, str(row["lider_asignado"])[:22], 1, 0, "L"); pdf.cell(25, 7, str(row["estatus_tiempo"])[:15], 1, 0, "C"); pdf.cell(18, 7, f"{int((row['avance_real'] or 0)*100)}%", 1, 0, "C"); pdf.set_font("Arial", "B", 8); pdf.cell(42, 7, str(row["ultima_actualizacion"])[:19], 1, 0, "C"); pdf.set_font("Arial", "", 8); pdf.cell(45, 7, str(row["etapa_actual"])[:25], 1, 1, "L")
       with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp: pdf.output(tmp.name); return tmp.name
 
-    with open(generar_pdf(df), "rb") as file: st.download_button("Descargar PDF Institucional", data=file, file_name=f"Reporte_Coppel_{datetime.now().strftime('%Y%m%d')}.pdf", use_container_width=True, type="secondary")
+    with open(generar_pdf(df), "rb") as file: st.download_button("Descargar Informe (PDF)", data=file, file_name=f"Heading360_{datetime.now().strftime('%Y%m%d')}.pdf", use_container_width=True, type="secondary")
     excel_buffer = io.BytesIO()
     with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer: df.to_excel(writer, index=False, sheet_name="Proyectos")
-    st.download_button("Exportar a Excel (.xlsx)", data=excel_buffer.getvalue(), file_name=f"Data_{datetime.now().strftime('%Y%m%d')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, type="secondary")
+    st.download_button("Exportar Telemetría (Excel)", data=excel_buffer.getvalue(), file_name=f"Telemetria_{datetime.now().strftime('%Y%m%d')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, type="secondary")
 
   st.write("")
-  if st.button("Cerrar Sesión", use_container_width=True): st.session_state.autenticado = False; st.rerun()
+  if st.button("Cerrar Sesión Segura", use_container_width=True): st.session_state.autenticado = False; st.rerun()
 
-# --- HEADER Y MÉTRICAS PERMANENTES ---
-st.markdown("<h2 style='margin-bottom: 20px; color:#0F172A;'>📊 Visión General del Portafolio</h2>", unsafe_allow_html=True)
+# --- HEADER Y MÉTRICAS DE TORRE DE CONTROL ---
+st.markdown("<h2 style='margin-bottom: 20px; color:#0F172A;'>✈️ Torre de Control Operativo</h2>", unsafe_allow_html=True)
 if not df.empty and not proyectos_retrasados.empty:
-  st.markdown(f"<div style='background-color:#FEF2F2; border-left: 5px solid #EF4444; padding: 16px; border-radius: 8px; margin-bottom: 20px;'><p style='color:#991B1B; margin:0; font-weight:600;'>⚠️ Tienes {len(proyectos_retrasados)} iniciativas marcadas como Retrasadas o Detenidas. Por favor revísalas.</p></div>", unsafe_allow_html=True)
+  st.markdown(f"<div style='background-color:#FEF2F2; border-left: 5px solid #EF4444; padding: 16px; border-radius: 8px; margin-bottom: 20px;'><p style='color:#991B1B; margin:0; font-weight:600;'>🚨 ALERTA DE TURBULENCIA: {len(proyectos_retrasados)} iniciativas fuera del plan de vuelo proyectado.</p></div>", unsafe_allow_html=True)
 
 total_p = len(df); en_t = len(df[df["estatus_tiempo"] == "En tiempo"]) if total_p > 0 else 0; ret = len(proyectos_retrasados) if total_p > 0 else 0; prom = df["avance_real"].mean() * 100 if total_p > 0 else 0.0
 m1, m2, m3, m4 = st.columns(4)
-m1.metric("PROYECTOS ACTIVOS", total_p); m2.metric("EN TIEMPO", en_t); m3.metric("EN RETRASO", ret); m4.metric("AVANCE PROMEDIO", f"{prom:.1f}%")
+m1.metric("INICIATIVAS EN VUELO", total_p); m2.metric("RUMBO CORRECTO (EN TIEMPO)", en_t); m3.metric("TURBULENCIA (RETRASO)", ret); m4.metric("AVANCE GLOBAL", f"{prom:.1f}%")
 st.write("")
 
-# --- PESTAÑAS (TABS AMIGABLES) ---
-if es_moderador: tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban", "➕ Nuevo Proyecto", "👥 Directorio de Accesos"])
-else: tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban", "➕ Nuevo Proyecto"])
+# --- NAVEGACIÓN PRINCIPAL (TABS) ---
+if es_moderador: tabs = st.tabs(["📈 Panel de Navegación", "🚀 Control de Ruta", "📋 Matriz Kanban", "➕ Alta de Plan de Vuelo", "👥 Tripulación de Accesos"])
+else: tabs = st.tabs(["📈 Panel de Navegación", "🚀 Control de Ruta", "📋 Matriz Kanban", "➕ Alta de Plan de Vuelo"])
 
 # PESTAÑA 1: DASHBOARD
 with tabs[0]:
   st.write("")
-  if df.empty: st.info("Agrega algunos proyectos para visualizar los gráficos.")
+  if df.empty: st.info("Buscando señal de datos. Agrega proyectos para visualizar el panel.")
   else:
     d_col1, d_col2 = st.columns(2)
     with d_col1:
-      fig1 = px.pie(df, names="area_negocio", title="Distribución por Área Solicitante", hole=0.45, color_discrete_sequence=px.colors.qualitative.Prism)
+      fig1 = px.pie(df, names="area_negocio", title="Distribución de Carga por Área", hole=0.45, color_discrete_sequence=px.colors.qualitative.Prism)
       fig1.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", title_font=dict(size=18, family="Inter", color="#0F172A")); st.plotly_chart(fig1, use_container_width=True)
     with d_col2:
       df_status_count = df["estatus_tiempo"].value_counts().reset_index(); df_status_count.columns = ["Estatus", "Volumen"]
-      fig2 = px.bar(df_status_count, x="Estatus", y="Volumen", title="Estatus de Salud del Portafolio", color="Estatus", color_discrete_map={"En tiempo": "#166534", "Retrasado": "#475569", "Detenido": "#854D0E", "Por iniciar": "#94A3B8"})
+      fig2 = px.bar(df_status_count, x="Estatus", y="Volumen", title="Estatus de Vuelo del Portafolio", color="Estatus", color_discrete_map={"En tiempo": "#166534", "Retrasado": "#475569", "Detenido": "#854D0E", "Por iniciar": "#94A3B8"})
       fig2.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", title_font=dict(size=18, family="Inter", color="#0F172A")); st.plotly_chart(fig2, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (MEGA-FILTROS)
+# PESTAÑA 2: CONTROL DE RUTA (6 FILTROS ESTRATÉGICOS)
 with tabs[1]:
-  if df.empty: st.info("No hay proyectos registrados todavía.")
+  if df.empty: st.info("No hay planes de vuelo registrados aún.")
   else:
     f_pills1, f_pills2, f_pills3, f_pills4 = st.columns([1.2, 1.2, 1.2, 2.4])
-    modo_filtro = f_pills1.radio("Filtros de Acceso Rápido", ["Ver Todos", "🚨 Solo Retrasados", "🟢 En Tiempo", "⭐ Mis Proyectos"], horizontal=True)
+    modo_filtro = f_pills1.radio("Visualización de Telemetría", ["Ver Todo", "🚨 Solo Turbulencia", "🟢 Rumbo Correcto", "⭐ Mis Vuelos"], horizontal=True)
 
-    st.markdown("<h5 style='color:#334155; margin-top:15px; margin-bottom:15px; font-size:0.9rem;'>Filtros Avanzados</h5>", unsafe_allow_html=True)
+    st.markdown("<h5 style='color:#334155; margin-top:15px; margin-bottom:15px; font-size:0.9rem;'>Filtros de Navegación Avanzada</h5>", unsafe_allow_html=True)
     f_col1, f_col2, f_col3 = st.columns(3)
-    txt_busqueda = f_col1.text_input("Buscar por Nombre o Folio")
-    filtro_area = f_col2.selectbox("Filtrar por Área", ["Todas las Áreas"] + OPCIONES_AREAS)
-    filtro_lider = f_col3.selectbox("Responsable del Proyecto", ["Todos los Responsables"] + lista_lideres_registrados)
+    txt_busqueda = f_col1.text_input("Búsqueda por Nombre o Folio")
+    filtro_area = f_col2.selectbox("Área Solicitante", ["Todas las Áreas"] + OPCIONES_AREAS)
+    filtro_lider = f_col3.selectbox("Piloto Responsable", ["Todos los Responsables"] + lista_lideres_registrados)
 
     f_col4, f_col5, f_col6 = st.columns(3)
-    filtro_estatus = f_col4.selectbox("Estatus de Ejecución", ["Todos los Estatus"] + OPCIONES_ESTATUS)
+    filtro_estatus = f_col4.selectbox("Estatus de Vuelo", ["Todos los Estatus"] + OPCIONES_ESTATUS)
     filtro_gerente = f_col5.selectbox("Gerente Sponsor", ["Todos los Gerentes"] + OPCIONES_GERENTES)
-    filtro_etapa = f_col6.selectbox("Fase Actual", ["Todas las Fases"] + OPCIONES_ETAPAS)
+    filtro_etapa = f_col6.selectbox("Fase de Vuelo", ["Todas las Fases"] + OPCIONES_ETAPAS)
 
     df_filtrado = df.copy()
 
-    if modo_filtro == "🚨 Solo Retrasados": df_filtrado = df_filtrado[df_filtrado["estatus_tiempo"].isin(["Retrasado", "Detenido"])]
-    elif modo_filtro == "🟢 En Tiempo": df_filtrado = df_filtrado[df_filtrado["estatus_tiempo"] == "En tiempo"]
-    elif modo_filtro == "⭐ Mis Proyectos": df_filtrado = df_filtrado[df_filtrado["lider_asignado"] == st.session_state.nombre_actual]
+    if modo_filtro == "🚨 Solo Turbulencia": df_filtrado = df_filtrado[df_filtrado["estatus_tiempo"].isin(["Retrasado", "Detenido"])]
+    elif modo_filtro == "🟢 Rumbo Correcto": df_filtrado = df_filtrado[df_filtrado["estatus_tiempo"] == "En tiempo"]
+    elif modo_filtro == "⭐ Mis Vuelos": df_filtrado = df_filtrado[df_filtrado["lider_asignado"] == st.session_state.nombre_actual]
 
     if txt_busqueda.strip(): df_filtrado = df_filtrado[df_filtrado["nombre"].str.lower().str.contains(txt_busqueda.lower(), na=False) | df_filtrado["folio"].str.lower().str.contains(txt_busqueda.lower(), na=False)]
     if filtro_area != "Todas las Áreas": df_filtrado = df_filtrado[df_filtrado["area_negocio"] == filtro_area]
@@ -366,37 +362,37 @@ with tabs[1]:
     if filtro_gerente != "Todos los Gerentes": df_filtrado = df_filtrado[df_filtrado["gerente"] == filtro_gerente]
     if filtro_etapa != "Todas las Fases": df_filtrado = df_filtrado[df_filtrado["etapa_actual"] == filtro_etapa]
 
-    st.markdown(f"<p style='color: #64748B; font-size: 0.85rem; margin-top: 15px;'>📌 Mostrando <b>{len(df_filtrado)}</b> de <b>{len(df)}</b> proyectos según tus filtros.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color: #64748B; font-size: 0.85rem; margin-top: 15px;'>📌 Visualizando <b>{len(df_filtrado)}</b> de <b>{len(df)}</b> planes de vuelo activos.</p>", unsafe_allow_html=True)
 
     for _, row in df_filtrado.iterrows():
       p_id = row["id"]
       badge_status = "status-green" if row["estatus_tiempo"] == "En tiempo" else ("status-yellow" if row["estatus_tiempo"] == "Detenido" else "status-gray")
 
-      with st.expander(f"[{row['folio'] or 'S/F'}] {row['nombre']} — Avance: {int((row['avance_real'] or 0)*100)}%"):
+      with st.expander(f"[{row['folio'] or 'S/F'}] {row['nombre']} — Altitud de Avance: {int((row['avance_real'] or 0)*100)}%"):
         st.progress(float(row["avance_real"] or 0.0))
 
         with st.form(f"update_{p_id}"):
           c1, c2, c3 = st.columns(3)
-          c1.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#64748B;'>Responsable:</span> <b style='color:#0F172A;'>{row['lider_asignado']}</b></p>", unsafe_allow_html=True)
-          c2.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#64748B;'>Estatus Actual:</span> <span class='status-badge {badge_status}'>{row['estatus_tiempo']}</span></p>", unsafe_allow_html=True)
-          c3.markdown(f"<p style='margin:0; font-size:0.88rem; text-align:right;'><span style='color:#64748B;'>Últ. Actualización:</span> <b style='color:#05297A;'>{row['ultima_actualizacion'] or 'N/A'}</b></p>", unsafe_allow_html=True)
+          c1.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#64748B;'>Piloto al Mando:</span> <b style='color:#0F172A;'>{row['lider_asignado']}</b></p>", unsafe_allow_html=True)
+          c2.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#64748B;'>Estatus de Rumbo:</span> <span class='status-badge {badge_status}'>{row['estatus_tiempo']}</span></p>", unsafe_allow_html=True)
+          c3.markdown(f"<p style='margin:0; font-size:0.88rem; text-align:right;'><span style='color:#64748B;'>Últ. Telemetría:</span> <b style='color:#05297A;'>{row['ultima_actualizacion'] or 'N/A'}</b></p>", unsafe_allow_html=True)
           st.divider()
 
           c_form1, c_form2, c_form3 = st.columns(3)
-          u_etapa = c_form1.selectbox("Fase del Proyecto", OPCIONES_ETAPAS, index=(OPCIONES_ETAPAS.index(row["etapa_actual"]) if row["etapa_actual"] in OPCIONES_ETAPAS else 0))
-          u_estatus = c_form2.selectbox("Estatus del Tiempo", OPCIONES_ESTATUS, index=(OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0))
-          u_avance = c_form3.slider("Progreso General (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
+          u_etapa = c_form1.selectbox("Fase Actual de Vuelo", OPCIONES_ETAPAS, index=(OPCIONES_ETAPAS.index(row["etapa_actual"]) if row["etapa_actual"] in OPCIONES_ETAPAS else 0))
+          u_estatus = c_form2.selectbox("Evaluación de Rumbo", OPCIONES_ESTATUS, index=(OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0))
+          u_avance = c_form3.slider("Progreso Validado (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
           
-          st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#334155; margin-bottom:4px;'>AÑADIR COMENTARIO A BITÁCORA</p>", unsafe_allow_html=True)
-          u_comentario = st.text_input("Escribe el estatus de la semana o actualizaciones...", placeholder="Ej. Se finalizó el documento de diseño...")
+          st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#334155; margin-bottom:4px;'>REGISTRAR REPORTE A BITÁCORA DE VUELO</p>", unsafe_allow_html=True)
+          u_comentario = st.text_input("Novedades de la semana", placeholder="Describe avances o ajustes en la ruta...")
           
           l1, l2 = st.columns(2)
-          u_carpeta = l1.text_input("Carpeta Drive (URL)", row["carpeta_url"] or "")
-          u_plan = l2.text_input("Link a Plan Anexo (Opcional)", row["plan_url"] or "")
+          u_carpeta = l1.text_input("Repositorio Drive (URL)", row["carpeta_url"] or "")
+          u_plan = l2.text_input("Plan Maestro de Vuelo (URL)", row["plan_url"] or "")
           
           st.write("")
           btn1, btn2, btn3 = st.columns([3, 3, 6])
-          if btn1.form_submit_button("Guardar Cambios", type="primary"):
+          if btn1.form_submit_button("Ajustar Rumbo", type="primary"):
             ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             engine = obtener_engine()
             with engine.begin() as conn:
@@ -404,20 +400,20 @@ with tabs[1]:
               if u_comentario.strip(): conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), {"p_id": p_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": u_comentario.strip()})
             limpiar_cache_y_recargar(); st.rerun()
 
-          if es_moderador and btn2.form_submit_button("Eliminar Proyecto", type="secondary"):
+          if es_moderador and btn2.form_submit_button("Cancelar Plan de Vuelo", type="secondary"):
             engine = obtener_engine()
             with engine.begin() as conn: conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id=:id"), {"id": p_id})
             limpiar_cache_y_recargar(); st.rerun()
 
-        # Historial
+        # Historial de Bitácora
         historial_proyecto = df_bitacora[df_bitacora["proyecto_id"] == p_id]
         if not historial_proyecto.empty:
-          st.markdown("<h5 style='margin-top: 15px; color:#0F172A; font-size:1.05rem;'>📜 Historial de Comentarios</h5>", unsafe_allow_html=True)
+          st.markdown("<h5 style='margin-top: 15px; color:#0F172A; font-size:1.05rem;'>📜 Bitácora de Registro de Vuelo</h5>", unsafe_allow_html=True)
           for _, h_row in historial_proyecto.iterrows():
             st.markdown(f"<div class='timeline-item'><div class='timeline-date'>{h_row['fecha_hora']} | Por: {h_row['usuario_nombre']}</div><div class='timeline-text'>{h_row['comentario']}</div></div>", unsafe_allow_html=True)
 
-        # GANTT CHART
-        st.markdown("<h4 style='color:#0F172A; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #CBD5E1; font-size:1.1rem;'>📅 Plan de Trabajo (Gantt)</h4>", unsafe_allow_html=True)
+        # GANTT CHART (CRONOGRAMA DE TAREAS)
+        st.markdown("<h4 style='color:#0F172A; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #CBD5E1; font-size:1.1rem;'>📅 Plan de Vuelo y Cronograma de Tareas (Gantt)</h4>", unsafe_allow_html=True)
         df_tareas_proj = df_tareas_all[df_tareas_all["proyecto_id"] == p_id]
         df_tareas_calc = calcular_fechas_tarea_df(df_tareas_proj)
 
@@ -433,7 +429,7 @@ with tabs[1]:
           fig.update_layout(height=160 + (len(df_tareas_calc) * 35), margin=dict(l=0, r=0, t=10, b=0), font=dict(family="Inter"), xaxis=dict(showgrid=True, gridcolor="#F1F5F9"), yaxis=dict(showgrid=False, title=""), coloraxis_colorbar=dict(title="% Avance"))
           st.plotly_chart(fig, use_container_width=True)
 
-          st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#05297A;'>✏️ Actualizar Avance por Tarea</p>", unsafe_allow_html=True)
+          st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#05297A;'>✏️ Actualizar Avance de Tarea Específica</p>", unsafe_allow_html=True)
           with st.form(f"upd_t_{p_id}", clear_on_submit=True):
             col_sel, col_val, col_btn = st.columns([2, 1, 1])
             opciones_tareas = df_tareas_calc.apply(lambda x: f"{x['id']} - {x['nombre_tarea']}", axis=1).tolist()
@@ -446,9 +442,9 @@ with tabs[1]:
                 engine = obtener_engine()
                 with engine.begin() as conn: conn.execute(sqlalchemy.text("UPDATE tareas SET porcentaje_avance=:a WHERE id=:id"), {"a": t_val, "id": t_id_real})
                 limpiar_cache_y_recargar(); st.rerun()
-        else: st.info("No has agregado tareas al plan de trabajo todavía.")
+        else: st.info("Aún no se han configurado waypoints o tareas en este plan de vuelo.")
 
-        with st.expander("➕ Agregar Nueva Tarea"):
+        with st.expander("➕ Agregar Tarea al Cronograma"):
           with st.form(f"ft_{p_id}", clear_on_submit=True):
             t_nom = st.text_input("Nombre de la Tarea *")
             c_t1, c_t2, c_t3, c_t4 = st.columns(4)
@@ -456,7 +452,7 @@ with tabs[1]:
             t_ini = c_t2.date_input("Fecha de Inicio")
             t_dur = c_t3.number_input("Duración (Días)", 1, value=5)
             t_pre = c_t4.text_input("Predecesoras (Ej. 1, 2)")
-            if st.form_submit_button("Añadir a Gantt"):
+            if st.form_submit_button("Añadir Tarea"):
               if t_nom.strip():
                 engine = obtener_engine()
                 with engine.begin() as conn: conn.execute(sqlalchemy.text("""INSERT INTO tareas (proyecto_id, nombre_tarea, responsable, fecha_inicio, duracion_dias, fecha_fin, porcentaje_avance, predecesoras) VALUES (:pid, :n, :r, :fi, :d, :ff, 0.0, :p)"""), {"pid": p_id, "n": t_nom, "r": t_res, "fi": str(t_ini), "d": t_dur, "ff": str(pd.to_datetime(t_ini) + timedelta(days=t_dur - 1)), "p": t_pre})
@@ -465,7 +461,7 @@ with tabs[1]:
 # PESTAÑA 3: VISTA KANBAN
 with tabs[2]:
   st.write("")
-  if df.empty: st.info("Agrega proyectos para verlos en el tablero.")
+  if df.empty: st.info("Registra proyectos para organizarlos en el tablero.")
   else:
     k_cols = st.columns(len(OPCIONES_ESTATUS))
     for i, status in enumerate(OPCIONES_ESTATUS):
@@ -473,23 +469,23 @@ with tabs[2]:
         st.markdown(f"<div style='background-color:#FFFFFF; padding:8px; border-radius:8px; border:1px solid #E2E8F0; border-top:3px solid #05297A; text-align:center; font-weight:700; color:#0F172A; font-size:0.85rem; margin-bottom:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);'>{status.upper()}</div>", unsafe_allow_html=True)
         df_k = df[df["estatus_tiempo"] == status]
         for _, k_row in df_k.iterrows():
-          st.markdown(f"<div class='kanban-card'><div class='kanban-title'>{k_row['nombre']}</div><div class='kanban-meta'>👤 {k_row['lider_asignado']}</div><div class='kanban-meta'>📈 {int((k_row['avance_real'] or 0)*100)}% Completado</div><div class='kanban-meta' style='margin-top:6px;'><i>Folio: {k_row['folio'] or 'S/F'}</i></div></div>", unsafe_allow_html=True)
+          st.markdown(f"<div class='kanban-card'><div class='kanban-title'>{k_row['nombre']}</div><div class='kanban-meta'>👤 {k_row['lider_asignado']}</div><div class='kanban-meta'>📈 {int((k_row['avance_real'] or 0)*100)}% Avance</div><div class='kanban-meta' style='margin-top:6px;'><i>Folio: {k_row['folio'] or 'S/F'}</i></div></div>", unsafe_allow_html=True)
 
 # PESTAÑA 4: NUEVO PROYECTO
 with tabs[3]:
   st.write("")
   if es_moderador:
     with st.form("f_nuevo", clear_on_submit=True):
-      st.markdown("<h3 style='font-size:1.2rem; color:#0F172A; margin-bottom:15px;'>Dar de Alta Nuevo Proyecto</h3>", unsafe_allow_html=True)
-      c1, c2, c3 = st.columns(3); folio = c1.text_input("Folio Interno"); nombre = c2.text_input("Nombre de la Iniciativa *"); lider = c3.selectbox("Responsable del Proyecto *", lista_lideres_registrados)
+      st.markdown("<h3 style='font-size:1.2rem; color:#0F172A; margin-bottom:15px;'>Alta de Plan de Vuelo (Nuevo Proyecto)</h3>", unsafe_allow_html=True)
+      c1, c2, c3 = st.columns(3); folio = c1.text_input("Folio Interno"); nombre = c2.text_input("Nombre de la Iniciativa *"); lider = c3.selectbox("Piloto Responsable *", lista_lideres_registrados)
       c4, c5, c6 = st.columns(3); area = c4.selectbox("Área Solicitante", OPCIONES_AREAS); tipo = c5.selectbox("Categoría Principal", OPCIONES_TIPOS); subtipo = c6.selectbox("Sub-categoría", OPCIONES_SUBTIPOS)
       c7, c8, c9 = st.columns(3); gerente = c7.selectbox("Gerente Sponsor", OPCIONES_GERENTES); etapa = c8.selectbox("Fase de Arranque", OPCIONES_ETAPAS); estatus_inicial = c9.selectbox("Estado Inicial", OPCIONES_ESTATUS, index=0)
-      if st.form_submit_button("Crear Iniciativa", type="primary"):
+      if st.form_submit_button("Registrar Plan de Vuelo", type="primary"):
         if nombre.strip():
           engine = obtener_engine()
           with engine.begin() as conn: conn.execute(sqlalchemy.text("""INSERT INTO proyectos (folio, nombre, area_negocio, tipo_proyecto, subtipo, gerente, lider_asignado, etapa_actual, estatus_tiempo, avance_real) VALUES (:f, :n, :a, :t, :s, :g, :l, :e, :st, 0)"""), {"f": folio, "n": nombre, "a": area, "t": tipo, "s": subtipo, "g": gerente, "l": lider, "e": etapa, "st": estatus_inicial})
-          limpiar_cache_y_recargar(); st.success("¡Proyecto creado y agregado exitosamente!"); st.rerun()
-        else: st.error("Por favor ingresa el nombre de la iniciativa.")
+          limpiar_cache_y_recargar(); st.success("¡Plan de vuelo registrado con éxito!"); st.rerun()
+        else: st.error("Ingresa el nombre del proyecto.")
 
 # PESTAÑA 5: USUARIOS (Solo Moderador)
 if es_moderador:
@@ -500,17 +496,17 @@ if es_moderador:
 
     col_table, col_forms = st.columns([1.5, 1])
     with col_table:
-      st.markdown("<h4>Directorio de Usuarios</h4>", unsafe_allow_html=True)
+      st.markdown("<h4>Tripulación y Directorio de Accesos</h4>", unsafe_allow_html=True)
       st.dataframe(df_users, use_container_width=True, hide_index=True)
 
     with col_forms:
       with st.form("f_alta"):
-        st.markdown("<h4>Crear Nuevo Usuario</h4>", unsafe_allow_html=True)
+        st.markdown("<h4>Registrar Nuevo Miembro</h4>", unsafe_allow_html=True)
         n_nom = st.text_input("Nombre Completo")
         n_cor = st.text_input("Correo Institucional (@coppel.com)")
         n_pas = st.text_input("Contraseña Inicial")
         n_rol = st.selectbox("Perfil de Seguridad", ["Usuario", "Moderador"])
-        if st.form_submit_button("Registrar Usuario", type="primary"):
+        if st.form_submit_button("Autorizar Credenciales", type="primary"):
           if n_cor and n_pas and n_nom:
             try:
               engine = obtener_engine()
@@ -526,64 +522,61 @@ if es_moderador:
           if correo_borrar != "Seleccionar...":
             engine = obtener_engine()
             with engine.begin() as conn: conn.execute(sqlalchemy.text("DELETE FROM usuarios WHERE correo=:c"), {"c": correo_borrar})
-            limpiar_cache_y_recargar(); st.success("Usuario eliminado."); st.rerun()
+            limpiar_cache_y_recargar(); st.success("Acceso revocado."); st.rerun()
 
 
 # ==============================================================================
-# --- MOTOR NLP J.A.R.V.I.S STYLE (SÚPER FLUIDO Y CONTEXTUAL) ---
+# --- MOTOR NLP PROJECT IA (COPILOTO DE VUELO DE HEADING 360) ---
 # ==============================================================================
 def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
   p_lower = prompt.lower().strip()
   
-  # --- 1. DETECCIÓN DE CORTESÍA ---
+  # 1. INTERCEPTOR DE CORTESÍA (Small Talk)
   p_clean = p_lower.replace("?", "").replace("¿", "").replace("!", "").replace("¡", "").strip()
   
   if p_clean in ["gracias", "muchas gracias", "excelente", "perfecto", "ok", "entendido", "vale", "va", "listo"]:
-      return "¡Con mucho gusto! 🚀 Quedo por aquí por si necesitas buscar algo más en el portafolio."
+      return "¡A la orden! ✈️ Copiloto en stand-by. Quedo atento a tu siguiente instrucción de vuelo."
       
-  if any(x == p_clean or p_clean.startswith(x) for x in ["como estas", "como andas", "todo bien", "que tal", "como te va"]):
-      return f"¡Hola **{usuario_nombre}**, operando al 100%! ✨ ¿De qué proyecto o colaborador te gustaría conocer los avances hoy?"
+  if any(x == p_clean for x in ["como estas", "como andas", "todo bien", "que tal", "como te va"]):
+      return f"¡Hola **{usuario_nombre}**, instrumental reportando 100% de efectividad! 🧭 ¿Qué planes de vuelo o métricas de proyectos revisamos hoy?"
       
   if any(x in p_clean for x in ["quien eres", "que haces", "para que sirves", "quien sos"]):
-      return "Soy **Project IA**, tu asistente inteligente dentro de la plataforma. Mi trabajo es ayudarte a buscar información de la base de datos de forma rápida.\n\nPuedes preguntarme cosas como:\n* *¿Qué proyectos tenemos retrasados?*\n* *¿Cuántos proyectos tiene el área de Banco?*\n* *¿Qué gerente tiene más proyectos asignados?*"
+      return "Soy **Project IA**, tu copiloto inteligente en Heading 360. Mi función es brindarte telemetría y datos del portafolio en tiempo real.\n\nPuedes preguntarme:\n* *¿Qué proyectos están en turbulencia (retrasados)?*\n* *¿Quién es el piloto con más proyectos a su cargo?*\n* *¿Cómo van los proyectos de Banco o Retail?*"
 
   if p_clean in ["hola", "buenas", "buenos dias", "buenas tardes", "buenas noches", "saludos", "hola bot", "hola project ia"]:
       tot = len(dataframe)
       ret = len(dataframe[dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])]) if not dataframe.empty else 0
-      resp = f"¡Hola, **{usuario_nombre}**! 👋 Qué gusto saludarte.\n\nActualmente administro **{tot} proyectos activos**. "
-      if ret > 0: resp += f"⚠️ Noté que hay **{ret} proyectos con retrasos**. ¿Te gustaría que te muestre cuáles son?"
-      else: resp += "Por fortuna, no tenemos ningún proyecto retrasado. ¿Qué te gustaría consultar hoy?"
+      resp = f"¡Hola, **{usuario_nombre}**! ✈️ Torre de control reportando.\n\nContamos con **{tot} planes de vuelo activos**. "
+      if ret > 0: resp += f"⚠️ Atención: Registramos **{ret} proyectos fuera de rumbo (retrasados)**. ¿Deseas revisarlos?"
+      else: resp += "Todo marcha en rumbo óptimo sin turbulencia. ¿En qué te apoyo hoy?"
       return resp
 
-
-  # --- 2. EVALUACIÓN Y MOTOR DE BÚSQUEDA ---
+  # 2. EVALUACIÓN Y BÚSQUEDA DE DATOS
   p_analizar = p_lower
   for s in ["hola ", "buenos dias ", "buenas tardes ", "por favor ", "dime ", "quiero saber ", "quisiera saber ", "me puedes decir "]:
       if p_analizar.startswith(s): p_analizar = p_analizar[len(s):].strip()
 
   if len(p_analizar) <= 2 or dataframe.empty:
-      if dataframe.empty: return "Por el momento, no tenemos proyectos registrados en el portafolio."
-      return "No entendí muy bien tu pregunta. Intenta ser más específico, por ejemplo preguntando por un líder o un área."
+      if dataframe.empty: return "Torre de control sin registros. No hay proyectos en el portafolio actualmente."
+      return "No logré captar la instrucción. Pregúntame sobre un área, piloto o proyectos retrasados."
 
-  # Variables
+  # Variables y filtros
   area_obj = next((a for a in OPCIONES_AREAS if a.lower() in p_analizar), None)
   lideres_y_gerentes = set(obtener_lista_usuarios(df_users_raw) + OPCIONES_GERENTES)
   persona_obj = next((p for p in lideres_y_gerentes if len(p) > 3 and p.lower() in p_analizar), None)
   
-  # Intenciones (MÁS FLEXIBLES PARA EVITAR FALLOS CON LENGUAJE NATURAL)
-  busca_retrasos = any(k in p_analizar for k in ["retras", "riesgo", "deteni", "critico", "problema", "urgente", "foco rojo"])
+  busca_retrasos = any(k in p_analizar for k in ["retras", "riesgo", "deteni", "critico", "problema", "urgente", "turbulencia", "foco rojo"])
   busca_top_gerente = any(k in p_analizar for k in ["gerente", "sponsor", "patrocinador"]) and any(k in p_analizar for k in ["mas", "mayor", "top"])
-  busca_top_lider = any(k in p_analizar for k in ["quien", "quién", "lider", "líder", "responsable", "persona", "encargado", "colaborador"]) and any(k in p_analizar for k in ["mas", "más", "mayor", "top", "tiene", "carga"])
-  busca_top_area = any(k in p_analizar for k in ["area", "área", "departamento", "donde"]) and any(k in p_analizar for k in ["mas", "más", "mayor", "top", "tiene"])
-  busca_resumen = any(k in p_analizar for k in ["como vamos", "resumen", "estatus global", "estado del portafolio", "cuantos proyectos", "total"])
+  busca_top_lider = any(k in p_analizar for k in ["quien", "quién", "lider", "líder", "responsable", "persona", "encargado", "colaborador", "piloto"]) and any(k in p_analizar for k in ["mas", "más", "mayor", "top", "tiene", "carga"])
+  busca_top_area = any(k in p_analizar for k in ["area", "área", "departamento"]) and any(k in p_analizar for k in ["mas", "más", "mayor", "top", "tiene"])
+  busca_resumen = any(k in p_analizar for k in ["como vamos", "resumen", "estatus global", "estado", "cuantos proyectos", "total"])
 
-  # --- 3. RESPUESTAS CONTEXTUALES FLUIDAS ---
-  
+  # 3. RESPUESTAS CONTEXTUALES FLUIDAS
   if busca_top_lider and not busca_retrasos:
       counts = dataframe["lider_asignado"].value_counts()
       if not counts.empty:
           top_l = counts.index[0]; top_val = counts.iloc[0]
-          res = f"¡Claro! Analizando la base de datos, veo que **{top_l}** es la persona con mayor carga operativa, teniendo **{top_val} iniciativas** bajo su responsabilidad.\n\n📌 **Aquí está el top de colaboradores:**\n"
+          res = f"🧭 El piloto con **mayor carga operativa** es **{top_l}**, teniendo a su mando **{top_val} iniciativas**.\n\n📌 **Distribución de tripulación:**\n"
           for l_name, val in counts.items(): res += f"* **{l_name}**: {val} proyecto(s)\n"
           return res
 
@@ -591,7 +584,7 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       counts = dataframe["area_negocio"].value_counts()
       if not counts.empty:
           top_a = counts.index[0]; top_val = counts.iloc[0]
-          res = f"¡Listo! El área que actualmente concentra más proyectos es **{top_a}**, liderando con **{top_val} iniciativas**.\n\n📌 **Así se distribuyen los proyectos por área:**\n"
+          res = f"🧭 El área con **mayor concentración de vuelos** es **{top_a}**, registrando **{top_val} iniciativas**.\n\n📌 **Desglose por área:**\n"
           for a_name, val in counts.items(): res += f"* **{a_name}**: {val} proyectos\n"
           return res
           
@@ -599,7 +592,7 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       counts = dataframe["gerente"].value_counts()
       if not counts.empty:
           top_g = counts.index[0]; top_val = counts.iloc[0]
-          res = f"El Gerente con más proyectos a su cargo es **{top_g}**, patrocinando **{top_val} iniciativas** en el portafolio.\n\n📌 **Lista completa:**\n"
+          res = f"El Gerente con más proyectos patrocinados es **{top_g}**, respaldando **{top_val} iniciativas**.\n\n📌 **Lista:**\n"
           for g_name, val in counts.items(): res += f"* **{g_name}**: {val} proyectos\n"
           return res
 
@@ -618,60 +611,55 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
 
   if len(criterios) > 0:
       if df_result.empty:
-          return f"🔍 Estuve buscando, pero no encontré proyectos que coincidan exactamente con tus filtros: " + " | ".join(criterios)
+          return f"🔍 Torre de control informa: No hay coincidencias para los criterios: " + " | ".join(criterios)
       
-      res = f"🔍 **¡Aquí tienes la información!** (" + " | ".join(criterios) + f")\n\nEncontré **{len(df_result)}** proyectos:\n\n"
+      res = f"🔍 **Telemetría obtenida:** (" + " | ".join(criterios) + f")\n\nEncontré **{len(df_result)}** proyectos:\n\n"
       for _, r in df_result.iterrows():
-          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 🏢 **Área:** {r['area_negocio']}\n  * 📌 **Estatus:** `{r['estatus_tiempo']}` | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
+          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Piloto:** {r['lider_asignado']} | 🏢 **Área:** {r['area_negocio']}\n  * 📌 **Estatus:** `{r['estatus_tiempo']}` | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
       return res
 
   if busca_resumen:
       tot = len(dataframe); en_t = len(dataframe[dataframe["estatus_tiempo"] == "En tiempo"]); ret = len(dataframe[dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])])
-      return f"📊 **Aquí tienes el estatus global:**\n* **Total:** {tot} proyectos\n* 🟢 **En tiempo:** {en_t}\n* 🚨 **Retrasados:** {ret}\n\nSi necesitas detalles de algún área, ¡solo dímelo!"
+      return f"📊 **Resumen de Vuelo (Heading 360):**\n* **Total:** {tot} proyectos\n* 🟢 **Rumbo correcto:** {en_t}\n* 🚨 **Turbulencia/Retraso:** {ret}\n\n¿Deseas consultar algún plan específico?"
 
   coincidencias = dataframe[dataframe["nombre"].str.lower().str.contains(p_analizar, na=False) | dataframe["folio"].str.lower().str.contains(p_analizar, na=False)]
   if not coincidencias.empty:
-      res = f"🔍 Encontré **{len(coincidencias)} proyectos** que coinciden con tu búsqueda:\n\n"
+      res = f"🔍 Coincidencias de vuelo encontradas (**{len(coincidencias)}**):\n\n"
       for _, r in coincidencias.iterrows():
-          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 📌 **Estatus:** `{r['estatus_tiempo']}` | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
+          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Piloto:** {r['lider_asignado']} | 📌 **Estatus:** `{r['estatus_tiempo']}` | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
       return res
 
-  return f"Lo siento, **{usuario_nombre}**. No logré encontrar esa información exacta. Puedes intentar hacer la pregunta de forma diferente, como: *'¿Quién tiene más proyectos?'* o *'Muéstrame los proyectos de Banco'*."
+  return f"Lo siento, **{usuario_nombre}**. No encontré registros para esa instrucción. Pregúntame algo como: *'¿Quién tiene más proyectos?'* o *'Proyectos de Retail'*."
 
 
-# --- BOTÓN FLOTANTE "PROJECT IA" CON LIMPIEZA RÁPIDA ---
-with st.popover("🤖 Project IA", help="Haz clic para charlar con tu asistente inteligente"):
-  # CABECERA CON BOTÓN PARA LIMPIAR CHAT (UX PRO)
+# --- BOTÓN FLOTANTE "PROJECT IA" (COPILOTO HEADING 360) ---
+with st.popover("🧭 Project IA", help="Haz clic para charlar con tu copiloto de vuelo"):
   col1, col2 = st.columns([3, 1])
   with col1:
-      st.markdown("<h3 style='color:#05297A; margin-bottom: 0px; font-weight:800; letter-spacing:-1px;'>🤖 Project IA</h3>", unsafe_allow_html=True)
+      st.markdown("<h3 style='color:#05297A; margin-bottom: 0px; font-weight:800; letter-spacing:-1px;'>🧭 Project IA</h3>", unsafe_allow_html=True)
   with col2:
-      if st.button("🧹 Borrar", help="Limpia la conversación actual"):
+      if st.button("🧹 Borrar", help="Limpia la conversación"):
           st.session_state.chat_history_fast = []
           st.rerun()
           
-  st.caption("Asistente Analítico Inteligente de Coppel.")
+  st.caption("Copiloto Inteligente Heading 360.")
   st.divider()
 
-  mensaje_bienvenida = {"role": "assistant", "content": f"¡Hola **{st.session_state.nombre_actual}**! 👋 Soy **Project IA**, tu asistente. ¿Qué te gustaría consultar del portafolio hoy?"}
+  mensaje_bienvenida = {"role": "assistant", "content": f"¡Hola **{st.session_state.nombre_actual}**! ✈️ Torre de control en línea. Soy **Project IA**, tu copiloto. ¿Qué rumbo u orden de proyectos auditamos hoy?"}
 
-  # Control de historial y borrado inteligente
   if "chat_history_fast" not in st.session_state or len(st.session_state.chat_history_fast) == 0:
     st.session_state.chat_history_fast = [mensaje_bienvenida]
 
   chat_box = st.container(height=350)
-  prompt_fast = st.chat_input("Pregúntame algo (ej. ¿Quién tiene más proyectos?)...", key="ia_fast_input")
+  prompt_fast = st.chat_input("Escribe tu instrucción de vuelo...", key="ia_fast_input")
   
   if prompt_fast:
       st.session_state.chat_history_fast.append({"role": "user", "content": prompt_fast})
       ans = consultar_ia_ultra_rapido(prompt_fast, df, st.session_state.nombre_actual)
       st.session_state.chat_history_fast.append({"role": "assistant", "content": ans})
   else:
-      # Lógica de limpieza: Si el usuario cambia de pestaña o toca un filtro de la app principal,
-      # el input queda vacío (None) y la conversación del bot se reinicia, manteniéndose limpio.
       st.session_state.chat_history_fast = [mensaje_bienvenida]
 
-  # Mostrar la conversación en pantalla
   with chat_box:
     for msg in st.session_state.chat_history_fast:
       avatar_img = URL_ROBOT if msg["role"] == "assistant" else URL_USER
