@@ -19,20 +19,29 @@ st.set_page_config(
 URL_ROBOT = "https://cdn-icons-png.flaticon.com/512/8943/8943377.png" 
 URL_USER = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
 
-# --- CSS CORPORATIVO (ENTERPRISE UI) ---
+# --- CSS CORPORATIVO (ENTERPRISE UI LIMPIO) ---
 st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-    html, body, [class*="css"], .stApp { font-family: 'Inter', sans-serif !important; background-color: #F4F6F9 !important; color: #0F172A !important; }
+    html, body, [class*="css"], .stApp { font-family: 'Inter', sans-serif !important; background-color: #F8FAFC !important; color: #0F172A !important; }
     [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E2E8F0 !important; }
     h1, h2, h3, h4, h5, h6 { color: #0F172A !important; font-weight: 700 !important; letter-spacing: -0.02em !important; }
     label { color: #475569 !important; font-weight: 600 !important; font-size: 0.75rem !important; text-transform: uppercase; letter-spacing: 0.05em; }
     
     /* INPUTS MINIMALISTAS */
-    .stTextInput > div > div, .stSelectbox > div > div, .stTextArea > div > div { border-radius: 6px !important; border: 1px solid #CBD5E1 !important; background-color: #F8FAFC !important; transition: all 0.15s ease; }
+    .stTextInput > div > div, .stSelectbox > div > div, .stTextArea > div > div { border-radius: 6px !important; border: 1px solid #CBD5E1 !important; background-color: #F1F5F9 !important; transition: all 0.15s ease; }
     .stTextInput > div > div:focus-within, .stSelectbox > div > div:focus-within { border-color: #05297A !important; box-shadow: 0 0 0 2px rgba(5, 41, 122, 0.15) !important; background-color: #FFFFFF !important; }
     
+    /* ESTILIZAR TODOS LOS FORMULARIOS COMO TARJETAS LIMPIAS (Arregla el Login) */
+    [data-testid="stForm"] {
+        background-color: #FFFFFF !important;
+        border-radius: 12px !important;
+        border: 1px solid #E2E8F0 !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important;
+        padding: 25px !important;
+    }
+
     /* BOTONES CORPORATIVOS */
     div[data-testid="stFormSubmitButton"] button, .stButton > button[kind="primary"] { background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important; color: #FFFFFF !important; border: none !important; border-radius: 6px !important; font-weight: 600 !important; padding: 0.5rem 1rem !important; box-shadow: 0 4px 6px -1px rgba(28, 66, 232, 0.2) !important; transition: all 0.2s ease !important; }
     div[data-testid="stFormSubmitButton"] button:hover, .stButton > button[kind="primary"]:hover { transform: translateY(-1px); box-shadow: 0 8px 12px -2px rgba(28, 66, 232, 0.3) !important; }
@@ -66,9 +75,6 @@ st.markdown(
     .timeline-item::before { content: ''; position: absolute; left: -5px; top: 0; width: 8px; height: 8px; border-radius: 50%; background: #05297A; }
     .timeline-date { font-size: 0.72rem; color: #64748B; font-weight: 600; }
     .timeline-text { font-size: 0.83rem; color: #1E293B; }
-    
-    /* LOGIN PANEL */
-    .login-box { background-color: #FFFFFF; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; }
     
     /* BOTÓN FLOTANTE "PROJECT IA" */
     div[data-testid="stPopover"] { position: fixed !important; bottom: 25px !important; right: 25px !important; z-index: 999999 !important; }
@@ -114,7 +120,6 @@ def cargar_datos_completos():
   df_p = pd.read_sql("SELECT * FROM proyectos ORDER BY id DESC", engine)
   df_b = pd.read_sql("SELECT * FROM bitacora ORDER BY id DESC", engine)
   df_t = pd.read_sql("SELECT * FROM tareas ORDER BY id ASC", engine)
-  # AHORA SE EXTRAE EL PASSWORD PARA MOSTRARLO EN EL PANEL DE ADMINISTRADOR
   df_u = pd.read_sql("SELECT nombre, correo, password, rol FROM usuarios ORDER BY nombre ASC", engine)
   return df_p, df_b, df_t, df_u
 
@@ -157,7 +162,6 @@ if not st.session_state.autenticado:
     st.markdown("<h1 style='text-align: center; color:#05297A !important; font-size: 2.2rem; letter-spacing: -1px;'>Plataforma Ejecutiva de Incentivos</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: #64748B; margin-bottom: 30px; font-size: 1rem;'>Acceso Corporativo Coppel</p>", unsafe_allow_html=True)
     
-    st.markdown("<div class='login-box'>", unsafe_allow_html=True)
     with st.form("login_form"):
       st.markdown("<h3 style='color:#0F172A !important; font-size: 1.1rem; margin-bottom: 20px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;'>Credenciales de Acceso</h3>", unsafe_allow_html=True)
       correo_input = st.text_input("Correo Institucional", placeholder="tu.nombre@coppel.com")
@@ -173,10 +177,10 @@ if not st.session_state.autenticado:
               st.session_state.autenticado = True; st.session_state.correo_actual = correo_input.strip().lower(); st.session_state.rol = res[1]; st.session_state.nombre_actual = res[2]; st.rerun()
             else: st.error("Credenciales incorrectas o usuario no registrado.")
     
-    # OPCIÓN: OLVIDÉ MI CONTRASEÑA
+    # OPCIÓN: OLVIDÉ MI CONTRASEÑA (Fuera del form para evitar recargas raras)
+    st.write("")
     if st.button("¿Olvidaste tu contraseña?", type="secondary", use_container_width=True):
-        st.info("🔒 **Protocolo de Seguridad:** Para visualizar o restablecer tu contraseña, por favor contacta al Administrador de la plataforma (Leonardo Castillo) vía correo o Teams corporativo.")
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.info("🔒 **Protocolo de Seguridad:** Para visualizar o restablecer tu contraseña, por favor contacta al Administrador de la plataforma (Leonardo Castillo) vía correo institucional.")
   st.stop()
 
 # --- CARGA DE DATOS EN MEMORIA ---
@@ -193,7 +197,7 @@ if not df.empty:
 
 # --- SIDEBAR ---
 with st.sidebar:
-  st.markdown(f"<div style='background-color:#F8FAFC; padding: 18px; border-radius: 8px; border: 1px solid #E2E8F0; margin-bottom: 15px;'><h3 style='margin:0 0 4px 0; font-size:1.05rem; color:#0F172A;'>👤 {st.session_state.nombre_actual}</h3><p style='margin:0 0 8px 0; color:#64748B; font-size:0.78rem;'>{st.session_state.correo_actual}</p><span class='status-badge {'status-green' if es_moderador else 'status-gray'}'>{st.session_state.rol}</span></div>", unsafe_allow_html=True)
+  st.markdown(f"<div style='background-color:#FFFFFF; padding: 18px; border-radius: 8px; border: 1px solid #E2E8F0; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);'><h3 style='margin:0 0 4px 0; font-size:1.05rem; color:#0F172A;'>👤 {st.session_state.nombre_actual}</h3><p style='margin:0 0 8px 0; color:#64748B; font-size:0.78rem;'>{st.session_state.correo_actual}</p><span class='status-badge {'status-green' if es_moderador else 'status-gray'}'>{st.session_state.rol}</span></div>", unsafe_allow_html=True)
   with st.expander("⚙️ Mi Cuenta", expanded=False):
     with st.form("form_cambio_pass"):
       nueva_pass = st.text_input("Nueva Contraseña", type="password"); confirmar_pass = st.text_input("Confirmar Contraseña", type="password")
@@ -413,12 +417,11 @@ with tabs[3]:
           limpiar_cache_y_recargar(); st.success("Registro completado con éxito."); st.rerun()
         else: st.error("El nombre del proyecto es obligatorio.")
 
-# PESTAÑA 5: USUARIOS (Solo Moderador) - AHORA MUESTRA CONTRASEÑAS
+# PESTAÑA 5: USUARIOS (Solo Moderador)
 if es_moderador:
   with tabs[4]:
     st.write("")
     df_users = df_users_raw.copy()
-    # Mapeo de columnas para mostrar de forma ejecutiva la base de usuarios (Incluyendo Contraseña)
     df_users.columns = ["Colaborador", "Correo Corporativo", "Contraseña Asignada", "Nivel de Acceso"]
 
     col_table, col_forms = st.columns([1.5, 1])
@@ -431,7 +434,7 @@ if es_moderador:
         st.markdown("<h4>Generar Credencial</h4>", unsafe_allow_html=True)
         n_nom = st.text_input("Nombre del Colaborador")
         n_cor = st.text_input("Correo Institucional")
-        n_pas = st.text_input("Clave Temporal") # Quitamos type password para el admin vea que escribe
+        n_pas = st.text_input("Clave Temporal")
         n_rol = st.selectbox("Perfil de Seguridad", ["Usuario", "Moderador"])
         if st.form_submit_button("Registrar en Sistema", type="primary"):
           if n_cor and n_pas and n_nom:
@@ -521,7 +524,7 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
   tot = len(dataframe)
   return f"Búsqueda ejecutada, **{usuario_nombre}**. La base de datos central cuenta con **{tot} registros**. Para mayor exactitud, por favor formula la consulta refiriendo a Áreas, Gerentes, Líderes o Análisis de Retrasos."
 
-# --- BOTÓN FLOTANTE "PROJECT IA" CON AVATARES 3D ---
+# --- BOTÓN FLOTANTE "PROJECT IA" ---
 with st.popover("🤖 Project IA", help="Asistente Ejecutivo de Análisis de Portafolio"):
   st.markdown("<h3 style='color:#05297A; margin-bottom: 0px;'>🤖 Project IA</h3>", unsafe_allow_html=True)
   st.caption("Motor de Inteligencia de Datos Corporativos (Off-grid).")
