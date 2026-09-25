@@ -23,7 +23,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- CSS PREMIUM / ENTERPRISE UI ---
+# --- CSS PREMIUM / ENTERPRISE UI CON BOTÓN FLOTANTE DE IA ---
 st.markdown(
     """
     <style>
@@ -32,19 +32,27 @@ st.markdown(
     [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E2E8F0 !important; box-shadow: 2px 0 10px rgba(0,0,0,0.02) !important; }
     h1, h2, h3, h4, h5, h6 { color: #0F172A !important; font-weight: 700 !important; letter-spacing: -0.02em !important; }
     label { color: #334155 !important; font-weight: 600 !important; font-size: 0.85rem !important; text-transform: uppercase; letter-spacing: 0.03em; }
+    
+    /* INPUTS */
     .stTextInput > div > div, .stSelectbox > div > div, .stTextArea > div > div { border-radius: 8px !important; border: 1px solid #CBD5E1 !important; background-color: #F8FAFC !important; transition: all 0.2s ease; }
     .stTextInput > div > div:focus-within, .stSelectbox > div > div:focus-within { border-color: #05297A !important; box-shadow: 0 0 0 2px rgba(5, 41, 122, 0.2) !important; background-color: #FFFFFF !important; }
+    
+    /* BOTONES PRIMARIOS Y SECUNDARIOS */
     div[data-testid="stFormSubmitButton"] button, .stButton > button[kind="primary"] { background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important; color: #FFFFFF !important; border: none !important; border-radius: 8px !important; font-weight: 600 !important; padding: 0.5rem 1rem !important; box-shadow: 0 4px 6px -1px rgba(28, 66, 232, 0.2) !important; transition: all 0.3s ease !important; }
     div[data-testid="stFormSubmitButton"] button:hover, .stButton > button[kind="primary"]:hover { transform: translateY(-1px); box-shadow: 0 10px 15px -3px rgba(28, 66, 232, 0.3) !important; }
     button[data-testid="baseButton-secondary"], .stButton > button[kind="secondary"] { background-color: #FFFFFF !important; border: 1px solid #CBD5E1 !important; color: #334155 !important; border-radius: 8px !important; font-weight: 500 !important; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; transition: all 0.2s ease !important; }
     button[data-testid="baseButton-secondary"]:hover, .stButton > button[kind="secondary"]:hover { border-color: #0F172A !important; color: #0F172A !important; background-color: #F8FAFC !important; }
     .stButton > button[kind="primary"] p { color: #FFFFFF !important; } .stButton > button[kind="secondary"] p { color: inherit !important; }
+    
+    /* MÉTRICAS Y TABS */
     div[data-testid="metric-container"] { background-color: #FFFFFF !important; border: 1px solid #E2E8F0 !important; border-top: 4px solid #05297A !important; padding: 20px 24px !important; border-radius: 12px !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important; }
     div[data-testid="metric-container"] label { color: #64748B !important; font-size: 0.85rem !important; font-weight: 600 !important; }
     div[data-testid="metric-container"] [data-testid="stMetricValue"] div { color: #0F172A !important; font-size: 2.2rem !important; font-weight: 800 !important; letter-spacing: -0.02em; }
     .stTabs [data-baseweb="tab-list"] { gap: 32px; border-bottom: 2px solid #E2E8F0; padding-bottom: 0px; }
     .stTabs [aria-selected="true"] { border-bottom: 3px solid #05297A !important; font-weight: 700 !important; color: #05297A !important; background-color: transparent !important; }
     .stTabs [aria-selected="false"] { color: #64748B !important; font-weight: 500 !important; }
+    
+    /* ACORDEONES & BADGES */
     .streamlit-expanderHeader { background-color: #FFFFFF !important; color: #0F172A !important; font-weight: 600 !important; border-radius: 12px !important; border: 1px solid #E2E8F0 !important; padding: 1rem !important; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important; }
     .streamlit-expanderContent { border: 1px solid #E2E8F0 !important; border-top: none !important; background-color: #FFFFFF !important; padding: 24px !important; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
     .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em; display: inline-block; }
@@ -52,17 +60,45 @@ st.markdown(
     .status-yellow { background-color: #FEF9C3; color: #854D0E !important; border: 1px solid #FEF08A;}
     .status-gray { background-color: #F1F5F9; color: #475569 !important; border: 1px solid #E2E8F0;}
     
-    /* Kanban CSS */
+    /* KANBAN & TIMELINE */
     .kanban-card { background: #FFFFFF; padding: 15px; border-radius: 10px; border: 1px solid #E2E8F0; border-left: 4px solid #05297A; box-shadow: 0 2px 4px rgba(0,0,0,0.02); margin-bottom: 15px; transition: transform 0.2s;}
     .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     .kanban-title { font-weight: 700; color: #0F172A; font-size: 0.95rem; margin-bottom: 8px; line-height: 1.2; }
     .kanban-meta { font-size: 0.8rem; color: #64748B; margin-bottom: 4px;}
-    
-    /* Timeline CSS */
     .timeline-item { border-left: 2px solid #CBD5E1; padding-left: 15px; margin-bottom: 15px; position: relative; }
     .timeline-item::before { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #05297A; }
     .timeline-date { font-size: 0.75rem; color: #64748B; font-weight: 600; margin-bottom: 2px; }
     .timeline-text { font-size: 0.85rem; color: #1E293B; }
+    
+    /* ================================================================= */
+    /* ESTILOS DEL BOTÓN FLOTANTE DE IA "PROJECT IA" EN LA ESQUINA DERECHA */
+    /* ================================================================= */
+    div[data-testid="stPopover"] {
+        position: fixed !important;
+        bottom: 30px !important;
+        right: 30px !important;
+        z-index: 999999 !important;
+    }
+    div[data-testid="stPopover"] > button {
+        background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important;
+        color: #FFFFFF !important;
+        border-radius: 30px !important;
+        padding: 12px 24px !important;
+        box-shadow: 0 10px 25px rgba(5, 41, 122, 0.4) !important;
+        border: 2px solid #FFFFFF !important;
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        transition: all 0.3s ease !important;
+    }
+    div[data-testid="stPopover"] > button:hover {
+        transform: scale(1.05) translateY(-2px) !important;
+        box-shadow: 0 14px 30px rgba(28, 66, 232, 0.5) !important;
+    }
+    div[data-testid="stPopover"] > button p {
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+    }
+
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     </style>
 """,
@@ -903,10 +939,8 @@ if es_moderador:
             st.rerun()
 
 # ==============================================================================
-# --- COPILOTO IA INTEGRADO AL PIE DE PÁGINA (GLOBAL PARA TODO EL SISTEMA) ---
+# --- BOTÓN FLOTANTE ROBOT "PROJECT IA" (ESQUINA INFERIOR DERECHA) ---
 # ==============================================================================
-st.divider()
-
 api_key_gemini = (
     st.secrets.get("GEMINI_API_KEY", None)
     or st.secrets.get("gemini", {}).get("api_key", None)
@@ -914,22 +948,24 @@ api_key_gemini = (
     else None
 )
 
-with st.expander(
-    "🤖 Copiloto Ejecutivo de IA — Consultas sobre el Portafolio",
-    expanded=False,
+with st.popover(
+    "🤖 Project IA",
+    help="Haz clic aquí para realizar consultas avanzadas a la IA",
 ):
   st.markdown(
-      "<p style='color:#64748B; font-size:0.88rem; margin-bottom:15px;'>Haz"
-      " preguntas en lenguaje natural sobre el estado interno de proyectos,"
-      " responsables, tareas o bitácoras del sistema.</p>",
+      "<h3 style='color:#05297A; margin-bottom: 0px;'>🤖 Project IA</h3>",
       unsafe_allow_html=True,
   )
+  st.caption(
+      "Asistente Robótico Inteligente en tiempo real para el Portafolio Coppel."
+  )
+  st.divider()
 
   if not api_key_gemini and HAS_GEMINI:
     api_key_gemini = st.text_input(
-        "🔑 Clave de IA para consultas:",
+        "🔑 Gemini API Key:",
         type="password",
-        help="Añade GEMINI_API_KEY en Secrets de Streamlit para no pedirla más.",
+        help="Añade GEMINI_API_KEY en Secrets de Streamlit para no pedirla.",
     )
 
   if HAS_GEMINI and api_key_gemini:
@@ -939,21 +975,20 @@ with st.expander(
       if "chat_history_global" not in st.session_state:
         st.session_state.chat_history_global = []
 
-      # Renderizar historial previo de la conversación
-      for msg in st.session_state.chat_history_global:
-        with st.chat_message(msg["role"]):
-          st.markdown(msg["content"])
+      # Contenedor con scroll para los mensajes dentro del Popover
+      chat_container = st.container(height=320)
+      with chat_container:
+        for msg in st.session_state.chat_history_global:
+          with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
 
-      if prompt := st.chat_input(
-          "Ejemplo: ¿Qué proyectos están retrasados en el área de Retail?"
+      if prompt_ia := st.chat_input(
+          "Ej: ¿Qué proyectos están retrasados?", key="floating_chat_input"
       ):
         st.session_state.chat_history_global.append(
-            {"role": "user", "content": prompt}
+            {"role": "user", "content": prompt_ia}
         )
-        with st.chat_message("user"):
-          st.markdown(prompt)
 
-        # Contexto completo de la BD interna para alimentar a la IA
         str_proyectos = df[[
             "folio",
             "nombre",
@@ -965,7 +1000,9 @@ with st.expander(
             "ultima_actualizacion",
         ]].to_string(index=False)
         str_bitacora = (
-            df_bitacora[["proyecto_id", "fecha_hora", "comentario"]].head(20).to_string(index=False)
+            df_bitacora[["proyecto_id", "fecha_hora", "comentario"]]
+            .head(20)
+            .to_string(index=False)
             if not df_bitacora.empty
             else "Sin bitácoras"
         )
@@ -982,39 +1019,34 @@ with st.expander(
         )
 
         system_instruction = f"""
-                Eres el Copiloto Ejecutivo del Portafolio de Incentivos Coppel.
-                Tu función es analizar y responder con total confidencialidad, precisión y profesionalismo ejecutivo sobre la información INTERNA del sistema.
-
-                DATOS DE PROYECTOS ACTIVOS:
+                Eres Project IA, un copiloto ejecutivo robótico de Inteligencia Artificial para el Portafolio de Incentivos Coppel.
+                Responde siempre con profesionalismo, brevedad y usando viñetas directas o tablas si es necesario.
+                
+                BASE DE DATOS EN TIEMPO REAL:
+                PROYECTOS:
                 {str_proyectos}
 
-                ÚLTIMOS COMENTARIOS DE BITÁCORA:
+                BITÁCORAS / HISTORIAL:
                 {str_bitacora}
 
-                TAREAS REGISTRADAS:
+                TAREAS:
                 {str_tareas}
-
-                INSTRUCCIONES:
-                1. Responde de forma clara, concisa y usando viñetas directas cuando aplique.
-                2. Basa tus respuestas únicamente en los datos internos proporcionados arriba.
                 """
 
         model = genai.GenerativeModel("gemini-1.5-flash")
         respuesta = model.generate_content(
-            f"{system_instruction}\n\nPregunta del usuario: {prompt}"
+            f"{system_instruction}\n\nPregunta: {prompt_ia}"
         )
 
-        with st.chat_message("assistant"):
-          st.markdown(respuesta.text)
         st.session_state.chat_history_global.append(
             {"role": "assistant", "content": respuesta.text}
         )
+        st.rerun()
 
     except Exception as err:
-      st.error(f"Error al conectar con la IA: {err}")
+      st.error(f"Error en Project IA: {err}")
   else:
     st.info(
-        "💡 Para activar las consultas inteligentes sobre la base de datos"
-        " interna, agrega `GEMINI_API_KEY = 'tu_clave'` en los **Secrets** de"
-        " Streamlit Cloud."
+        "💡 Para activar a **Project IA**, agrega `GEMINI_API_KEY = 'tu_clave'`"
+        " en los **Secrets** de Streamlit Cloud."
     )
