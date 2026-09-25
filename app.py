@@ -24,7 +24,7 @@ st.markdown(
     html, body, [class*="css"], .stApp {
         font-family: 'Inter', sans-serif !important;
         background-color: #F4F6F9 !important; /* Gris ultra claro para dar profundidad */
-        color: #1E293B !important; /* Texto pizarra oscuro, más elegante que negro puro */
+        color: #1E293B !important; /* Texto pizarra oscuro */
     }
 
     /* Ajuste del Sidebar */
@@ -49,7 +49,7 @@ st.markdown(
         letter-spacing: 0.03em;
     }
 
-    /* Campos de entrada (Inputs/Selects) */
+    /* Campos de entrada */
     .stTextInput > div > div, .stSelectbox > div > div, .stTextArea > div > div {
         border-radius: 8px !important;
         border: 1px solid #CBD5E1 !important;
@@ -62,7 +62,7 @@ st.markdown(
         background-color: #FFFFFF !important;
     }
 
-    /* BOTONES PRIMARIOS (Premium Gradient) */
+    /* BOTONES PRIMARIOS */
     div[data-testid="stFormSubmitButton"] button,
     .stButton > button[kind="primary"] {
         background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important;
@@ -80,7 +80,7 @@ st.markdown(
         box-shadow: 0 10px 15px -3px rgba(28, 66, 232, 0.3), 0 4px 6px -2px rgba(28, 66, 232, 0.15) !important;
     }
 
-    /* BOTONES SECUNDARIOS (Limpios y Outline) */
+    /* BOTONES SECUNDARIOS */
     button[data-testid="baseButton-secondary"],
     .stButton > button[kind="secondary"] {
         background-color: #FFFFFF !important;
@@ -102,7 +102,7 @@ st.markdown(
     .stButton > button[kind="primary"] p { color: #FFFFFF !important; }
     .stButton > button[kind="secondary"] p { color: inherit !important; }
 
-    /* TARJETAS DE MÉTRICAS (KPIs Elegantes) */
+    /* TARJETAS DE MÉTRICAS */
     div[data-testid="metric-container"] {
         background-color: #FFFFFF !important;
         border: 1px solid #E2E8F0 !important;
@@ -162,7 +162,7 @@ st.markdown(
     /* BADGES DE ESTATUS */
     .status-badge { 
         padding: 4px 12px; 
-        border-radius: 20px; /* Pastilla redondeada */
+        border-radius: 20px; 
         font-size: 0.75rem; 
         font-weight: 700; 
         letter-spacing: 0.02em;
@@ -332,7 +332,6 @@ df = pd.read_sql("SELECT * FROM proyectos", engine)
 # --- HEADER Y MÉTRICAS (SIEMPRE VISIBLES) ---
 st.markdown("<h2 style='margin-bottom: 25px; color:#0F172A; display: flex; align-items: center; gap: 10px;'>📊 Visión General del Portafolio</h2>", unsafe_allow_html=True)
 
-# Lógica segura para KPIs aunque no haya proyectos
 total_proyectos = len(df)
 en_tiempo = len(df[df["estatus_tiempo"] == "En tiempo"]) if total_proyectos > 0 else 0
 retrasados = len(df[df["estatus_tiempo"] == "Retrasado"]) if total_proyectos > 0 else 0
@@ -385,7 +384,6 @@ lista_lideres_registrados = obtener_lista_usuarios()
 with tabs[0]:
   st.write("")
   if df.empty:
-    # --- ESTADO VACÍO ELEGANTE (EMPTY STATE PREMIUM) ---
     st.markdown("""
         <div style='text-align: center; padding: 60px 20px; background-color: #FFFFFF; border-radius: 16px; border: 1px dashed #CBD5E1; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-top: 20px;'>
             <div style='font-size: 3rem; margin-bottom: 15px;'>🗂️</div>
@@ -418,12 +416,10 @@ with tabs[0]:
       for _, row in df_filtrado.iterrows():
         p_id = row["id"]
         
-        # Color del badge según estatus
         badge_status = "status-gray"
         if row["estatus_tiempo"] == "En tiempo": badge_status = "status-green"
         elif row["estatus_tiempo"] == "Detenido": badge_status = "status-yellow"
 
-        # Título del Expander mejorado
         expander_title = f"{row['folio'] or 'S/F'} | {row['nombre']} — Avance: {int((row['avance_real'] or 0)*100)}%"
         
         with st.expander(expander_title):
@@ -539,7 +535,10 @@ if es_moderador:
   with tabs[2]:
     st.write("")
     engine = obtener_engine()
-    df_users = pd.read_sql("SELECT nombre as Colaborador, correo as Correo, rol as Permisos FROM usuarios", engine)
+    
+    # CORRECCIÓN DE COLUMNAS (KEYERROR POSTGRES)
+    df_users = pd.read_sql("SELECT nombre, correo, rol FROM usuarios", engine)
+    df_users.columns = ["Colaborador", "Correo", "Permisos"]
     
     col_table, col_forms = st.columns([1.5, 1])
     
