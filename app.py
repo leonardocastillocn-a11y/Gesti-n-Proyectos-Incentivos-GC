@@ -15,74 +15,58 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- CSS PREMIUM / ENTERPRISE UI CON BOTÓN FLOTANTE "PROJECT IA" ---
+# --- CSS ENTERPRISE & PRO UI ---
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    html, body, [class*="css"], .stApp { font-family: 'Inter', sans-serif !important; background-color: #F4F6F9 !important; color: #1E293B !important; }
-    [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E2E8F0 !important; box-shadow: 2px 0 10px rgba(0,0,0,0.02) !important; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    html, body, [class*="css"], .stApp { font-family: 'Inter', sans-serif !important; background-color: #F4F6F9 !important; color: #0F172A !important; }
+    [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E2E8F0 !important; }
     h1, h2, h3, h4, h5, h6 { color: #0F172A !important; font-weight: 700 !important; letter-spacing: -0.02em !important; }
-    label { color: #334155 !important; font-weight: 600 !important; font-size: 0.85rem !important; text-transform: uppercase; letter-spacing: 0.03em; }
+    label { color: #475569 !important; font-weight: 600 !important; font-size: 0.8rem !important; text-transform: uppercase; letter-spacing: 0.04em; }
     
-    /* INPUTS */
-    .stTextInput > div > div, .stSelectbox > div > div, .stTextArea > div > div { border-radius: 8px !important; border: 1px solid #CBD5E1 !important; background-color: #F8FAFC !important; transition: all 0.2s ease; }
-    .stTextInput > div > div:focus-within, .stSelectbox > div > div:focus-within { border-color: #05297A !important; box-shadow: 0 0 0 2px rgba(5, 41, 122, 0.2) !important; background-color: #FFFFFF !important; }
+    /* INPUTS ULTRA-CLEAN */
+    .stTextInput > div > div, .stSelectbox > div > div, .stTextArea > div > div { border-radius: 8px !important; border: 1px solid #CBD5E1 !important; background-color: #F8FAFC !important; transition: all 0.15s ease; }
+    .stTextInput > div > div:focus-within, .stSelectbox > div > div:focus-within { border-color: #05297A !important; box-shadow: 0 0 0 3px rgba(5, 41, 122, 0.15) !important; background-color: #FFFFFF !important; }
     
-    /* BOTONES */
-    div[data-testid="stFormSubmitButton"] button, .stButton > button[kind="primary"] { background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important; color: #FFFFFF !important; border: none !important; border-radius: 8px !important; font-weight: 600 !important; padding: 0.5rem 1rem !important; box-shadow: 0 4px 6px -1px rgba(28, 66, 232, 0.2) !important; transition: all 0.3s ease !important; }
-    div[data-testid="stFormSubmitButton"] button:hover, .stButton > button[kind="primary"]:hover { transform: translateY(-1px); box-shadow: 0 10px 15px -3px rgba(28, 66, 232, 0.3) !important; }
-    button[data-testid="baseButton-secondary"], .stButton > button[kind="secondary"] { background-color: #FFFFFF !important; border: 1px solid #CBD5E1 !important; color: #334155 !important; border-radius: 8px !important; font-weight: 500 !important; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; transition: all 0.2s ease !important; }
-    button[data-testid="baseButton-secondary"]:hover, .stButton > button[kind="secondary"]:hover { border-color: #0F172A !important; color: #0F172A !important; background-color: #F8FAFC !important; }
+    /* BOTONES PRIMARIOS GRADIENTE */
+    div[data-testid="stFormSubmitButton"] button, .stButton > button[kind="primary"] { background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important; color: #FFFFFF !important; border: none !important; border-radius: 8px !important; font-weight: 600 !important; padding: 0.5rem 1rem !important; box-shadow: 0 4px 6px -1px rgba(28, 66, 232, 0.2) !important; transition: all 0.2s ease !important; }
+    div[data-testid="stFormSubmitButton"] button:hover, .stButton > button[kind="primary"]:hover { transform: translateY(-1px); box-shadow: 0 8px 12px -2px rgba(28, 66, 232, 0.3) !important; }
+    
+    /* BOTONES SECUNDARIOS */
+    button[data-testid="baseButton-secondary"], .stButton > button[kind="secondary"] { background-color: #FFFFFF !important; border: 1px solid #CBD5E1 !important; color: #334155 !important; border-radius: 8px !important; font-weight: 600 !important; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04) !important; }
+    button[data-testid="baseButton-secondary"]:hover, .stButton > button[kind="secondary"]:hover { border-color: #05297A !important; color: #05297A !important; background-color: #F8FAFC !important; }
     .stButton > button[kind="primary"] p { color: #FFFFFF !important; } .stButton > button[kind="secondary"] p { color: inherit !important; }
     
-    /* MÉTRICAS Y TABS */
-    div[data-testid="metric-container"] { background-color: #FFFFFF !important; border: 1px solid #E2E8F0 !important; border-top: 4px solid #05297A !important; padding: 20px 24px !important; border-radius: 12px !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important; }
-    div[data-testid="metric-container"] label { color: #64748B !important; font-size: 0.85rem !important; font-weight: 600 !important; }
-    div[data-testid="metric-container"] [data-testid="stMetricValue"] div { color: #0F172A !important; font-size: 2.2rem !important; font-weight: 800 !important; letter-spacing: -0.02em; }
-    .stTabs [data-baseweb="tab-list"] { gap: 32px; border-bottom: 2px solid #E2E8F0; padding-bottom: 0px; }
+    /* TARJETAS DE MÉTRICAS PRO */
+    div[data-testid="metric-container"] { background-color: #FFFFFF !important; border: 1px solid #E2E8F0 !important; border-top: 4px solid #05297A !important; padding: 18px 20px !important; border-radius: 12px !important; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02) !important; }
+    div[data-testid="metric-container"] label { color: #64748B !important; font-size: 0.78rem !important; font-weight: 700 !important; }
+    div[data-testid="metric-container"] [data-testid="stMetricValue"] div { color: #0F172A !important; font-size: 2rem !important; font-weight: 800 !important; letter-spacing: -0.03em; }
+    
+    /* PESTAÑAS (TABS) */
+    .stTabs [data-baseweb="tab-list"] { gap: 24px; border-bottom: 2px solid #E2E8F0; }
     .stTabs [aria-selected="true"] { border-bottom: 3px solid #05297A !important; font-weight: 700 !important; color: #05297A !important; background-color: transparent !important; }
     .stTabs [aria-selected="false"] { color: #64748B !important; font-weight: 500 !important; }
     
     /* BADGES & TARJETAS */
-    .streamlit-expanderHeader { background-color: #FFFFFF !important; color: #0F172A !important; font-weight: 600 !important; border-radius: 12px !important; border: 1px solid #E2E8F0 !important; padding: 1rem !important; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important; }
-    .streamlit-expanderContent { border: 1px solid #E2E8F0 !important; border-top: none !important; background-color: #FFFFFF !important; padding: 24px !important; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
-    .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em; display: inline-block; }
+    .streamlit-expanderHeader { background-color: #FFFFFF !important; color: #0F172A !important; font-weight: 600 !important; border-radius: 10px !important; border: 1px solid #E2E8F0 !important; padding: 0.9rem !important; }
+    .streamlit-expanderContent { border: 1px solid #E2E8F0 !important; border-top: none !important; background-color: #FFFFFF !important; padding: 20px !important; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; }
+    .status-badge { padding: 3px 10px; border-radius: 20px; font-size: 0.73rem; font-weight: 700; display: inline-block; }
     .status-green { background-color: #DCFCE7; color: #166534 !important; border: 1px solid #BBF7D0;}
     .status-yellow { background-color: #FEF9C3; color: #854D0E !important; border: 1px solid #FEF08A;}
     .status-gray { background-color: #F1F5F9; color: #475569 !important; border: 1px solid #E2E8F0;}
     
-    .kanban-card { background: #FFFFFF; padding: 15px; border-radius: 10px; border: 1px solid #E2E8F0; border-left: 4px solid #05297A; box-shadow: 0 2px 4px rgba(0,0,0,0.02); margin-bottom: 15px; transition: transform 0.2s;}
-    .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-    .kanban-title { font-weight: 700; color: #0F172A; font-size: 0.95rem; margin-bottom: 8px; line-height: 1.2; }
-    .kanban-meta { font-size: 0.8rem; color: #64748B; margin-bottom: 4px;}
-    .timeline-item { border-left: 2px solid #CBD5E1; padding-left: 15px; margin-bottom: 15px; position: relative; }
-    .timeline-item::before { content: ''; position: absolute; left: -6px; top: 0; width: 10px; height: 10px; border-radius: 50%; background: #05297A; }
-    .timeline-date { font-size: 0.75rem; color: #64748B; font-weight: 600; margin-bottom: 2px; }
-    .timeline-text { font-size: 0.85rem; color: #1E293B; }
+    .kanban-card { background: #FFFFFF; padding: 14px; border-radius: 10px; border: 1px solid #E2E8F0; border-left: 4px solid #05297A; box-shadow: 0 1px 3px rgba(0,0,0,0.02); margin-bottom: 12px; }
+    .kanban-title { font-weight: 700; color: #0F172A; font-size: 0.9rem; margin-bottom: 6px; }
+    .kanban-meta { font-size: 0.78rem; color: #64748B; margin-bottom: 3px;}
+    .timeline-item { border-left: 2px solid #CBD5E1; padding-left: 12px; margin-bottom: 12px; position: relative; }
+    .timeline-item::before { content: ''; position: absolute; left: -5px; top: 0; width: 8px; height: 8px; border-radius: 50%; background: #05297A; }
+    .timeline-date { font-size: 0.72rem; color: #64748B; font-weight: 600; }
+    .timeline-text { font-size: 0.83rem; color: #1E293B; }
     
-    /* BOTÓN FLOTANTE "PROJECT IA" DERECHA INFERIOR */
-    div[data-testid="stPopover"] {
-        position: fixed !important;
-        bottom: 30px !important;
-        right: 30px !important;
-        z-index: 999999 !important;
-    }
-    div[data-testid="stPopover"] > button {
-        background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important;
-        color: #FFFFFF !important;
-        border-radius: 30px !important;
-        padding: 12px 24px !important;
-        box-shadow: 0 10px 25px rgba(5, 41, 122, 0.4) !important;
-        border: 2px solid #FFFFFF !important;
-        font-size: 1rem !important;
-        font-weight: 700 !important;
-        transition: all 0.3s ease !important;
-    }
-    div[data-testid="stPopover"] > button:hover {
-        transform: scale(1.05) translateY(-2px) !important;
-        box-shadow: 0 14px 30px rgba(28, 66, 232, 0.5) !important;
-    }
+    /* BOTÓN FLOTANTE "PROJECT IA" */
+    div[data-testid="stPopover"] { position: fixed !important; bottom: 25px !important; right: 25px !important; z-index: 999999 !important; }
+    div[data-testid="stPopover"] > button { background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important; color: #FFFFFF !important; border-radius: 30px !important; padding: 10px 20px !important; box-shadow: 0 8px 20px rgba(5, 41, 122, 0.35) !important; border: 2px solid #FFFFFF !important; font-size: 0.95rem !important; font-weight: 700 !important; }
     div[data-testid="stPopover"] > button p { color: #FFFFFF !important; font-weight: 700 !important; }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
@@ -161,14 +145,17 @@ OPCIONES_GERENTES = [
 ]
 
 
-# --- BASE DE DATOS ---
+# --- OPTIMIZACIÓN DE MOTOR DE BASE DE DATOS Y CACHÉ (ULTRA RÁPIDO) ---
+@st.cache_resource
 def obtener_engine():
   db_url = (
       st.secrets["postgres"]["url"]
       if "postgres" in st.secrets
       else "sqlite:///db_coppel_v5.db"
   )
-  return sqlalchemy.create_engine(db_url)
+  return sqlalchemy.create_engine(
+      db_url, pool_size=10, max_overflow=20, pool_pre_ping=True
+  )
 
 
 def inicializar_db():
@@ -218,24 +205,35 @@ def inicializar_db():
 inicializar_db()
 
 
-def obtener_lista_usuarios():
+# Carga optimizada con caché de 3 segundos
+@st.cache_data(ttl=3)
+def cargar_datos_completos():
   engine = obtener_engine()
-  df = pd.read_sql("SELECT nombre FROM usuarios ORDER BY nombre ASC", engine)
+  df_p = pd.read_sql("SELECT * FROM proyectos ORDER BY id DESC", engine)
+  df_b = pd.read_sql("SELECT * FROM bitacora ORDER BY id DESC", engine)
+  df_t = pd.read_sql("SELECT * FROM tareas ORDER BY id ASC", engine)
+  df_u = pd.read_sql(
+      "SELECT nombre, correo, rol FROM usuarios ORDER BY nombre ASC", engine
+  )
+  return df_p, df_b, df_t, df_u
+
+
+def limpiar_cache_y_recargar():
+  cargar_datos_completos.clear()
+
+
+def obtener_lista_usuarios(df_u):
   return (
-      df["nombre"].tolist()
-      if not df.empty
+      df_u["nombre"].tolist()
+      if not df_u.empty
       else ["Leonardo Castillo", "Oscar Ivan Salazar"]
   )
 
 
-def calcular_fechas_tarea(proyecto_id):
-  engine = obtener_engine()
-  df_t = pd.read_sql(
-      f"SELECT * FROM tareas WHERE proyecto_id = {proyecto_id} ORDER BY id ASC",
-      engine,
-  )
-  if df_t.empty:
-    return df_t
+def calcular_fechas_tarea_df(df_tareas_proyecto):
+  if df_tareas_proyecto.empty:
+    return df_tareas_proyecto
+  df_t = df_tareas_proyecto.copy()
   df_t["fecha_inicio"] = pd.to_datetime(df_t["fecha_inicio"])
   df_t["fecha_fin"] = pd.to_datetime(df_t["fecha_fin"])
   fechas_fin = {}
@@ -257,122 +255,6 @@ def calcular_fechas_tarea(proyecto_id):
     df_t.at[idx, "fecha_fin"] = fin
     fechas_fin[t_id] = fin
   return df_t
-
-
-# --- MOTOR DE IA LOCAL / NATIVO (100% SEGURO Y ANTI-BLOQUEOS) ---
-def consultar_project_ia_local(prompt, dataframe):
-  p_lower = prompt.lower().strip()
-  if dataframe.empty:
-    return "ℹ️ El portafolio no contiene proyectos registrados aún."
-
-  # 1. Proyectos retrasados o en riesgo
-  if any(
-      k in p_lower for k in ["retras", "riesgo", "deteni", "critico", "problema"]
-  ):
-    p_ret = dataframe[
-        dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])
-    ]
-    if p_ret.empty:
-      return (
-          "✅ **Excelente noticia**: No hay proyectos retrasados o detenidos en"
-          " este momento."
-      )
-    resp = f"🚨 **Encontré {len(p_ret)} iniciativa(s) en riesgo o retraso:**\n\n"
-    for _, r in p_ret.iterrows():
-      resp += (
-          f"* **{r['folio'] or 'S/F'} - {r['nombre']}**\n  * **Área:**"
-          f" {r['area_negocio']} | **Líder:** {r['lider_asignado']} |"
-          f" **Estatus:** `{r['estatus_tiempo']}` | **Avance:**"
-          f" {int((r['avance_real'] or 0)*100)}%\n"
-      )
-    return resp
-
-  # 2. Búsqueda por Área
-  areas_encontradas = [a for a in OPCIONES_AREAS if a.lower() in p_lower]
-  if areas_encontradas:
-    area = areas_encontradas[0]
-    p_area = dataframe[dataframe["area_negocio"] == area]
-    if p_area.empty:
-      return (
-          f"ℹ️ No hay iniciativas registradas actualmente para el área de"
-          f" **{area}**."
-      )
-    resp = f"📂 **Iniciativas en el Área {area} ({len(p_area)}):**\n\n"
-    for _, r in p_area.iterrows():
-      resp += (
-          f"* **{r['nombre']}** (`{r['folio'] or 'S/F'}`)\n  * **Líder:**"
-          f" {r['lider_asignado']} | **Estatus:** `{r['estatus_tiempo']}` |"
-          f" **Avance:** {int((r['avance_real'] or 0)*100)}%\n"
-      )
-    return resp
-
-  # 3. Búsqueda por Líder / Responsable
-  lideres = obtener_lista_usuarios()
-  lideres_encontrados = [l for l in lideres if l.lower() in p_lower]
-  if lideres_encontrados:
-    lid = lideres_encontrados[0]
-    p_lid = dataframe[dataframe["lider_asignado"] == lid]
-    if p_lid.empty:
-      return f"👤 **{lid}** no tiene proyectos asignados actualmente."
-    resp = f"👤 **Proyectos a cargo de {lid} ({len(p_lid)}):**\n\n"
-    for _, r in p_lid.iterrows():
-      resp += (
-          f"* **{r['nombre']}**\n  * **Área:** {r['area_negocio']} |"
-          f" **Estatus:** `{r['estatus_tiempo']}` | **Avance:**"
-          f" {int((r['avance_real'] or 0)*100)}%\n"
-      )
-    return resp
-
-  # 4. Resumen General / Métricas
-  if any(
-      k in p_lower
-      for k in [
-          "resumen",
-          "general",
-          "avance",
-          "metrica",
-          "total",
-          "cuantos",
-          "estado",
-      ]
-  ):
-    tot = len(dataframe)
-    en_t = len(dataframe[dataframe["estatus_tiempo"] == "En tiempo"])
-    ret = len(
-        dataframe[dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])]
-    )
-    prom = dataframe["avance_real"].mean() * 100
-    return f"""📊 **Resumen Ejecutivo del Portafolio:**
-* **Total de proyectos:** {tot}
-* **En tiempo:** {en_t}
-* **En riesgo / retraso:** {ret}
-* **Avance global promedio:** {prom:.1f}%
-"""
-
-  # 5. Coincidencia por palabra clave
-  coincidencias = dataframe[
-      dataframe["nombre"].str.lower().str.contains(p_lower, na=False)
-      | dataframe["folio"].str.lower().str.contains(p_lower, na=False)
-  ]
-  if not coincidencias.empty:
-    resp = f"🔍 **Resultados de la búsqueda ({len(coincidencias)}):**\n\n"
-    for _, r in coincidencias.iterrows():
-      resp += (
-          f"* **{r['folio'] or 'S/F'} - {r['nombre']}**\n  * **Área:**"
-          f" {r['area_negocio']} | **Líder:** {r['lider_asignado']} |"
-          f" **Estatus:** `{r['estatus_tiempo']}` | **Avance:**"
-          f" {int((r['avance_real'] or 0)*100)}%\n"
-      )
-    return resp
-
-  # Mensaje sugerencia por defecto
-  return f"""🤖 **Project IA (Modo Interno):**
-No encontré una regla directa para tu consulta. Intenta preguntarme sobre:
-* 🚨 *Proyectos retrasados o en riesgo*
-* 📂 *Áreas de negocio (ej. Retail, Banco, Afore)*
-* 👤 *Líderes de proyecto (ej. Leonardo Castillo)*
-* 📊 *Resumen general o avance del portafolio*
-"""
 
 
 # --- LOGIN ---
@@ -434,12 +316,10 @@ if not st.session_state.autenticado:
               st.error("Credenciales incorrectas.")
   st.stop()
 
-# --- DATOS GLOBALES ---
-engine = obtener_engine()
-df = pd.read_sql("SELECT * FROM proyectos", engine)
-df_bitacora = pd.read_sql("SELECT * FROM bitacora ORDER BY id DESC", engine)
-df_tareas_all = pd.read_sql("SELECT * FROM tareas", engine)
+# --- CARGA DE DATOS EN MEMORIA RÁPIDA ---
+df, df_bitacora, df_tareas_all, df_users_raw = cargar_datos_completos()
 es_moderador = st.session_state.rol == "Moderador"
+lista_lideres_registrados = obtener_lista_usuarios(df_users_raw)
 
 # --- ALERTAS INTELIGENTES ---
 if not df.empty:
@@ -455,11 +335,11 @@ if not df.empty:
 # --- SIDEBAR ---
 with st.sidebar:
   st.markdown(
-      f"<div style='background-color:#F8FAFC; padding: 20px; border-radius:"
-      " 12px; border: 1px solid #E2E8F0; margin-bottom: 20px;'><h3"
-      " style='margin:0 0 5px 0; font-size:1.1rem; color:#0F172A;'>👤"
-      f" {st.session_state.nombre_actual}</h3><p style='margin:0 0 10px 0;"
-      f" color:#64748B; font-size:0.8rem;'>{st.session_state.correo_actual}</p><span"
+      f"<div style='background-color:#F8FAFC; padding: 18px; border-radius:"
+      " 12px; border: 1px solid #E2E8F0; margin-bottom: 15px;'><h3"
+      " style='margin:0 0 4px 0; font-size:1.05rem; color:#0F172A;'>👤"
+      f" {st.session_state.nombre_actual}</h3><p style='margin:0 0 8px 0;"
+      f" color:#64748B; font-size:0.78rem;'>{st.session_state.correo_actual}</p><span"
       " class='status-badge"
       f" {'status-green' if es_moderador else 'status-gray'}'>{st.session_state.rol}</span></div>",
       unsafe_allow_html=True,
@@ -471,6 +351,7 @@ with st.sidebar:
       confirmar_pass = st.text_input("Confirmar", type="password")
       if st.form_submit_button("Actualizar Clave", use_container_width=True):
         if nueva_pass == confirmar_pass and nueva_pass:
+          engine = obtener_engine()
           with engine.begin() as conn:
             conn.execute(
                 sqlalchemy.text(
@@ -478,14 +359,14 @@ with st.sidebar:
                 ),
                 {"p": nueva_pass, "c": st.session_state.correo_actual},
             )
+          limpiar_cache_y_recargar()
           st.success("Guardado.")
         else:
           st.error("No coinciden.")
   st.write("")
 
   st.markdown(
-      "<h4 style='color:#0F172A; font-size: 0.9rem;'>📥 Exportar"
-      " Información</h4>",
+      "<h4 style='color:#0F172A; font-size: 0.85rem;'>📥 Exportar</h4>",
       unsafe_allow_html=True,
   )
   if not df.empty:
@@ -541,7 +422,7 @@ with st.sidebar:
 
     with open(generar_pdf(df), "rb") as file:
       st.download_button(
-          "Descargar Reporte PDF",
+          "Descargar PDF",
           data=file,
           file_name=f"Reporte_{datetime.now().strftime('%Y%m%d')}.pdf",
           use_container_width=True,
@@ -552,7 +433,7 @@ with st.sidebar:
     with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
       df.to_excel(writer, index=False, sheet_name="Proyectos")
     st.download_button(
-        "Descargar Base (Excel)",
+        "Descargar Excel",
         data=excel_buffer.getvalue(),
         file_name=f"Base_Datos_{datetime.now().strftime('%Y%m%d')}.xlsx",
         mime=(
@@ -567,19 +448,19 @@ with st.sidebar:
     st.session_state.autenticado = False
     st.rerun()
 
-# --- HEADER Y MÉTRICAS ---
+# --- HEADER Y MÉTRICAS PERMANENTES ---
 st.markdown(
-    "<h2 style='margin-bottom: 25px; color:#0F172A;'>📊 Visión General del"
+    "<h2 style='margin-bottom: 20px; color:#0F172A;'>📊 Visión General del"
     " Portafolio</h2>",
     unsafe_allow_html=True,
 )
 if not df.empty and not proyectos_retrasados.empty:
   st.markdown(
       "<div style='background-color:#FEF2F2; border-left: 4px solid #EF4444;"
-      " padding: 15px; border-radius: 8px; margin-bottom: 20px;'><p"
+      " padding: 12px; border-radius: 8px; margin-bottom: 15px;'><p"
       " style='color:#991B1B; margin:0; font-weight:600;'>⚠️ Atención Crítica:"
-      f" Tienes {len(proyectos_retrasados)} proyectos marcados como Retrasados"
-      " o Detenidos.</p></div>",
+      f" Tienes {len(proyectos_retrasados)} proyectos en estatus Retrasado o"
+      " Detenido.</p></div>",
       unsafe_allow_html=True,
   )
 
@@ -587,6 +468,7 @@ total_p = len(df)
 en_t = len(df[df["estatus_tiempo"] == "En tiempo"]) if total_p > 0 else 0
 ret = len(proyectos_retrasados) if total_p > 0 else 0
 prom = df["avance_real"].mean() * 100 if total_p > 0 else 0.0
+
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("INICIATIVAS ACTIVAS", total_p)
 m2.metric("EJECUCIÓN EN TIEMPO", en_t)
@@ -607,8 +489,6 @@ else:
   tabs = st.tabs(
       ["📈 Dashboard Analítico", "🚀 Seguimiento", "📋 Kanban", "➕ Nuevo Proyecto"]
   )
-
-lista_lideres_registrados = obtener_lista_usuarios()
 
 # PESTAÑA 1: DASHBOARD ANALÍTICO
 with tabs[0]:
@@ -650,27 +530,45 @@ with tabs[0]:
       )
       st.plotly_chart(fig2, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO OPERATIVO
+# PESTAÑA 2: SEGUIMIENTO OPERATIVO CON FILTROS RÁPIDOS
 with tabs[1]:
   if df.empty:
     st.info("El portafolio está vacío.")
   else:
-    f_col1, f_col2, f_col3, f_col4 = st.columns(4)
+    # BANDA DE FILTROS RÁPIDOS (SMART PILLS)
+    f_pills1, f_pills2, f_pills3, f_pills4 = st.columns([1.2, 1.2, 1.2, 2.4])
+    modo_filtro = f_pills1.radio(
+        "Filtro Rápido",
+        ["Todos", "🚨 Solo Retrasados", "🟢 En Tiempo", "⭐ Mis Proyectos"],
+        horizontal=True,
+    )
+
+    f_col1, f_col2, f_col3 = st.columns(3)
     txt_busqueda = f_col1.text_input(
         "Búsqueda Rápida", placeholder="Ej. INC-001 o Banco..."
     )
     filtro_area = f_col2.selectbox(
         "Área del Negocio", ["Todas las Áreas"] + OPCIONES_AREAS
     )
-    filtro_estatus = f_col3.selectbox(
-        "Estatus Operativo", ["Todos los Estatus"] + OPCIONES_ESTATUS
-    )
-    filtro_lider = f_col4.selectbox(
+    filtro_lider = f_col3.selectbox(
         "Responsable Asignado",
         ["Todos los Responsables"] + lista_lideres_registrados,
     )
 
     df_filtrado = df.copy()
+
+    # Lógica de Filtro Rápido
+    if modo_filtro == "🚨 Solo Retrasados":
+      df_filtrado = df_filtrado[
+          df_filtrado["estatus_tiempo"].isin(["Retrasado", "Detenido"])
+      ]
+    elif modo_filtro == "🟢 En Tiempo":
+      df_filtrado = df_filtrado[df_filtrado["estatus_tiempo"] == "En tiempo"]
+    elif modo_filtro == "⭐ Mis Proyectos":
+      df_filtrado = df_filtrado[
+          df_filtrado["lider_asignado"] == st.session_state.nombre_actual
+      ]
+
     if txt_busqueda.strip():
       df_filtrado = df_filtrado[
           df_filtrado["nombre"]
@@ -682,16 +580,15 @@ with tabs[1]:
       ]
     if filtro_area != "Todas las Áreas":
       df_filtrado = df_filtrado[df_filtrado["area_negocio"] == filtro_area]
-    if filtro_estatus != "Todos los Estatus":
-      df_filtrado = df_filtrado[df_filtrado["estatus_tiempo"] == filtro_estatus]
     if filtro_lider != "Todos los Responsables":
       df_filtrado = df_filtrado[
           df_filtrado["lider_asignado"] == filtro_lider
       ]
 
     st.markdown(
-        f"<p style='color: #64748B; font-size: 0.9rem; margin-top: 10px;'>📌"
-        f" Mostrando <b>{len(df_filtrado)}</b> iniciativas.</p>",
+        f"<p style='color: #64748B; font-size: 0.85rem; margin-top: 5px;'>📌"
+        f" Mostrando <b>{len(df_filtrado)}</b> de <b>{len(df)}</b>"
+        " iniciativas.</p>",
         unsafe_allow_html=True,
     )
 
@@ -716,19 +613,19 @@ with tabs[1]:
         with st.form(f"update_{p_id}"):
           c1, c2, c3 = st.columns(3)
           c1.markdown(
-              f"<p style='margin:0; font-size:0.9rem;'><span"
+              f"<p style='margin:0; font-size:0.88rem;'><span"
               f" style='color:#64748B;'>Responsable:</span> <b"
               f" style='color:#0F172A;'>{row['lider_asignado']}</b></p>",
               unsafe_allow_html=True,
           )
           c2.markdown(
-              f"<p style='margin:0; font-size:0.9rem;'><span"
+              f"<p style='margin:0; font-size:0.88rem;'><span"
               " style='color:#64748B;'>Estatus:</span> <span"
               f" class='status-badge {badge_status}'>{row['estatus_tiempo']}</span></p>",
               unsafe_allow_html=True,
           )
           c3.markdown(
-              f"<p style='margin:0; font-size:0.9rem; text-align:right;'><span"
+              f"<p style='margin:0; font-size:0.88rem; text-align:right;'><span"
               " style='color:#64748B;'>Últ. Actualización:</span> <b"
               f" style='color:#05297A;'>{row['ultima_actualizacion'] or 'N/A'}</b></p>",
               unsafe_allow_html=True,
@@ -776,12 +673,12 @@ with tabs[1]:
           )
 
           st.markdown(
-              "<p style='font-size:0.85rem; font-weight:600; color:#334155;"
-              " margin-bottom:5px;'>NUEVO COMENTARIO DE BITÁCORA</p>",
+              "<p style='font-size:0.82rem; font-weight:600; color:#334155;"
+              " margin-bottom:4px;'>NUEVO COMENTARIO DE BITÁCORA</p>",
               unsafe_allow_html=True,
           )
           u_comentario = st.text_input(
-              "Agregar actualización (Se guardará en el historial)",
+              "Agregar actualización",
               placeholder="Escribe el estatus de la semana...",
           )
 
@@ -797,6 +694,7 @@ with tabs[1]:
           btn1, btn2, btn3 = st.columns([3, 3, 6])
           if btn1.form_submit_button("Actualizar Proyecto", type="primary"):
             ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            engine = obtener_engine()
             with engine.begin() as conn:
               conn.execute(
                   sqlalchemy.text("""UPDATE proyectos SET etapa_actual=:e, estatus_tiempo=:s, avance_real=:a, 
@@ -823,22 +721,25 @@ with tabs[1]:
                         "com": u_comentario.strip(),
                     },
                 )
+            limpiar_cache_y_recargar()
             st.rerun()
 
           if es_moderador and btn2.form_submit_button(
               "Eliminar", type="secondary"
           ):
+            engine = obtener_engine()
             with engine.begin() as conn:
               conn.execute(
                   sqlalchemy.text("DELETE FROM proyectos WHERE id=:id"),
                   {"id": p_id},
               )
+            limpiar_cache_y_recargar()
             st.rerun()
 
         historial_proyecto = df_bitacora[df_bitacora["proyecto_id"] == p_id]
         if not historial_proyecto.empty:
           st.markdown(
-              "<h5 style='margin-top: 15px; color:#0F172A;'>📜 Historial de"
+              "<h5 style='margin-top: 12px; color:#0F172A;'>📜 Historial de"
               " Cambios</h5>",
               unsafe_allow_html=True,
           )
@@ -850,19 +751,19 @@ with tabs[1]:
                 f" class='timeline-text'>{h_row['comentario']}</div></div>",
                 unsafe_allow_html=True,
             )
-        else:
-          st.caption("No hay comentarios en el historial aún.")
 
         st.markdown(
-            "<h4 style='color:#0F172A; margin-top: 20px; padding-top: 20px;"
+            "<h4 style='color:#0F172A; margin-top: 18px; padding-top: 15px;"
             " border-top: 1px dashed #CBD5E1;'>📅 Cronograma de Tareas"
             " (Gantt)</h4>",
             unsafe_allow_html=True,
         )
-        df_tareas = calcular_fechas_tarea(p_id)
-        if not df_tareas.empty:
+        df_tareas_proj = df_tareas_all[df_tareas_all["proyecto_id"] == p_id]
+        df_tareas_calc = calcular_fechas_tarea_df(df_tareas_proj)
+
+        if not df_tareas_calc.empty:
           fig = px.timeline(
-              df_tareas,
+              df_tareas_calc,
               x_start="fecha_inicio",
               x_end="fecha_fin",
               y="nombre_tarea",
@@ -876,7 +777,7 @@ with tabs[1]:
           )
           fig.update_yaxes(autorange="reversed")
           fig.update_layout(
-              height=200 + (len(df_tareas) * 20),
+              height=180 + (len(df_tareas_calc) * 20),
               margin=dict(l=0, r=0, t=10, b=0),
           )
           st.plotly_chart(fig, use_container_width=True)
@@ -893,6 +794,7 @@ with tabs[1]:
             t_pre = c_t4.text_input("Predecesoras (Ej. 1, 2)")
             if st.form_submit_button("Guardar Tarea"):
               if t_nom.strip():
+                engine = obtener_engine()
                 with engine.begin() as conn:
                   conn.execute(
                       sqlalchemy.text("""INSERT INTO tareas (proyecto_id, nombre_tarea, responsable, fecha_inicio, duracion_dias, fecha_fin, porcentaje_avance, predecesoras) 
@@ -909,6 +811,7 @@ with tabs[1]:
                           "p": t_pre,
                       },
                   )
+                limpiar_cache_y_recargar()
                 st.rerun()
 
 # PESTAÑA 3: VISTA KANBAN
@@ -921,10 +824,10 @@ with tabs[2]:
     for i, status in enumerate(OPCIONES_ESTATUS):
       with k_cols[i]:
         st.markdown(
-            f"<div style='background-color:#F8FAFC; padding:10px;"
+            f"<div style='background-color:#F8FAFC; padding:8px;"
             " border-radius:8px; border:1px solid #E2E8F0; text-align:center;"
-            " font-weight:700; color:#0F172A;"
-            f" margin-bottom:15px;'>{status.upper()}</div>",
+            " font-weight:700; color:#0F172A; font-size:0.85rem;"
+            f" margin-bottom:12px;'>{status.upper()}</div>",
             unsafe_allow_html=True,
         )
         df_k = df[df["estatus_tiempo"] == status]
@@ -935,7 +838,7 @@ with tabs[2]:
                             <div class='kanban-title'>{k_row['nombre']}</div>
                             <div class='kanban-meta'>👤 {k_row['lider_asignado']}</div>
                             <div class='kanban-meta'>📈 {int((k_row['avance_real'] or 0)*100)}% Completado</div>
-                            <div class='kanban-meta' style='margin-top:8px;'><i>Folio: {k_row['folio'] or 'S/F'}</i></div>
+                            <div class='kanban-meta' style='margin-top:6px;'><i>Folio: {k_row['folio'] or 'S/F'}</i></div>
                         </div>
                     """,
               unsafe_allow_html=True,
@@ -963,6 +866,7 @@ with tabs[3]:
       )
       if st.form_submit_button("Crear Proyecto", type="primary"):
         if nombre.strip():
+          engine = obtener_engine()
           with engine.begin() as conn:
             conn.execute(
                 sqlalchemy.text("""INSERT INTO proyectos (folio, nombre, area_negocio, tipo_proyecto, subtipo, gerente, lider_asignado, etapa_actual, estatus_tiempo, avance_real) 
@@ -979,6 +883,7 @@ with tabs[3]:
                     "st": estatus_inicial,
                 },
             )
+          limpiar_cache_y_recargar()
           st.success("Iniciativa creada.")
           st.rerun()
         else:
@@ -988,9 +893,7 @@ with tabs[3]:
 if es_moderador:
   with tabs[4]:
     st.write("")
-    df_users = pd.read_sql(
-        "SELECT nombre, correo, rol FROM usuarios ORDER BY nombre ASC", engine
-    )
+    df_users = df_users_raw.copy()
     df_users.columns = ["Colaborador", "Correo", "Permisos"]
 
     col_table, col_forms = st.columns([1.5, 1])
@@ -1008,6 +911,7 @@ if es_moderador:
         if st.form_submit_button("Registrar Usuario", type="primary"):
           if n_cor and n_pas and n_nom:
             try:
+              engine = obtener_engine()
               with engine.begin() as conn:
                 conn.execute(
                     sqlalchemy.text(
@@ -1020,6 +924,7 @@ if es_moderador:
                         "n": n_nom,
                     },
                 )
+              limpiar_cache_y_recargar()
               st.rerun()
             except:
               st.error("El correo ya existe.")
@@ -1033,50 +938,94 @@ if es_moderador:
         )
         if st.form_submit_button("Eliminar Cuenta", type="secondary"):
           if correo_borrar != "Seleccionar...":
+            engine = obtener_engine()
             with engine.begin() as conn:
               conn.execute(
                   sqlalchemy.text("DELETE FROM usuarios WHERE correo=:c"),
                   {"c": correo_borrar},
               )
+            limpiar_cache_y_recargar()
             st.rerun()
 
-# ==============================================================================
-# --- BOTÓN FLOTANTE Y CHAT ROBÓTICO "PROJECT IA" (100% OFFLINE Y SEGURO) ---
-# ==============================================================================
+
+# --- MOTOR PROJECT IA LOCAL ULTRARRÁPIDO (<5ms) ---
+def consultar_ia_ultra_rapido(prompt, dataframe):
+  p_lower = prompt.lower().strip()
+  if dataframe.empty:
+    return "ℹ️ El portafolio está vacío."
+
+  if any(k in p_lower for k in ["retras", "riesgo", "deteni", "critico"]):
+    p_ret = dataframe[
+        dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])
+    ]
+    if p_ret.empty:
+      return "✅ No hay proyectos retrasados ni detenidos en este momento."
+    res = f"🚨 **Encontré {len(p_ret)} proyectos en riesgo:**\n\n"
+    for _, r in p_ret.iterrows():
+      res += (
+          f"* **{r['folio'] or 'S/F'} - {r['nombre']}** | Área:"
+          f" {r['area_negocio']} | Líder: {r['lider_asignado']} | Avance:"
+          f" {int((r['avance_real'] or 0)*100)}%\n"
+      )
+    return res
+
+  areas_found = [a for a in OPCIONES_AREAS if a.lower() in p_lower]
+  if areas_found:
+    area = areas_found[0]
+    p_area = dataframe[dataframe["area_negocio"] == area]
+    if p_area.empty:
+      return f"ℹ️ Sin proyectos registrados en **{area}**."
+    res = f"📂 **Proyectos en {area} ({len(p_area)}):**\n\n"
+    for _, r in p_area.iterrows():
+      res += (
+          f"* **{r['nombre']}** | Líder: {r['lider_asignado']} | Estatus:"
+          f" `{r['estatus_tiempo']}`\n"
+      )
+    return res
+
+  tot = len(dataframe)
+  en_t = len(dataframe[dataframe["estatus_tiempo"] == "En tiempo"])
+  ret = len(
+      dataframe[dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])]
+  )
+  prom = dataframe["avance_real"].mean() * 100
+  return f"""📊 **Resumen Ejecutivo:**
+* Total proyectos: **{tot}**
+* En tiempo: **{en_t}**
+* Retrasados/Detenidos: **{ret}**
+* Avance promedio: **{prom:.1f}%**
+"""
+
+
+# --- BOTÓN FLOTANTE "PROJECT IA" DERECHA INFERIOR ---
 with st.popover(
     "🤖 Project IA",
-    help="Haz clic aquí para consultar sobre proyectos, áreas o retrasos",
+    help="Haz clic aquí para consultar proyectos, áreas o retrasos",
 ):
   st.markdown(
       "<h3 style='color:#05297A; margin-bottom: 0px;'>🤖 Project IA</h3>",
       unsafe_allow_html=True,
   )
-  st.caption(
-      "Asistente Robótico Interno para consultas rápidas sobre el Portafolio."
-  )
+  st.caption("Asistente ultrarrápido sin dependencias de red externa.")
   st.divider()
 
-  if "chat_history_local" not in st.session_state:
-    st.session_state.chat_history_local = []
+  if "chat_history_fast" not in st.session_state:
+    st.session_state.chat_history_fast = []
 
-  # Contenedor para la conversación
-  chat_container = st.container(height=320)
-  with chat_container:
-    for msg in st.session_state.chat_history_local:
+  chat_box = st.container(height=300)
+  with chat_box:
+    for msg in st.session_state.chat_history_fast:
       with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-  if prompt_user := st.chat_input(
-      "Ej: ¿Qué proyectos están retrasados?", key="ia_local_input"
+  if prompt_fast := st.chat_input(
+      "Ej: Proyectos retrasados", key="ia_fast_input"
   ):
-    st.session_state.chat_history_local.append(
-        {"role": "user", "content": prompt_user}
+    st.session_state.chat_history_fast.append(
+        {"role": "user", "content": prompt_fast}
     )
-
-    # Genera la respuesta procesando la BD en Python directamente
-    respuesta_bot = consultar_project_ia_local(prompt_user, df)
-
-    st.session_state.chat_history_local.append(
-        {"role": "assistant", "content": respuesta_bot}
+    ans = consultar_ia_ultra_rapido(prompt_fast, df)
+    st.session_state.chat_history_fast.append(
+        {"role": "assistant", "content": ans}
     )
     st.rerun()
