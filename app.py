@@ -138,6 +138,9 @@ st.markdown(
     .kanban-title { font-weight: 700; color: #0F172A; font-size: 0.95rem; margin-bottom: 8px; }
     .kanban-meta { font-size: 0.8rem; color: #64748B; margin-bottom: 4px; }
     
+    /* LOGIN LIMPIO */
+    .login-box { background-color: #FFFFFF; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid #E2E8F0; }
+    
     /* BOTÓN FLOTANTE "PROJECT IA" */
     div[data-testid="stPopover"] { position: fixed !important; bottom: 30px !important; right: 30px !important; z-index: 999999 !important; }
     div[data-testid="stPopover"] > button { 
@@ -443,7 +446,6 @@ with tabs[1]:
       badge_status = "status-green" if row["estatus_tiempo"] == "En tiempo" else ("status-yellow" if row["estatus_tiempo"] == "Detenido" else "status-gray")
       tag_estancado = " <span class='status-badge status-red'>⚠️ Estancado (>20d)</span>" if row.get("es_estancado", False) else ""
       
-      # VALIDACIÓN DE PERMISO DE EDICIÓN
       es_mi_proyecto = (row["lider_asignado"] == st.session_state.nombre_actual)
       puedo_editar = es_moderador or es_mi_proyecto
 
@@ -490,7 +492,6 @@ with tabs[1]:
               with engine.begin() as conn: conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id=:id"), {"id": p_id})
               limpiar_cache_y_recargar(); st.rerun()
         else:
-          # MODO LECTURA PARA PROYECTOS AJENOS
           st.info(f"🔒 **Modo Lectura:** Perteneces al perfil de Usuario. Solo el responsable asignado (**{row['lider_asignado']}**) o un Moderador pueden realizar cambios en este proyecto.")
           c1, c2, c3 = st.columns(3)
           c1.write(f"**Área:** {row['area_negocio']}")
@@ -502,14 +503,12 @@ with tabs[1]:
           c5.write(f"**Presupuesto:** ${float(row.get('presupuesto', 0.0)):,.2f}")
           c6.write(f"**Última Actualización:** {row['ultima_actualizacion'] or 'N/A'}")
 
-        # Historial de Bitácora
         historial_proyecto = df_bitacora[df_bitacora["proyecto_id"] == p_id]
         if not historial_proyecto.empty:
           st.markdown("<h5 style='margin-top: 15px; color:#0F172A; font-size:1.05rem;'>📜 Historial de Comentarios</h5>", unsafe_allow_html=True)
           for _, h_row in historial_proyecto.iterrows():
             st.markdown(f"<div class='timeline-item'><div class='timeline-date'>{h_row['fecha_hora']} | Por: {h_row['usuario_nombre']}</div><div class='timeline-text'>{h_row['comentario']}</div></div>", unsafe_allow_html=True)
 
-        # GANTT CHART
         st.markdown("<h4 style='color:#0F172A; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #CBD5E1; font-size:1.1rem;'>📅 Plan de Trabajo (Gantt)</h4>", unsafe_allow_html=True)
         df_tareas_proj = df_tareas_all[df_tareas_all["proyecto_id"] == p_id]
         df_tareas_calc = calcular_fechas_tarea_df(df_tareas_proj)
@@ -686,7 +685,7 @@ if es_moderador:
             p_folio = b_row.get("folio", "S/F")
             st.markdown(f"<div class='timeline-item'><div class='timeline-date'>{b_row['fecha_hora']} | Autor: <b>{b_row['usuario_nombre']}</b> | Proyecto: <b>[{p_folio}] {p_nombre}</b></div><div class='timeline-text'>{b_row['comentario']}</div></div>", unsafe_allow_html=True)
 
-  # PESTAÑA 6: USUARIOS
+  # PESTAÑA 6: USUARIOS (GESTIÓN Y EDICIÓN COMPLETA)
   with tabs[5]:
     st.write("")
     df_users = df_users_raw.copy()
@@ -698,8 +697,31 @@ if es_moderador:
       st.dataframe(df_users, use_container_width=True, hide_index=True)
 
     with col_forms:
+      # FORMULARIO 1: EDITAR USUARIO EXISTENTE
+      st.markdown("<h4>✏️ Editar Perfil de Usuario</h4>", unsafe_allow_html=True)
+      lista_correos_all = df_users_raw["correo"].tolist() if not df_users_raw.empty else []
+      u_sel_correo = st.selectbox("Seleccionar Usuario a Modificar", ["Seleccionar..."] + lista_correos_all, key="sel_mod_user")
+      
+      if u_sel_correo != "Seleccionar...":
+          u_info = df_users_raw[df_users_raw["correo"] == u_sel_correo].iloc[0]
+          with st.form("f_edit_user"):
+              e_nom = st.text_input("Nombre Completo", value=u_info["nombre"])
+              e_pas = st.text_input("Contraseña", value=u_info["password"])
+              e_rol = st.selectbox("Perfil de Seguridad", ["Usuario", "Moderador"], index=0 if u_info["rol"]=="Usuario" else 1)
+              if st.form_submit_button("Guardar Cambios de Perfil", type="primary"):
+                  engine = obtener_engine()
+                  with engine.begin() as conn:
+                      conn.execute(sqlalchemy.text("UPDATE usuarios SET nombre=:n, password=:p, rol=:r WHERE correo=:c"),
+                                   {"n": e_nom, "p": e_pas, "r": e_rol, "c": u_sel_correo})
+                  limpiar_cache_y_recargar()
+                  st.success("¡Perfil actualizado con éxito!")
+                  st.rerun()
+
+      st.divider()
+
+      # FORMULARIO 2: CREAR NUEVO USUARIO
       with st.form("f_alta"):
-        st.markdown("<h4>Crear Nuevo Usuario</h4>", unsafe_allow_html=True)
+        st.markdown("<h4>➕ Crear Nuevo Usuario</h4>", unsafe_allow_html=True)
         n_nom = st.text_input("Nombre Completo")
         n_cor = st.text_input("Correo Institucional (@coppel.com)")
         n_pas = st.text_input("Contraseña Inicial")
@@ -710,12 +732,14 @@ if es_moderador:
               engine = obtener_engine()
               with engine.begin() as conn: conn.execute(sqlalchemy.text("INSERT INTO usuarios VALUES (:c, :p, :r, :n)"), {"c": n_cor.strip().lower(), "p": n_pas, "r": n_rol, "n": n_nom})
               limpiar_cache_y_recargar(); st.success("Usuario agregado."); st.rerun()
-            except: st.error("El correo ya se encuentra registrado.")
+            except Exception: st.error("El correo ya se encuentra registrado.")
 
+      # FORMULARIO 3: ELIMINAR USUARIO
       with st.form("f_baja"):
+        st.markdown("<h4>🗑️ Revocar Acceso</h4>", unsafe_allow_html=True)
         lista_correos = df_users["Correo Corporativo"].tolist()
         if st.session_state.correo_actual in lista_correos: lista_correos.remove(st.session_state.correo_actual)
-        correo_borrar = st.selectbox("Revocar Acceso a:", ["Seleccionar..."] + lista_correos)
+        correo_borrar = st.selectbox("Seleccionar Usuario a Eliminar:", ["Seleccionar..."] + lista_correos)
         if st.form_submit_button("Eliminar Usuario", type="secondary"):
           if correo_borrar != "Seleccionar...":
             engine = obtener_engine()
