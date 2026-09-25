@@ -13,26 +13,52 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS ANTI-ROJO (Sobrescribe variables de raíz e IDs de Streamlit) ---
+# --- CSS DE ALTO CONTRASTE Y VISIBILIDAD (COLOR DE TEXTO FORZADO) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
-    /* Variables raíz de Streamlit */
-    :root, [data-testid="stAppViewContainer"], .stApp {
-        --primary-color: #05297A !important;
-        background-color: #F8F9FA !important;
+    /* 1. CONFIGURACIÓN GLOBAL Y FONDO */
+    html, body, [class*="css"], .stApp {
         font-family: 'Inter', sans-serif !important;
+        background-color: #F8F9FA !important;
+        color: #081754 !important;
     }
 
-    /* SOBREESCRITURA DIRECTA DE BOTONES DE FORMULARIO Y GENERALES */
+    /* 2. TEXTO VISIBLE EN TODOS LOS ETIQUETAS (LABELS) */
+    label, [data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] span {
+        color: #081754 !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* 3. TEXTO VISIBLE DENTRO DE CAMPOS DE TEXTO, SELECTS Y ÁREAS DE TEXTO */
+    input, textarea, select, 
+    .stTextInput input, .stTextArea textarea, .stSelectbox select,
+    div[data-baseweb="select"] span, div[data-baseweb="select"] div,
+    div[role="combobox"] {
+        color: #081754 !important;
+        background-color: #FFFFFF !important;
+        font-weight: 500 !important;
+    }
+
+    /* Bordes e inputs */
+    .stTextInput > div > div, .stSelectbox > div > div, .stTextArea > div > div {
+        border-radius: 6px !important;
+        border: 1px solid #C9C9C9 !important;
+        background-color: #FFFFFF !important;
+    }
+
+    /* Texto de sugerencia (Placeholder) */
+    ::placeholder, input::placeholder, textarea::placeholder {
+        color: #6B7280 !important;
+        opacity: 1 !important;
+    }
+
+    /* 4. BOTONES: TEXTO BLANCO SOBRE AZUL COPPEL */
     div[data-testid="stFormSubmitButton"] button,
     button[data-testid="baseButton-primary"],
-    button[data-testid="baseButton-secondary"],
-    .stButton button,
-    .stFormSubmitButton button,
-    button[kind="primary"],
-    button[kind="secondary"] {
+    .stButton > button {
         background-color: #05297A !important;
         background: #05297A !important;
         color: #FFFFFF !important;
@@ -42,33 +68,22 @@ st.markdown("""
         transition: all 0.2s ease-in-out !important;
     }
     
+    /* Garantizar que el texto dentro del botón sea blanco */
+    div[data-testid="stFormSubmitButton"] button *,
+    button[data-testid="baseButton-primary"] *,
+    .stButton > button * {
+        color: #FFFFFF !important;
+    }
+
     div[data-testid="stFormSubmitButton"] button:hover,
     button[data-testid="baseButton-primary"]:hover,
-    button[data-testid="baseButton-secondary"]:hover,
-    .stButton button:hover,
-    .stFormSubmitButton button:hover {
+    .stButton > button:hover {
         background-color: #1C42E8 !important;
         background: #1C42E8 !important;
-        color: #FFFFFF !important;
-        box-shadow: 0 4px 12px rgba(28, 66, 232, 0.25) !important;
+        box-shadow: 0 4px 10px rgba(28, 66, 232, 0.25) !important;
     }
 
-    /* INPUTS Y SELECTS */
-    .stTextInput > div > div > input, 
-    .stSelectbox > div > div > select, 
-    .stTextArea > div > div > textarea { 
-        border-radius: 6px !important; 
-        border: 1px solid #C9C9C9 !important; 
-        background-color: #FFFFFF !important;
-        color: #081754 !important;
-    }
-    .stTextInput > div > div > input:focus, 
-    .stSelectbox > div > div > select:focus {
-        border-color: #1C42E8 !important; 
-        box-shadow: 0 0 0 1px #1C42E8 !important;
-    }
-
-    /* TARJETAS DE MÉTRICAS */
+    /* 5. TARJETAS DE MÉTRICAS */
     div[data-testid="metric-container"] {
         background-color: #FFFFFF !important;
         border: 1px solid #C9C9C9 !important;
@@ -76,29 +91,27 @@ st.markdown("""
         padding: 15px !important;
         border-radius: 8px !important;
     }
-    div[data-testid="metric-container"] > label { font-size: 0.85rem !important; color: #4A4A4A !important; font-weight: 600 !important; }
-    div[data-testid="metric-container"] > div > div { font-size: 2rem !important; color: #081754 !important; font-weight: 700 !important; }
+    div[data-testid="metric-container"] label, 
+    div[data-testid="metric-container"] [data-testid="stMetricLabel"] p { 
+        color: #4A4A4A !important; 
+        font-size: 0.85rem !important; 
+        font-weight: 600 !important; 
+    }
+    div[data-testid="metric-container"] [data-testid="stMetricValue"] div { 
+        color: #081754 !important; 
+        font-size: 2rem !important; 
+        font-weight: 700 !important; 
+    }
 
-    /* PESTAÑAS (TABS) */
+    /* 6. PESTAÑAS (TABS) */
     .stTabs [data-baseweb="tab-list"] { gap: 24px; border-bottom: 1px solid #C9C9C9; }
     .stTabs [aria-selected="true"] { border-bottom: 2px solid #05297A !important; font-weight: 700 !important; color: #081754 !important; }
-    .stTabs [aria-selected="false"] { color: #4A4A4A !important; font-weight: 400 !important; }
+    .stTabs [aria-selected="false"] { color: #4A4A4A !important; font-weight: 500 !important; }
+    .stTabs [data-baseweb="tab"] p { color: inherit !important; }
 
-    /* TÍTULOS Y TEXTO */
-    h1, h2, h3, h4 { color: #081754 !important; font-weight: 700 !important; }
-    p, span { color: #4A4A4A; }
-
-    /* BADGES DE ESTATUS */
-    .status-badge { padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; border: 1px solid transparent;}
-    .status-green { background-color: #E8F5E9; color: #2E7D32; border-color: #A5D6A7;}
-    .status-yellow { background-color: #FFF9C4; color: #F57F17; border-color: #FFF59D;}
-    .status-gray { background-color: #EEE8E3; color: #4A4A4A; border-color: #C9C9C9;}
-
-    /* ACORDEONES (EXPANDERS) */
-    .streamlit-expanderHeader { 
+    /* 7. ACORDEONES (EXPANDERS) Y ESTATUS */
+    .streamlit-expanderHeader, .streamlit-expanderHeader p { 
         background-color: #FFFFFF !important; 
-        border-radius: 6px !important; 
-        border: 1px solid #C9C9C9 !important; 
         color: #081754 !important;
         font-weight: 600 !important;
     }
@@ -108,6 +121,11 @@ st.markdown("""
         background-color: #FFFFFF !important; 
         padding: 20px !important;
     }
+
+    .status-badge { padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; border: 1px solid transparent;}
+    .status-green { background-color: #E8F5E9; color: #2E7D32 !important; border-color: #A5D6A7;}
+    .status-yellow { background-color: #FFF9C4; color: #F57F17 !important; border-color: #FFF59D;}
+    .status-gray { background-color: #EEE8E3; color: #4A4A4A !important; border-color: #C9C9C9;}
 
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -169,8 +187,8 @@ if not st.session_state.autenticado:
 # --- SIDEBAR ---
 es_moderador = st.session_state.rol == "Moderador"
 with st.sidebar:
-    st.markdown(f"<h3 style='margin-bottom:0; font-size:1.1rem;'>{st.session_state.nombre_actual}</h3>", unsafe_allow_html=True)
-    st.markdown(f"<p style='color:#8C8C8C; font-size:0.85rem; margin-top:0;'>{st.session_state.correo_actual}</p>", unsafe_allow_html=True)
+    st.markdown(f"<h3 style='margin-bottom:0; font-size:1.1rem; color:#081754;'>{st.session_state.nombre_actual}</h3>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color:#4A4A4A; font-size:0.85rem; margin-top:0;'>{st.session_state.correo_actual}</p>", unsafe_allow_html=True)
     
     badge_color = "status-green" if es_moderador else "status-gray"
     st.markdown(f"<div><span class='status-badge {badge_color}'>{st.session_state.rol}</span></div>", unsafe_allow_html=True)
@@ -196,7 +214,7 @@ conn = obtener_conexion()
 df = pd.read_sql_query("SELECT * FROM proyectos", conn)
 
 # --- HEADER Y MÉTRICAS ---
-st.markdown("<h2 style='margin-bottom: 20px;'>Visión General</h2>", unsafe_allow_html=True)
+st.markdown("<h2 style='margin-bottom: 20px; color:#081754;'>Visión General</h2>", unsafe_allow_html=True)
 
 if not df.empty:
     m1, m2, m3, m4 = st.columns(4)
@@ -256,8 +274,8 @@ with tabs[0]:
                 
                 with st.form(f"update_{p_id}"):
                     c1, c2 = st.columns(2)
-                    c1.markdown(f"<p style='margin:0; font-size:0.9rem;'><span style='color:#8C8C8C;'>Responsable:</span> <b style='color:#081754;'>{row['lider_asignado']}</b></p>", unsafe_allow_html=True)
-                    c2.markdown(f"<p style='margin:0; font-size:0.9rem; text-align:right;'><span style='color:#8C8C8C;'>Actualizado:</span> <b style='color:#081754;'>{row['ultima_actualizacion'] or 'N/A'}</b></p>", unsafe_allow_html=True)
+                    c1.markdown(f"<p style='margin:0; font-size:0.9rem;'><span style='color:#4A4A4A;'>Responsable:</span> <b style='color:#081754;'>{row['lider_asignado']}</b></p>", unsafe_allow_html=True)
+                    c2.markdown(f"<p style='margin:0; font-size:0.9rem; text-align:right;'><span style='color:#4A4A4A;'>Actualizado:</span> <b style='color:#081754;'>{row['ultima_actualizacion'] or 'N/A'}</b></p>", unsafe_allow_html=True)
                     st.divider()
                     
                     c_form1, c_form2, c_form3 = st.columns(3)
