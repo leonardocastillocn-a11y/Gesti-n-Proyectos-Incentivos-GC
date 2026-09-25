@@ -4,3 +4,4 @@ fpdf
 plotly
 psycopg2-binary
 sqlalchemy
+# Forzar deploy
