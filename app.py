@@ -5,213 +5,54 @@ import streamlit as st
 import tempfile
 from fpdf import FPDF
 
-st.set_page_config(page_title="Portafolio de Incentivos", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Portafolio de Incentivos", page_icon="💼", layout="wide", initial_sidebar_state="expanded")
 
-# --- CONTROL DE ACCESO (LOGIN) ---
-if "autenticado" not in st.session_state:
-    st.session_state.autenticado = False
-    st.session_state.rol = None
+# --- ESTILOS CSS ---
+st.markdown("""
+    <style>
+    .metric-card { background-color: #f8f9fa; border-left: 5px solid #0056b3; padding: 15px; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
+    .stExpander header { background-color: #f1f3f5; font-weight: bold; border-radius: 5px; }
+    </style>
+""", unsafe_allow_html=True)
 
-if not st.session_state.autenticado:
-    st.title("🔒 Sistema de Incentivos")
-    st.write("Por favor, inicia sesión para continuar.")
-    
-    usuario = st.selectbox("Perfil", ["Seleccionar...", "Moderador", "Líder de Proyecto"])
-    password = st.text_input("Contraseña", type="password")
-    
-    if st.button("Ingresar"):
-        # CONTRASEÑAS CONFIGURADAS AQUÍ:
-        if usuario == "Moderador" and password == "admin123":
-            st.session_state.autenticado = True
-            st.session_state.rol = "Moderador"
-            st.rerun()
-        elif usuario == "Líder de Proyecto" and password == "user123":
-            st.session_state.autenticado = True
-            st.session_state.rol = "Usuario"
-            st.rerun()
-        else:
-            st.error("Contraseña incorrecta o perfil no válido.")
-    st.stop() # Detiene la ejecución si no está logueado
-
-# --- BARRA LATERAL ---
-st.sidebar.title("Bienvenido")
-st.sidebar.info(f"👤 Rol actual: **{st.session_state.rol}**")
-if st.sidebar.button("🚪 Cerrar Sesión"):
-    st.session_state.autenticado = False
-    st.session_state.rol = None
-    st.rerun()
-
-st.sidebar.divider()
-
-# --- BASE DE DATOS ---
+# --- INICIALIZACIÓN DE LA BASE DE DATOS (AHORA CON USUARIOS) ---
 def obtener_conexion():
-    conn = sqlite3.connect("portafolio_incentivos.db", check_same_thread=False)
-    return conn
+    return sqlite3.connect("portafolio_incentivos.db", check_same_thread=False)
 
 def inicializar_db():
     conn = obtener_conexion()
     cursor = conn.cursor()
+    # Tabla de Proyectos
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS proyectos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, folio TEXT, nombre TEXT NOT NULL, atencion TEXT, area_negocio TEXT,
-            tipo_proyecto TEXT, subtipo TEXT, puestos_impactar TEXT, inicio_planificado TEXT, fin_planificado TEXT,
-            nacional_incentivos TEXT, gerente_incentivos TEXT, lider_asignado TEXT, origen_presupuesto TEXT,
-            etapa_actual TEXT, estatus_tiempo TEXT, avance_real REAL, resumen_estatus TEXT, carpeta_url TEXT,
-            plan_url TEXT, ultima_actualizacion TEXT
+            id INTEGER PRIMARY KEY AUTOINCREMENT, folio TEXT, nombre TEXT NOT NULL,
+            lider_asignado TEXT, estatus_tiempo TEXT, avance_real REAL,
+            resumen_estatus TEXT, carpeta_url TEXT, plan_url TEXT, ultima_actualizacion TEXT
         )
     """)
+    # Tabla de Usuarios
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS usuarios (
+            usuario TEXT PRIMARY KEY, password TEXT NOT NULL, rol TEXT NOT NULL
+        )
+    """)
+    
+    # Crear usuarios por defecto si la tabla está vacía
+    cursor.execute("SELECT COUNT(*) FROM usuarios")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("INSERT INTO usuarios (usuario, password, rol) VALUES ('moderador', 'admin123', 'Moderador')")
+        cursor.execute("INSERT INTO usuarios (usuario, password, rol) VALUES ('lider1', 'user123', 'Usuario')")
+        cursor.execute("INSERT INTO usuarios (usuario, password, rol) VALUES ('lider2', 'user123', 'Usuario')")
+        
     conn.commit()
     conn.close()
 
 inicializar_db()
 
-# --- CONSTANTES ---
-OPCIONES_ESTATUS = ["En tiempo", "Retrasado", "Detenido", "Cancelado", "Por iniciar"]
-es_moderador = st.session_state.rol == "Moderador"
-
-# --- INTERFAZ PRINCIPAL ---
-st.title("📊 Portafolio de Proyectos de Incentivos")
-
-conn = obtener_conexion()
-df = pd.read_sql_query("SELECT * FROM proyectos", conn)
-
-# 1. FUNCIÓN PARA DESCARGAR PDF (Solo Moderador)
-if es_moderador and not df.empty:
-    def generar_pdf(dataframe):
-        pdf = FPDF(orientation="L", unit="mm", format="A4")
-        pdf.add_page()
-        pdf.set_font("Arial", 'B', 16)
-        pdf.cell(0, 10, "Reporte de Portafolio de Proyectos - Incentivos", ln=True, align="C")
-        pdf.ln(5)
-        
-        pdf.set_font("Arial", 'B', 10)
-        # Encabezados de tabla
-        pdf.cell(30, 10, "Folio", 1)
-        pdf.cell(80, 10, "Nombre", 1)
-        pdf.cell(40, 10, "Lider", 1)
-        pdf.cell(30, 10, "Estatus", 1)
-        pdf.cell(20, 10, "Avance", 1)
-        pdf.cell(50, 10, "Ult. Act.", 1)
-        pdf.ln()
-        
-        pdf.set_font("Arial", '', 9)
-        for _, row in dataframe.iterrows():
-            pdf.cell(30, 10, str(row['folio'])[:15], 1)
-            pdf.cell(80, 10, str(row['nombre'])[:40], 1)
-            pdf.cell(40, 10, str(row['lider_asignado'])[:20], 1)
-            pdf.cell(30, 10, str(row['estatus_tiempo']), 1)
-            pdf.cell(20, 10, f"{int((row['avance_real'] or 0)*100)}%", 1)
-            pdf.cell(50, 10, str(row['ultima_actualizacion'])[:16], 1)
-            pdf.ln()
-            
-        # Guardar en archivo temporal
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            pdf.output(tmp.name)
-            return tmp.name
-
-    st.sidebar.markdown("### 📄 Exportar")
-    pdf_path = generar_pdf(df)
-    with open(pdf_path, "rb") as file:
-        st.sidebar.download_button(
-            label="⬇️ Descargar Reporte PDF",
-            data=file,
-            file_name=f"Reporte_Incentivos_{datetime.now().strftime('%Y%m%d')}.pdf",
-            mime="application/pdf",
-        )
-
-# 2. CREACIÓN DE PROYECTOS (Solo Moderador)
-if es_moderador:
-    with st.expander("➕ Crear Nuevo Proyecto", expanded=False):
-        with st.form("form_nuevo"):
-            c1, c2, c3 = st.columns(3)
-            folio = c1.text_input("Folio (ej. INC-001)")
-            nombre = c2.text_input("Nombre del Proyecto *")
-            lider = c3.text_input("Líder Asignado")
-            
-            if st.form_submit_button("Guardar Proyecto"):
-                if nombre.strip():
-                    cursor = conn.cursor()
-                    cursor.execute("INSERT INTO proyectos (folio, nombre, lider_asignado, estatus_tiempo, avance_real) VALUES (?, ?, ?, 'Por iniciar', 0)", (folio, nombre, lider))
-                    conn.commit()
-                    st.success("Creado correctamente")
-                    st.rerun()
-
-# 3. LISTADO Y ACTUALIZACIÓN SEMANAL
-st.subheader("📋 Actualización de Avances Semanales")
-
-if not df.empty:
-    for _, row in df.iterrows():
-        p_id = row["id"]
-        color = "🟢" if row["estatus_tiempo"] == "En tiempo" else ("🔴" if row["estatus_tiempo"] == "Retrasado" else "🟡")
-        
-        with st.expander(f"{color} {row['folio'] or 'S/F'} - {row['nombre']} | Líder: {row['lider_asignado']} | Avance: {int((row['avance_real'] or 0)*100)}%"):
-            
-            # --- FORMULARIO DE ACTUALIZACIÓN SEMANAL (Para ambos roles) ---
-            st.caption("Campos de actualización periódica:")
-            with st.form(f"update_{p_id}"):
-                col1, col2 = st.columns(2)
-                
-                # Los 6 campos solicitados
-                u_estatus = col1.selectbox("Estatus de tiempo", OPCIONES_ESTATUS, index=OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0)
-                u_avance = col2.slider("% Avance real", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
-                
-                u_resumen = st.text_area("Resumen estatus / Bitácora", row["resumen_estatus"] or "")
-                
-                u_carpeta = st.text_input("Carpeta de proyecto (URL Drive)", row["carpeta_url"] or "")
-                u_plan = st.text_input("Plan de trabajo (URL Sheets)", row["plan_url"] or "")
-                
-                st.info(f"🕒 Última actualización registrada: {row['ultima_actualizacion'] or 'Nunca'}")
-                
-                if st.form_submit_button("💾 Guardar Cambios"):
-                    ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    cursor = conn.cursor()
-                    cursor.execute("""
-                        UPDATE proyectos SET 
-                        estatus_tiempo=?, avance_real=?, resumen_estatus=?, 
-                        carpeta_url=?, plan_url=?, ultima_actualizacion=? 
-                        WHERE id=?
-                    """, (u_estatus, u_avance, u_resumen, u_carpeta, u_plan, ahora, p_id))
-                    conn.commit()
-                    st.success("¡Información actualizada!")
-                    st.rerun()
-            
-            # --- BORRADO (Solo Moderador) ---
-            if es_moderador:import sqlite3
-from datetime import datetime
-import pandas as pd
-import streamlit as st
-import tempfile
-from fpdf import FPDF
-
-# --- CONFIGURACIÓN DE PÁGINA (Debe ser la primera línea) ---
-st.set_page_config(
-    page_title="Portafolio de Incentivos",
-    page_icon="💼",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# --- ESTILOS CSS PERSONALIZADOS ---
-st.markdown("""
-    <style>
-    .metric-card {
-        background-color: #f8f9fa;
-        border-left: 5px solid #0056b3;
-        padding: 15px;
-        border-radius: 5px;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
-    }
-    .stExpander header {
-        background-color: #f1f3f5;
-        font-weight: bold;
-        border-radius: 5px;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 # --- CONTROL DE ACCESO (LOGIN) ---
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
+    st.session_state.usuario_actual = None
     st.session_state.rol = None
 
 if not st.session_state.autenticado:
@@ -222,61 +63,82 @@ if not st.session_state.autenticado:
         
         with st.form("login_form"):
             st.subheader("🔒 Inicio de Sesión")
-            usuario = st.selectbox("Perfil de acceso", ["Seleccionar...", "Moderador (Administrador)", "Líder de Proyecto (Usuario)"])
-            password = st.text_input("Contraseña", type="password")
-            
+            usuario_input = st.text_input("Usuario (ej. moderador, lider1)")
+            password_input = st.text_input("Contraseña", type="password")
             submit = st.form_submit_button("Ingresar al Sistema", use_container_width=True)
             
             if submit:
-                if usuario == "Moderador (Administrador)" and password == "admin123":
+                conn = obtener_conexion()
+                cursor = conn.cursor()
+                cursor.execute("SELECT password, rol FROM usuarios WHERE usuario=?", (usuario_input,))
+                user_data = cursor.fetchone()
+                conn.close()
+                
+                if user_data and user_data[0] == password_input:
                     st.session_state.autenticado = True
-                    st.session_state.rol = "Moderador"
-                    st.rerun()
-                elif usuario == "Líder de Proyecto (Usuario)" and password == "user123":
-                    st.session_state.autenticado = True
-                    st.session_state.rol = "Usuario"
+                    st.session_state.usuario_actual = usuario_input
+                    st.session_state.rol = user_data[1]
                     st.rerun()
                 else:
-                    st.error("❌ Contraseña incorrecta o perfil no válido.")
+                    st.error("❌ Usuario o contraseña incorrectos.")
     st.stop()
 
-# --- BASE DE DATOS ---
-def obtener_conexion():
-    return sqlite3.connect("portafolio_incentivos.db", check_same_thread=False)
-
-def inicializar_db():
-    conn = obtener_conexion()
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS proyectos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, folio TEXT, nombre TEXT NOT NULL,
-            lider_asignado TEXT, estatus_tiempo TEXT, avance_real REAL,
-            resumen_estatus TEXT, carpeta_url TEXT, plan_url TEXT, ultima_actualizacion TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-inicializar_db()
-
-# --- BARRA LATERAL ---
+# --- BARRA LATERAL (CON CAMBIO DE CONTRASEÑA) ---
 es_moderador = st.session_state.rol == "Moderador"
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=80)
     st.title("Mi Panel")
-    if es_moderador:
-        st.success("🛡️ **Rol:** Moderador Admin")
-    else:
-        st.info("👤 **Rol:** Líder de Proyecto")
-    
+    st.write(f"Hola, **{st.session_state.usuario_actual}**")
+    st.caption(f"Rol: {st.session_state.rol}")
     st.divider()
+
+    # Módulo para cambiar contraseña
+    with st.expander("🔑 Cambiar mi contraseña", expanded=False):
+        with st.form("form_cambio_pass"):
+            nueva_pass = st.text_input("Nueva Contraseña", type="password")
+            confirmar_pass = st.text_input("Confirmar Contraseña", type="password")
+            
+            if st.form_submit_button("Actualizar"):
+                if nueva_pass and nueva_pass == confirmar_pass:
+                    conn = obtener_conexion()
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE usuarios SET password=? WHERE usuario=?", (nueva_pass, st.session_state.usuario_actual))
+                    conn.commit()
+                    conn.close()
+                    st.success("¡Contraseña actualizada!")
+                else:
+                    st.error("Las contraseñas no coinciden.")
     
+    # Módulo para agregar usuarios (Solo Moderador)
+    if es_moderador:
+        with st.expander("👥 Crear nuevo usuario", expanded=False):
+            with st.form("form_nuevo_usuario"):
+                n_user = st.text_input("Nombre de Usuario (Login)")
+                n_pass = st.text_input("Contraseña Temporal", type="password")
+                n_rol = st.selectbox("Rol", ["Usuario", "Moderador"])
+                
+                if st.form_submit_button("Crear Usuario"):
+                    if n_user and n_pass:
+                        try:
+                            conn = obtener_conexion()
+                            cursor = conn.cursor()
+                            cursor.execute("INSERT INTO usuarios (usuario, password, rol) VALUES (?, ?, ?)", (n_user, n_pass, n_rol))
+                            conn.commit()
+                            conn.close()
+                            st.success("Usuario creado.")
+                        except:
+                            st.error("El usuario ya existe.")
+                    else:
+                        st.warning("Completa los datos.")
+
+    st.divider()
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.autenticado = False
+        st.session_state.usuario_actual = None
         st.session_state.rol = None
         st.rerun()
 
-# --- CONSULTA PRINCIPAL ---
+# --- CONSULTA PRINCIPAL DE PROYECTOS ---
 conn = obtener_conexion()
 df = pd.read_sql_query("SELECT * FROM proyectos", conn)
 
@@ -295,7 +157,7 @@ if not df.empty:
     m2.markdown(f"<div class='metric-card' style='border-left-color: #28a745;'><h4>🟢 En Tiempo</h4><h2>{en_tiempo}</h2></div>", unsafe_allow_html=True)
     m3.markdown(f"<div class='metric-card' style='border-left-color: #dc3545;'><h4>🔴 Retrasados</h4><h2>{retrasados}</h2></div>", unsafe_allow_html=True)
     m4.markdown(f"<div class='metric-card' style='border-left-color: #17a2b8;'><h4>📈 Avance Global</h4><h2>{promedio_avance:.1f}%</h2></div>", unsafe_allow_html=True)
-    st.write("") # Espaciador
+    st.write("")
 
 # --- FUNCIÓN GENERAR PDF (Solo Moderador) ---
 if es_moderador and not df.empty:
@@ -310,7 +172,6 @@ if es_moderador and not df.empty:
         pdf.cell(0, 10, f"Generado el: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align="C")
         pdf.ln(5)
         
-        # Encabezados
         pdf.set_font("Arial", 'B', 10)
         pdf.set_fill_color(240, 240, 240)
         pdf.set_text_color(0, 0, 0)
@@ -321,7 +182,6 @@ if es_moderador and not df.empty:
         pdf.cell(20, 10, "Avance", 1, 0, 'C', True)
         pdf.cell(50, 10, "Ult. Act.", 1, 1, 'C', True)
         
-        # Contenido
         pdf.set_font("Arial", '', 9)
         for _, row in dataframe.iterrows():
             pdf.cell(30, 10, str(row['folio'])[:15], 1)
@@ -339,22 +199,16 @@ if es_moderador and not df.empty:
     pdf_path = generar_pdf(df)
     with open(pdf_path, "rb") as file:
         st.sidebar.download_button(
-            label="⬇️ Descargar Reporte Completo (PDF)",
-            data=file,
-            file_name=f"Reporte_Incentivos_{datetime.now().strftime('%Y%m%d')}.pdf",
-            mime="application/pdf",
-            use_container_width=True
+            label="⬇️ Descargar Reporte (PDF)", data=file, file_name=f"Reporte_{datetime.now().strftime('%Y%m%d')}.pdf", mime="application/pdf", use_container_width=True
         )
 
 # --- CREACIÓN DE PROYECTOS (Solo Moderador) ---
 st.divider()
-col_title, col_btn = st.columns([4, 1])
-col_title.markdown("### 📋 Gestión de Proyectos")
+st.markdown("### 📋 Gestión de Proyectos")
 
 if es_moderador:
     with st.expander("✨ Registrar Nuevo Proyecto", expanded=False):
         with st.form("form_nuevo", clear_on_submit=True):
-            st.markdown("**Datos Generales**")
             c1, c2, c3 = st.columns(3)
             folio = c1.text_input("Folio (Opcional)")
             nombre = c2.text_input("Nombre del Proyecto *")
@@ -372,19 +226,15 @@ if es_moderador:
 
 # --- LISTADO Y ACTUALIZACIÓN SEMANAL ---
 if not df.empty:
-    st.caption("Selecciona un proyecto para actualizar su avance semanal.")
     OPCIONES_ESTATUS = ["En tiempo", "Retrasado", "Detenido", "Cancelado", "Por iniciar"]
-    
     for _, row in df.iterrows():
         p_id = row["id"]
-        # Semáforo visual
-        if row["estatus_tiempo"] == "En tiempo": icon, color = "🟢", "green"
-        elif row["estatus_tiempo"] == "Retrasado": icon, color = "🔴", "red"
-        elif row["estatus_tiempo"] == "Detenido": icon, color = "🟡", "orange"
-        else: icon, color = "⚪", "gray"
+        if row["estatus_tiempo"] == "En tiempo": icon = "🟢"
+        elif row["estatus_tiempo"] == "Retrasado": icon = "🔴"
+        elif row["estatus_tiempo"] == "Detenido": icon = "🟡"
+        else: icon = "⚪"
         
         with st.expander(f"{icon} {row['folio'] or 'S/F'} | {row['nombre']} — Avance: {int((row['avance_real'] or 0)*100)}%"):
-            
             with st.form(f"update_{p_id}"):
                 st.markdown(f"**Líder:** {row['lider_asignado']} | **Última actualización:** {row['ultima_actualizacion'] or 'Sin registro'}")
                 st.divider()
@@ -392,23 +242,18 @@ if not df.empty:
                 col1, col2 = st.columns([1, 1])
                 u_estatus = col1.selectbox("Estatus del Proyecto", OPCIONES_ESTATUS, index=OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0)
                 u_avance = col2.slider("Progreso (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05, format="%.2f")
-                
                 u_resumen = st.text_area("Resumen de Estatus / Comentarios", row["resumen_estatus"] or "", height=100)
-                
                 c_links1, c_links2 = st.columns(2)
                 u_carpeta = c_links1.text_input("📁 Carpeta (URL Drive)", row["carpeta_url"] or "")
                 u_plan = c_links2.text_input("📅 Plan de Trabajo (URL)", row["plan_url"] or "")
                 
-                # Botones de acción
                 c_btn1, c_btn2, c_btn3 = st.columns([2, 2, 6])
                 if c_btn1.form_submit_button("💾 Guardar", type="primary"):
                     ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     cursor = conn.cursor()
-                    cursor.execute("""
-                        UPDATE proyectos SET estatus_tiempo=?, avance_real=?, resumen_estatus=?, carpeta_url=?, plan_url=?, ultima_actualizacion=? WHERE id=?
-                    """, (u_estatus, u_avance, u_resumen, u_carpeta, u_plan, ahora, p_id))
+                    cursor.execute("UPDATE proyectos SET estatus_tiempo=?, avance_real=?, resumen_estatus=?, carpeta_url=?, plan_url=?, ultima_actualizacion=? WHERE id=?", (u_estatus, u_avance, u_resumen, u_carpeta, u_plan, ahora, p_id))
                     conn.commit()
-                    st.success("Actualizado correctamente")
+                    st.success("Actualizado")
                     st.rerun()
                 
                 if es_moderador:
@@ -417,7 +262,5 @@ if not df.empty:
                         cursor.execute("DELETE FROM proyectos WHERE id=?", (p_id,))
                         conn.commit()
                         st.rerun()
-else:
-    st.info("📌 No hay proyectos registrados. Inicia sesión como Moderador para agregar el primero.")
 
 conn.close()
