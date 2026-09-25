@@ -7,7 +7,7 @@ import plotly.express as px
 import sqlalchemy
 import streamlit as st
 
-# Intentar importar la librería de IA de Google
+# Importación segura de IA
 try:
   import google.generativeai as genai
 
@@ -42,7 +42,7 @@ st.markdown(
     div[data-testid="metric-container"] { background-color: #FFFFFF !important; border: 1px solid #E2E8F0 !important; border-top: 4px solid #05297A !important; padding: 20px 24px !important; border-radius: 12px !important; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important; }
     div[data-testid="metric-container"] label { color: #64748B !important; font-size: 0.85rem !important; font-weight: 600 !important; }
     div[data-testid="metric-container"] [data-testid="stMetricValue"] div { color: #0F172A !important; font-size: 2.2rem !important; font-weight: 800 !important; letter-spacing: -0.02em; }
-    .stTabs [data-baseweb="tab-list"] { gap: 24px; border-bottom: 2px solid #E2E8F0; padding-bottom: 0px; }
+    .stTabs [data-baseweb="tab-list"] { gap: 32px; border-bottom: 2px solid #E2E8F0; padding-bottom: 0px; }
     .stTabs [aria-selected="true"] { border-bottom: 3px solid #05297A !important; font-weight: 700 !important; color: #05297A !important; background-color: transparent !important; }
     .stTabs [aria-selected="false"] { color: #64748B !important; font-weight: 500 !important; }
     .streamlit-expanderHeader { background-color: #FFFFFF !important; color: #0F172A !important; font-weight: 600 !important; border-radius: 12px !important; border: 1px solid #E2E8F0 !important; padding: 1rem !important; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important; }
@@ -300,6 +300,7 @@ if not st.session_state.autenticado:
 engine = obtener_engine()
 df = pd.read_sql("SELECT * FROM proyectos", engine)
 df_bitacora = pd.read_sql("SELECT * FROM bitacora ORDER BY id DESC", engine)
+df_tareas_all = pd.read_sql("SELECT * FROM tareas", engine)
 es_moderador = st.session_state.rol == "Moderador"
 
 # --- ALERTAS INTELIGENTES ---
@@ -313,7 +314,7 @@ if not df.empty:
     )
     st.session_state.alerta_mostrada = True
 
-# --- SIDEBAR MEJORADO ---
+# --- SIDEBAR ---
 with st.sidebar:
   st.markdown(
       f"<div style='background-color:#F8FAFC; padding: 20px; border-radius:"
@@ -344,7 +345,6 @@ with st.sidebar:
           st.error("No coinciden.")
   st.write("")
 
-  # DESCARGAS
   st.markdown(
       "<h4 style='color:#0F172A; font-size: 0.9rem;'>📥 Exportar"
       " Información</h4>",
@@ -456,24 +456,20 @@ m3.metric("EN RIESGO / RETRASO", ret)
 m4.metric("AVANCE GLOBAL", f"{prom:.1f}%")
 st.write("")
 
-# --- PESTAÑAS (TABS) ---
+# --- PESTAÑAS (TABS PRINCIPALES) ---
 if es_moderador:
   tabs = st.tabs([
       "📈 Dashboard Analítico",
       "🚀 Seguimiento",
       "📋 Kanban",
-      "🤖 Copiloto IA",
       "➕ Nuevo Proyecto",
       "👥 Accesos",
   ])
 else:
-  tabs = st.tabs([
-      "📈 Dashboard Analítico",
-      "🚀 Seguimiento",
-      "📋 Kanban",
-      "🤖 Copiloto IA",
-      "➕ Nuevo Proyecto",
-  ])
+  tabs = st.tabs(
+      ["📈 Dashboard Analítico", "🚀 Seguimiento", "📋 Kanban", "➕ Nuevo Proyecto"]
+  )
+
 lista_lideres_registrados = obtener_lista_usuarios()
 
 # PESTAÑA 1: DASHBOARD ANALÍTICO
@@ -807,95 +803,8 @@ with tabs[2]:
               unsafe_allow_html=True,
           )
 
-# PESTAÑA 4: ASISTENTE DE IA (COPILOTO GEMINI)
+# PESTAÑA 4: NUEVO PROYECTO
 with tabs[3]:
-  st.write("")
-  st.markdown(
-      "<h3 style='color:#0F172A; margin-bottom: 5px;'>🤖 Copiloto de Inteligencia"
-      " Artificial</h3>",
-      unsafe_allow_html=True,
-  )
-  st.markdown(
-      "<p style='color:#64748B; font-size:0.95rem; margin-bottom:20px;'>Pregunta"
-      " en lenguaje natural sobre retrasos, estado de proyectos, áreas o"
-      " desempeño del equipo.</p>",
-      unsafe_allow_html=True,
-  )
-
-  api_key_gemini = (
-      st.secrets.get("GEMINI_API_KEY", None)
-      or st.secrets.get("gemini", {}).get("api_key", None)
-      if "gemini" in st.secrets or "GEMINI_API_KEY" in st.secrets
-      else None
-  )
-
-  if not api_key_gemini and HAS_GEMINI:
-    api_key_gemini = st.text_input(
-        "🔑 Ingresa tu Gemini API Key para activar la IA:", type="password"
-    )
-
-  if HAS_GEMINI and api_key_gemini:
-    try:
-      genai.configure(api_key=api_key_gemini)
-
-      if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
-
-      for message in st.session_state.chat_history:
-        with st.chat_message(message["role"]):
-          st.markdown(message["content"])
-
-      if user_query := st.chat_input(
-          "Ej: ¿Cuáles son los proyectos retrasados y quién es el"
-          " responsable?"
-      ):
-        st.session_state.chat_history.append(
-            {"role": "user", "content": user_query}
-        )
-        with st.chat_message("user"):
-          st.markdown(user_query)
-
-        # Contexto estructurado en tiempo real del portafolio
-        contexto_proyectos = df[[
-            "folio",
-            "nombre",
-            "area_negocio",
-            "lider_asignado",
-            "etapa_actual",
-            "estatus_tiempo",
-            "avance_real",
-        ]].to_string(index=False)
-        system_instruction = f"""
-                Eres el Asistente Inteligente Ejecutivo del Portafolio de Incentivos Coppel.
-                Responde con precisión, profesionalismo y brevedad utilizando la base de datos real del portafolio:
-                
-                DATOS ACTUALES DEL PORTAFOLIO:
-                {contexto_proyectos}
-                """
-
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(
-            f"{system_instruction}\n\nPregunta del Usuario: {user_query}"
-        )
-
-        with st.chat_message("assistant"):
-          st.markdown(response.text)
-        st.session_state.chat_history.append(
-            {"role": "assistant", "content": response.text}
-        )
-
-    except Exception as e:
-      st.error(f"Error en la conexión con la IA: {e}")
-  else:
-    st.info(
-        "💡 Para habilitar el Copiloto de IA, añade `GEMINI_API_KEY ="
-        " 'tu_clave'` en los **Secrets** de Streamlit Cloud o pégala en el"
-        " campo de texto superior."
-    )
-
-# PESTAÑA 5: NUEVO PROYECTO
-idx_tab_nuevo = 4 if es_moderador else 4
-with tabs[idx_tab_nuevo]:
   st.write("")
   if es_moderador:
     with st.form("f_nuevo", clear_on_submit=True):
@@ -937,9 +846,9 @@ with tabs[idx_tab_nuevo]:
         else:
           st.error("Nombre obligatorio.")
 
-# PESTAÑA 6: USUARIOS (Solo Moderador)
+# PESTAÑA 5: USUARIOS (Solo Moderador)
 if es_moderador:
-  with tabs[5]:
+  with tabs[4]:
     st.write("")
     df_users = pd.read_sql(
         "SELECT nombre, correo, rol FROM usuarios ORDER BY nombre ASC", engine
@@ -992,3 +901,120 @@ if es_moderador:
                   {"c": correo_borrar},
               )
             st.rerun()
+
+# ==============================================================================
+# --- COPILOTO IA INTEGRADO AL PIE DE PÁGINA (GLOBAL PARA TODO EL SISTEMA) ---
+# ==============================================================================
+st.divider()
+
+api_key_gemini = (
+    st.secrets.get("GEMINI_API_KEY", None)
+    or st.secrets.get("gemini", {}).get("api_key", None)
+    if "gemini" in st.secrets or "GEMINI_API_KEY" in st.secrets
+    else None
+)
+
+with st.expander(
+    "🤖 Copiloto Ejecutivo de IA — Consultas sobre el Portafolio",
+    expanded=False,
+):
+  st.markdown(
+      "<p style='color:#64748B; font-size:0.88rem; margin-bottom:15px;'>Haz"
+      " preguntas en lenguaje natural sobre el estado interno de proyectos,"
+      " responsables, tareas o bitácoras del sistema.</p>",
+      unsafe_allow_html=True,
+  )
+
+  if not api_key_gemini and HAS_GEMINI:
+    api_key_gemini = st.text_input(
+        "🔑 Clave de IA para consultas:",
+        type="password",
+        help="Añade GEMINI_API_KEY en Secrets de Streamlit para no pedirla más.",
+    )
+
+  if HAS_GEMINI and api_key_gemini:
+    try:
+      genai.configure(api_key=api_key_gemini)
+
+      if "chat_history_global" not in st.session_state:
+        st.session_state.chat_history_global = []
+
+      # Renderizar historial previo de la conversación
+      for msg in st.session_state.chat_history_global:
+        with st.chat_message(msg["role"]):
+          st.markdown(msg["content"])
+
+      if prompt := st.chat_input(
+          "Ejemplo: ¿Qué proyectos están retrasados en el área de Retail?"
+      ):
+        st.session_state.chat_history_global.append(
+            {"role": "user", "content": prompt}
+        )
+        with st.chat_message("user"):
+          st.markdown(prompt)
+
+        # Contexto completo de la BD interna para alimentar a la IA
+        str_proyectos = df[[
+            "folio",
+            "nombre",
+            "area_negocio",
+            "lider_asignado",
+            "etapa_actual",
+            "estatus_tiempo",
+            "avance_real",
+            "ultima_actualizacion",
+        ]].to_string(index=False)
+        str_bitacora = (
+            df_bitacora[["proyecto_id", "fecha_hora", "comentario"]].head(20).to_string(index=False)
+            if not df_bitacora.empty
+            else "Sin bitácoras"
+        )
+        str_tareas = (
+            df_tareas_all[[
+                "proyecto_id",
+                "nombre_tarea",
+                "responsable",
+                "fecha_fin",
+                "porcentaje_avance",
+            ]].to_string(index=False)
+            if not df_tareas_all.empty
+            else "Sin tareas"
+        )
+
+        system_instruction = f"""
+                Eres el Copiloto Ejecutivo del Portafolio de Incentivos Coppel.
+                Tu función es analizar y responder con total confidencialidad, precisión y profesionalismo ejecutivo sobre la información INTERNA del sistema.
+
+                DATOS DE PROYECTOS ACTIVOS:
+                {str_proyectos}
+
+                ÚLTIMOS COMENTARIOS DE BITÁCORA:
+                {str_bitacora}
+
+                TAREAS REGISTRADAS:
+                {str_tareas}
+
+                INSTRUCCIONES:
+                1. Responde de forma clara, concisa y usando viñetas directas cuando aplique.
+                2. Basa tus respuestas únicamente en los datos internos proporcionados arriba.
+                """
+
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        respuesta = model.generate_content(
+            f"{system_instruction}\n\nPregunta del usuario: {prompt}"
+        )
+
+        with st.chat_message("assistant"):
+          st.markdown(respuesta.text)
+        st.session_state.chat_history_global.append(
+            {"role": "assistant", "content": respuesta.text}
+        )
+
+    except Exception as err:
+      st.error(f"Error al conectar con la IA: {err}")
+  else:
+    st.info(
+        "💡 Para activar las consultas inteligentes sobre la base de datos"
+        " interna, agrega `GEMINI_API_KEY = 'tu_clave'` en los **Secrets** de"
+        " Streamlit Cloud."
+    )
