@@ -15,10 +15,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- INICIALIZACIÓN DE LA BASE DE DATOS (NUEVA DB LIMPIA) ---
+# --- INICIALIZACIÓN DE LA BASE DE DATOS ---
 def obtener_conexion():
-    # Cambiamos el nombre del archivo para forzar una base de datos limpia
-    return sqlite3.connect("bd_incentivos.db", check_same_thread=False)
+    return sqlite3.connect("db_coppel_v2.db", check_same_thread=False)
 
 def inicializar_db():
     conn = obtener_conexion()
@@ -33,28 +32,29 @@ def inicializar_db():
         )
     """)
     
-    # Tabla de Usuarios
+    # Tabla de Usuarios (Ahora la llave primaria es el correo)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
-            usuario TEXT PRIMARY KEY, password TEXT NOT NULL, rol TEXT NOT NULL, correo TEXT
+            correo TEXT PRIMARY KEY, password TEXT NOT NULL, rol TEXT NOT NULL, nombre TEXT
         )
     """)
     
     # Crear usuarios reales por defecto si la tabla está vacía
     cursor.execute("SELECT COUNT(*) FROM usuarios")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO usuarios (usuario, password, rol, correo) VALUES ('leonardo.castillo', 'Coppel2026', 'Moderador', 'leonardo.castillo@coppel.com')")
-        cursor.execute("INSERT INTO usuarios (usuario, password, rol, correo) VALUES ('ivan.salazar', 'Coppel2026', 'Usuario', 'ivan.salazar@coppel.com')")
+        cursor.execute("INSERT INTO usuarios (correo, password, rol, nombre) VALUES ('leonardo.castillo@coppel.com', 'Coppel2026', 'Moderador', 'Leonardo Castillo')")
+        cursor.execute("INSERT INTO usuarios (correo, password, rol, nombre) VALUES ('ivan.salazar@coppel.com', 'Coppel2026', 'Usuario', 'Oscar Ivan Salazar')")
         
     conn.commit()
     conn.close()
 
 inicializar_db()
 
-# --- CONTROL DE ACCESO (LOGIN) ---
+# --- CONTROL DE ACCESO (LOGIN POR CORREO) ---
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
-    st.session_state.usuario_actual = None
+    st.session_state.correo_actual = None
+    st.session_state.nombre_actual = None
     st.session_state.rol = None
 
 if not st.session_state.autenticado:
@@ -65,24 +65,32 @@ if not st.session_state.autenticado:
         
         with st.form("login_form"):
             st.subheader("🔒 Inicio de Sesión")
-            usuario_input = st.text_input("Usuario (ej. leonardo.castillo)")
+            correo_input = st.text_input("Correo Electrónico (ej. leonardo.castillo@coppel.com)")
             password_input = st.text_input("Contraseña", type="password")
             submit = st.form_submit_button("Ingresar al Sistema", use_container_width=True)
             
             if submit:
-                conn = obtener_conexion()
-                cursor = conn.cursor()
-                cursor.execute("SELECT password, rol FROM usuarios WHERE usuario=?", (usuario_input,))
-                user_data = cursor.fetchone()
-                conn.close()
-                
-                if user_data and user_data[0] == password_input:
-                    st.session_state.autenticado = True
-                    st.session_state.usuario_actual = usuario_input
-                    st.session_state.rol = user_data[1]
-                    st.rerun()
+                # Validar que no esté vacío
+                if correo_input.strip() == "":
+                    st.warning("Por favor, ingresa tu correo electrónico.")
                 else:
-                    st.error("❌ Usuario o contraseña incorrectos.")
+                    # Convertir a minúsculas por si acaso
+                    correo_limpio = correo_input.strip().lower()
+                    
+                    conn = obtener_conexion()
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT password, rol, nombre FROM usuarios WHERE LOWER(correo)=?", (correo_limpio,))
+                    user_data = cursor.fetchone()
+                    conn.close()
+                    
+                    if user_data and user_data[0] == password_input:
+                        st.session_state.autenticado = True
+                        st.session_state.correo_actual = correo_limpio
+                        st.session_state.rol = user_data[1]
+                        st.session_state.nombre_actual = user_data[2]
+                        st.rerun()
+                    else:
+                        st.error("❌ Correo o contraseña incorrectos.")
     st.stop()
 
 # --- BARRA LATERAL (CON CAMBIO DE CONTRASEÑA) ---
@@ -90,8 +98,8 @@ es_moderador = st.session_state.rol == "Moderador"
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=80)
     st.title("Mi Panel")
-    st.write(f"Hola, **{st.session_state.usuario_actual}**")
-    st.caption(f"Rol: {st.session_state.rol}")
+    st.write(f"Hola, **{st.session_state.nombre_actual}**")
+    st.caption(f"Rol: {st.session_state.rol} | {st.session_state.correo_actual}")
     st.divider()
 
     # Módulo para cambiar contraseña
@@ -104,10 +112,10 @@ with st.sidebar:
                 if nueva_pass and nueva_pass == confirmar_pass:
                     conn = obtener_conexion()
                     cursor = conn.cursor()
-                    cursor.execute("UPDATE usuarios SET password=? WHERE usuario=?", (nueva_pass, st.session_state.usuario_actual))
+                    cursor.execute("UPDATE usuarios SET password=? WHERE correo=?", (nueva_pass, st.session_state.correo_actual))
                     conn.commit()
                     conn.close()
-                    st.success("¡Contraseña actualizada!")
+                    st.success("¡Contraseña actualizada con éxito!")
                 else:
                     st.error("Las contraseñas no coinciden.")
     
@@ -115,28 +123,31 @@ with st.sidebar:
     if es_moderador:
         with st.expander("👥 Crear nuevo usuario", expanded=False):
             with st.form("form_nuevo_usuario"):
-                n_user = st.text_input("Nombre de Usuario (Login)")
+                n_nombre = st.text_input("Nombre Completo")
+                n_correo = st.text_input("Correo Electrónico")
                 n_pass = st.text_input("Contraseña Temporal", type="password")
                 n_rol = st.selectbox("Rol", ["Usuario", "Moderador"])
                 
                 if st.form_submit_button("Crear Usuario"):
-                    if n_user and n_pass:
+                    if n_correo and n_pass and n_nombre:
+                        correo_nuevo_limpio = n_correo.strip().lower()
                         try:
                             conn = obtener_conexion()
                             cursor = conn.cursor()
-                            cursor.execute("INSERT INTO usuarios (usuario, password, rol, correo) VALUES (?, ?, ?, ?)", (n_user, n_pass, n_rol, ""))
+                            cursor.execute("INSERT INTO usuarios (correo, password, rol, nombre) VALUES (?, ?, ?, ?)", (correo_nuevo_limpio, n_pass, n_rol, n_nombre))
                             conn.commit()
                             conn.close()
-                            st.success("Usuario creado.")
+                            st.success(f"Usuario {correo_nuevo_limpio} creado.")
                         except:
-                            st.error("El usuario ya existe.")
+                            st.error("Este correo ya está registrado.")
                     else:
-                        st.warning("Completa los datos.")
+                        st.warning("Completa todos los datos (Nombre, Correo y Contraseña).")
 
     st.divider()
     if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.autenticado = False
-        st.session_state.usuario_actual = None
+        st.session_state.correo_actual = None
+        st.session_state.nombre_actual = None
         st.session_state.rol = None
         st.rerun()
 
@@ -214,7 +225,7 @@ if es_moderador:
             c1, c2, c3 = st.columns(3)
             folio = c1.text_input("Folio (Opcional)")
             nombre = c2.text_input("Nombre del Proyecto *")
-            lider = c3.text_input("Líder Asignado")
+            lider = c3.text_input("Líder Asignado (Nombre)")
             
             if st.form_submit_button("Guardar en Portafolio", type="primary"):
                 if nombre.strip():
@@ -238,7 +249,7 @@ if not df.empty:
         
         with st.expander(f"{icon} {row['folio'] or 'S/F'} | {row['nombre']} — Avance: {int((row['avance_real'] or 0)*100)}%"):
             with st.form(f"update_{p_id}"):
-                st.markdown(f"**Líder:** {row['lider_asignado']} | **Última actualización:** {row['ultima_actualizacion'] or 'Sin registro'}")
+                st.markdown(f"**Líder Asignado:** {row['lider_asignado']} | **Última actualización:** {row['ultima_actualizacion'] or 'Sin registro'}")
                 st.divider()
                 
                 col1, col2 = st.columns([1, 1])
