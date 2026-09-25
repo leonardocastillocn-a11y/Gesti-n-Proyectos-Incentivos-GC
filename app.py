@@ -297,6 +297,325 @@ with tabs[0]:
                         cursor.execute("UPDATE proyectos SET etapa_actual=?, estatus_tiempo=?, avance_real=?, resumen_estatus=?, carpeta_url=?, plan_url=?, ultima_actualizacion=? WHERE id=?", (u_etapa, u_estatus, u_avance, u_resumen, u_carpeta, u_plan, ahora, p_id))
                         conn.commit(); st.rerun()
                     
+                    if es_moderador:import sqlite3
+from datetime import datetime
+import pandas as pd
+import streamlit as st
+import tempfile
+from fpdf import FPDF
+
+# --- CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(
+    page_title="Portafolio de Incentivos Coppel",
+    page_icon="💼",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# --- CSS DE ALTO CONTRASTE Y VISIBILIDAD INSTITUCIONAL ---
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    html, body, [class*="css"], .stApp {
+        font-family: 'Inter', sans-serif !important;
+        background-color: #F8F9FA !important;
+        color: #081754 !important;
+    }
+
+    label, [data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] span {
+        color: #081754 !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+    }
+
+    input, textarea, select, 
+    .stTextInput input, .stTextArea textarea, .stSelectbox select,
+    div[data-baseweb="select"] span, div[data-baseweb="select"] div,
+    div[role="combobox"] {
+        color: #081754 !important;
+        background-color: #FFFFFF !important;
+        font-weight: 500 !important;
+    }
+
+    .stTextInput > div > div, .stSelectbox > div > div, .stTextArea > div > div {
+        border-radius: 6px !important;
+        border: 1px solid #C9C9C9 !important;
+        background-color: #FFFFFF !important;
+    }
+
+    ::placeholder, input::placeholder, textarea::placeholder {
+        color: #6B7280 !important;
+        opacity: 1 !important;
+    }
+
+    /* BOTONES PRIMARIOS (AZUL COPPEL - NADA DE ROJO) */
+    div[data-testid="stFormSubmitButton"] button,
+    button[data-testid="baseButton-primary"],
+    .stButton > button {
+        background-color: #05297A !important;
+        background: #05297A !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    
+    div[data-testid="stFormSubmitButton"] button *,
+    button[data-testid="baseButton-primary"] *,
+    .stButton > button * {
+        color: #FFFFFF !important;
+    }
+
+    div[data-testid="stFormSubmitButton"] button:hover,
+    button[data-testid="baseButton-primary"]:hover,
+    .stButton > button:hover {
+        background-color: #1C42E8 !important;
+        background: #1C42E8 !important;
+        box-shadow: 0 4px 10px rgba(28, 66, 232, 0.25) !important;
+    }
+
+    /* TARJETAS DE MÉTRICAS */
+    div[data-testid="metric-container"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #C9C9C9 !important;
+        border-left: 4px solid #05297A !important;
+        padding: 15px !important;
+        border-radius: 8px !important;
+    }
+    div[data-testid="metric-container"] label, 
+    div[data-testid="metric-container"] [data-testid="stMetricLabel"] p { 
+        color: #4A4A4A !important; 
+        font-size: 0.85rem !important; 
+        font-weight: 600 !important; 
+    }
+    div[data-testid="metric-container"] [data-testid="stMetricValue"] div { 
+        color: #081754 !important; 
+        font-size: 2rem !important; 
+        font-weight: 700 !important; 
+    }
+
+    /* PESTAÑAS (TABS) */
+    .stTabs [data-baseweb="tab-list"] { gap: 24px; border-bottom: 1px solid #C9C9C9; }
+    .stTabs [aria-selected="true"] { border-bottom: 2px solid #05297A !important; font-weight: 700 !important; color: #081754 !important; }
+    .stTabs [aria-selected="false"] { color: #4A4A4A !important; font-weight: 500 !important; }
+
+    /* ACORDEONES (EXPANDERS) */
+    .streamlit-expanderHeader, .streamlit-expanderHeader p { 
+        background-color: #FFFFFF !important; 
+        color: #081754 !important;
+        font-weight: 600 !important;
+    }
+    .streamlit-expanderContent { 
+        border: 1px solid #C9C9C9 !important; 
+        border-top: none !important; 
+        background-color: #FFFFFF !important; 
+        padding: 20px !important;
+    }
+
+    .status-badge { padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; border: 1px solid transparent;}
+    .status-green { background-color: #E8F5E9; color: #2E7D32 !important; border-color: #A5D6A7;}
+    .status-yellow { background-color: #FFF9C4; color: #F57F17 !important; border-color: #FFF59D;}
+    .status-gray { background-color: #EEE8E3; color: #4A4A4A !important; border-color: #C9C9C9;}
+
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
+
+# --- CONSTANTES ---
+OPCIONES_AREAS = ["Incentivos", "Afore", "Banca Empresarial", "Banco", "CAT Cobranza", "CAT P&V", "CEDIS", "Cobranza Domiciliaria", "Credito Automotriz", "Inmobiliaria", "Retail", "Sale Vale"]
+OPCIONES_TIPOS = ["Esquema de Incentivos", "Tecnología", "Estratégicos", "Procesos", "Campañas", "Auditorías"]
+OPCIONES_SUBTIPOS = ["EI-Nuevo incentivo completo", "EI-Actualización completa de incentivo", "EI-Ajuste menor de incentivo", "EI-Ajuste mayor de incentivo", "EI-Casos especiales", "CA-Campaña", "CA-Concurso", "PR-Documentación oficial", "PR-Nuevo proceso", "TE-Software", "TE-Tableros", "Otros"]
+OPCIONES_ETAPAS = ["1. Diseño (EI)", "2. Prueba piloto (EI)", "3. Escalamiento nacional (EI)", "4. Cierre (EI)", "1. Diseño (CA)", "2. Implementación (CA)", "3. Evaluación y cierre (CA)", "4. Cierre (CA)", "1. Planeación", "2. Ejecución", "3. Cierre"]
+OPCIONES_ESTATUS = ["En tiempo", "Retrasado", "Detenido", "Cancelado", "Por iniciar"]
+OPCIONES_GERENTES = ["Andres Avila", "Eduardo Rodriguez", "Heriberto Vega", "Janik Orozco", "Kurokusi Ochoa", "Noel Aquino", "Yahir Ramirez", "Giovanni Vallejo", "Ruben Rivera"]
+
+# --- BASE DE DATOS ---
+def obtener_conexion(): return sqlite3.connect("db_coppel_v5.db", check_same_thread=False)
+
+def inicializar_db():
+    conn = obtener_conexion(); cursor = conn.cursor()
+    cursor.execute("""CREATE TABLE IF NOT EXISTS proyectos (id INTEGER PRIMARY KEY AUTOINCREMENT, folio TEXT, nombre TEXT NOT NULL, area_negocio TEXT, tipo_proyecto TEXT, subtipo TEXT, gerente TEXT, lider_asignado TEXT, etapa_actual TEXT, estatus_tiempo TEXT, avance_real REAL, resumen_estatus TEXT, carpeta_url TEXT, plan_url TEXT, ultima_actualizacion TEXT)""")
+    cursor.execute("CREATE TABLE IF NOT EXISTS usuarios (correo TEXT PRIMARY KEY, password TEXT NOT NULL, rol TEXT NOT NULL, nombre TEXT)")
+    cursor.execute("SELECT COUNT(*) FROM usuarios")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("INSERT INTO usuarios VALUES ('leonardo.castillo@coppel.com', 'Coppel2026', 'Moderador', 'Leonardo Castillo')")
+        cursor.execute("INSERT INTO usuarios VALUES ('ivan.salazar@coppel.com', 'Coppel2026', 'Usuario', 'Oscar Ivan Salazar')")
+    conn.commit(); conn.close()
+inicializar_db()
+
+# --- FUNCION PARA OBTENER LÍDERES REGISTRADOS ---
+def obtener_lista_usuarios():
+    conn = obtener_conexion()
+    df_users = pd.read_sql_query("SELECT nombre FROM usuarios ORDER BY nombre ASC", conn)
+    conn.close()
+    if not df_users.empty:
+        return df_users['nombre'].tolist()
+    return ["Leonardo Castillo", "Oscar Ivan Salazar"]
+
+# --- LOGIN ---
+if "autenticado" not in st.session_state:
+    st.session_state.autenticado = False; st.session_state.correo_actual = None; st.session_state.nombre_actual = None; st.session_state.rol = None
+
+if not st.session_state.autenticado:
+    col_izq, col_centro, col_der = st.columns([1, 1.2, 1])
+    with col_centro:
+        st.write(""); st.write(""); st.write("")
+        st.markdown("<h1 style='text-align: center; color:#081754 !important;'>Portafolio de Incentivos</h1>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #4A4A4A; margin-bottom: 30px;'>Coppel</p>", unsafe_allow_html=True)
+        
+        with st.form("login_form"):
+            st.markdown("<h3 style='color:#05297A !important; font-size: 1.1rem;'>Iniciar Sesión</h3>", unsafe_allow_html=True)
+            correo_input = st.text_input("Correo Corporativo", placeholder="tu.nombre@coppel.com")
+            password_input = st.text_input("Contraseña", type="password", placeholder="••••••••")
+            st.write("")
+            submit = st.form_submit_button("Ingresar", type="primary", use_container_width=True)
+            
+            if submit:
+                if correo_input.strip() == "": st.warning("El correo es requerido.")
+                else:
+                    conn = obtener_conexion(); cursor = conn.cursor()
+                    cursor.execute("SELECT password, rol, nombre FROM usuarios WHERE LOWER(correo)=?", (correo_input.strip().lower(),))
+                    user_data = cursor.fetchone(); conn.close()
+                    if user_data and user_data[0] == password_input:
+                        st.session_state.autenticado = True; st.session_state.correo_actual = correo_input.strip().lower()
+                        st.session_state.rol = user_data[1]; st.session_state.nombre_actual = user_data[2]; st.rerun()
+                    else: st.error("Credenciales incorrectas.")
+    st.stop()
+
+# --- SIDEBAR ---
+es_moderador = st.session_state.rol == "Moderador"
+with st.sidebar:
+    st.markdown(f"<h3 style='margin-bottom:0; font-size:1.1rem; color:#081754;'>{st.session_state.nombre_actual}</h3>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color:#4A4A4A; font-size:0.85rem; margin-top:0;'>{st.session_state.correo_actual}</p>", unsafe_allow_html=True)
+    
+    badge_color = "status-green" if es_moderador else "status-gray"
+    st.markdown(f"<div><span class='status-badge {badge_color}'>{st.session_state.rol}</span></div>", unsafe_allow_html=True)
+    
+    st.divider()
+    with st.expander("Seguridad", expanded=False):
+        with st.form("form_cambio_pass"):
+            nueva_pass = st.text_input("Nueva Contraseña", type="password")
+            confirmar_pass = st.text_input("Confirmar", type="password")
+            if st.form_submit_button("Actualizar", use_container_width=True):
+                if nueva_pass == confirmar_pass and nueva_pass:
+                    conn = obtener_conexion(); cursor = conn.cursor()
+                    cursor.execute("UPDATE usuarios SET password=? WHERE correo=?", (nueva_pass, st.session_state.correo_actual))
+                    conn.commit(); conn.close(); st.success("Guardado.")
+                else: st.error("No coinciden.")
+    
+    st.divider()
+    if st.button("Cerrar Sesión", use_container_width=True, type="secondary"):
+        st.session_state.autenticado = False; st.rerun()
+
+# --- DATOS GLOBALES ---
+conn = obtener_conexion()
+df = pd.read_sql_query("SELECT * FROM proyectos", conn)
+
+# --- HEADER Y MÉTRICAS ---
+st.markdown("<h2 style='margin-bottom: 20px; color:#081754;'>Visión General</h2>", unsafe_allow_html=True)
+
+if not df.empty:
+    m1, m2, m3, m4 = st.columns(4)
+    total = len(df); en_tiempo = len(df[df['estatus_tiempo'] == 'En tiempo'])
+    retrasados = len(df[df['estatus_tiempo'] == 'Retrasado']); prom_avance = df['avance_real'].mean() * 100
+    
+    m1.metric(label="Iniciativas Activas", value=total)
+    m2.metric(label="Ejecución en Tiempo", value=en_tiempo)
+    m3.metric(label="En Riesgo / Retraso", value=retrasados)
+    m4.metric(label="Avance Global", value=f"{prom_avance:.1f}%")
+    st.write("")
+
+# --- GENERADOR PDF ---
+if es_moderador and not df.empty:
+    def generar_pdf(dataframe):
+        pdf = FPDF(orientation="L", unit="mm", format="A4"); pdf.add_page()
+        pdf.set_font("Arial", 'B', 18); pdf.set_text_color(8, 23, 84)
+        pdf.cell(0, 10, "Reporte Ejecutivo de Portafolio - Incentivos Coppel", ln=True, align="L")
+        pdf.set_font("Arial", 'I', 10); pdf.set_text_color(74, 74, 74) 
+        pdf.cell(0, 8, f"Generado el: {datetime.now().strftime('%d/%m/%Y')} | Uso Interno Exclusivo", ln=True, align="L"); pdf.ln(8)
+        
+        pdf.set_font("Arial", 'B', 9); pdf.set_fill_color(241, 245, 249); pdf.set_text_color(8, 23, 84)
+        pdf.cell(20, 10, "Folio", 0, 0, 'L', True); pdf.cell(70, 10, "Proyecto", 0, 0, 'L', True)
+        pdf.cell(45, 10, "Lider Asignado", 0, 0, 'L', True); pdf.cell(25, 10, "Estatus", 0, 0, 'C', True)
+        pdf.cell(20, 10, "Avance", 0, 0, 'C', True); pdf.cell(50, 10, "Etapa Actual", 0, 0, 'L', True); pdf.cell(45, 10, "Ult. Act.", 0, 1, 'L', True)
+        
+        pdf.set_font("Arial", '', 8); pdf.set_text_color(74, 74, 74)
+        for _, row in dataframe.iterrows():
+            pdf.cell(20, 10, str(row['folio'])[:10], 'B'); pdf.cell(70, 10, str(row['nombre'])[:40], 'B')
+            pdf.cell(45, 10, str(row['lider_asignado'])[:25], 'B'); pdf.cell(25, 10, str(row['estatus_tiempo']), 'B', 0, 'C')
+            pdf.cell(20, 10, f"{int((row['avance_real'] or 0)*100)}%", 'B', 0, 'C'); pdf.cell(50, 10, str(row['etapa_actual'])[:30], 'B', 0, 'L'); pdf.cell(45, 10, str(row['ultima_actualizacion'])[:16], 'B', 1, 'L')
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp: pdf.output(tmp.name); return tmp.name
+
+    with st.sidebar:
+        pdf_path = generar_pdf(df)
+        with open(pdf_path, "rb") as file: st.download_button("Descargar PDF", data=file, file_name="Portafolio_Incentivos.pdf", use_container_width=True, type="secondary")
+
+# --- PESTAÑAS DINÁMICAS ---
+if es_moderador: tabs = st.tabs(["Seguimiento", "Nuevo Proyecto", "Accesos"])
+else: tabs = st.tabs(["Seguimiento", "Nuevo Proyecto"])
+
+# LISTA DINÁMICA DE LÍDERES
+lista_lideres_registrados = obtener_lista_usuarios()
+
+# PESTAÑA 1: LISTADO Y EDICIÓN
+with tabs[0]:
+    if df.empty:
+        st.info("El portafolio está vacío.")
+    else:
+        # Filtro opcional por responsable
+        col_filtro, _ = st.columns([1, 2])
+        filtro_lider = col_filtro.selectbox("Filtrar por Responsable", ["Todos los Responsables"] + lista_lideres_registrados)
+        
+        df_filtrado = df.copy()
+        if filtro_lider != "Todos los Responsables":
+            df_filtrado = df_filtrado[df_filtrado["lider_asignado"] == filtro_lider]
+        
+        st.write("")
+        for _, row in df_filtrado.iterrows():
+            p_id = row["id"]
+            if row["estatus_tiempo"] == "En tiempo": css_class = "status-green"
+            elif row["estatus_tiempo"] == "Retrasado": css_class = "status-gray"
+            elif row["estatus_tiempo"] == "Detenido": css_class = "status-yellow"
+            else: css_class = "status-gray"
+            
+            with st.expander(f"{row['folio'] or 'S/F'} | {row['nombre']} — Avance: {int((row['avance_real'] or 0)*100)}%"):
+                st.progress(float(row['avance_real'] or 0.0))
+                
+                with st.form(f"update_{p_id}"):
+                    c1, c2 = st.columns(2)
+                    c1.markdown(f"<p style='margin:0; font-size:0.9rem;'><span style='color:#4A4A4A;'>Responsable Actual:</span> <b style='color:#081754;'>{row['lider_asignado']}</b></p>", unsafe_allow_html=True)
+                    c2.markdown(f"<p style='margin:0; font-size:0.9rem; text-align:right;'><span style='color:#4A4A4A;'>Actualizado:</span> <b style='color:#081754;'>{row['ultima_actualizacion'] or 'N/A'}</b></p>", unsafe_allow_html=True)
+                    st.divider()
+                    
+                    c_form1, c_form2, c_form3 = st.columns(3)
+                    u_etapa = c_form1.selectbox("Fase Actual", OPCIONES_ETAPAS, index=OPCIONES_ETAPAS.index(row["etapa_actual"]) if row["etapa_actual"] in OPCIONES_ETAPAS else 0)
+                    u_estatus = c_form2.selectbox("Estado", OPCIONES_ESTATUS, index=OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0)
+                    u_avance = c_form3.slider("Progreso Validado (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
+                    
+                    # Si es moderador, puede reasignar el líder del proyecto
+                    if es_moderador:
+                        idx_lider = lista_lideres_registrados.index(row["lider_asignado"]) if row["lider_asignado"] in lista_lideres_registrados else 0
+                        u_lider = st.selectbox("Reasignar Líder de Proyecto", lista_lideres_registrados, index=idx_lider)
+                    else:
+                        u_lider = row["lider_asignado"]
+                        
+                    u_resumen = st.text_area("Bitácora", row["resumen_estatus"] or "", height=80)
+                    
+                    l1, l2 = st.columns(2)
+                    u_carpeta = l1.text_input("Repositorio Drive", row["carpeta_url"] or "")
+                    u_plan = l2.text_input("Plan de Trabajo", row["plan_url"] or "")
+                    
+                    st.write("")
+                    btn1, btn2, btn3 = st.columns([2, 2, 6])
+                    if btn1.form_submit_button("Guardar Cambios", type="primary"):
+                        ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        cursor = conn.cursor()
+                        cursor.execute("UPDATE proyectos SET etapa_actual=?, estatus_tiempo=?, avance_real=?, lider_asignado=?, resumen_estatus=?, carpeta_url=?, plan_url=?, ultima_actualizacion=? WHERE id=?", (u_etapa, u_estatus, u_avance, u_lider, u_resumen, u_carpeta, u_plan, ahora, p_id))
+                        conn.commit(); st.rerun()
+                    
                     if es_moderador:
                         if btn2.form_submit_button("Eliminar", type="secondary"):
                             cursor = conn.cursor(); cursor.execute("DELETE FROM proyectos WHERE id=?", (p_id,)); conn.commit(); st.rerun()
@@ -310,7 +629,9 @@ with tabs[1]:
             c1, c2, c3 = st.columns(3)
             folio = c1.text_input("Folio Interno")
             nombre = c2.text_input("Nombre de la Iniciativa *")
-            lider = c3.text_input("Líder Asignado")
+            
+            # DESPLEGABLE DINÁMICO DE USUARIOS
+            lider = c3.selectbox("Líder Asignado *", lista_lideres_registrados)
             
             c4, c5, c6 = st.columns(3)
             area = c4.selectbox("Área Solicitante", OPCIONES_AREAS)
