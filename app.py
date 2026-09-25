@@ -188,7 +188,6 @@ def inicializar_db():
     conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS tareas (id SERIAL PRIMARY KEY, proyecto_id INTEGER, nombre_tarea TEXT NOT NULL, responsable TEXT, fecha_inicio TEXT, duracion_dias INTEGER, fecha_fin TEXT, porcentaje_avance REAL, predecesoras TEXT)"""))
     conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS bitacora (id SERIAL PRIMARY KEY, proyecto_id INTEGER, usuario_nombre TEXT, fecha_hora TEXT, comentario TEXT)"""))
     
-    # Migración segura de columnas financieras para bases preexistentes
     try:
       conn.execute(sqlalchemy.text("ALTER TABLE proyectos ADD COLUMN presupuesto REAL DEFAULT 0.0"))
     except Exception: pass
@@ -360,7 +359,7 @@ st.write("")
 if es_moderador: tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban", "➕ Nuevo Proyecto", "📜 Bitácora General", "👥 Directorio de Accesos"])
 else: tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban", "➕ Nuevo Proyecto", "📜 Bitácora General"])
 
-# PESTAÑA 1: DASHBOARD CON MAPA DE CAPACIDAD Y MÉTRICAS SLA
+# PESTAÑA 1: DASHBOARD CON MATRIZ DE CARGA
 with tabs[0]:
   st.write("")
   if df.empty: st.info("Agrega algunos proyectos para visualizar los gráficos analíticos.")
@@ -375,18 +374,38 @@ with tabs[0]:
       fig2.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", title_font=dict(size=18, family="Inter", color="#0F172A")); st.plotly_chart(fig2, use_container_width=True)
 
     st.divider()
-    st.markdown("<h4 style='color:#0F172A; margin-bottom:15px;'>🔥 Matriz de Carga de Trabajo y Capacidad por Líder</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='color:#0F172A; margin-bottom:15px;'>👥 Matriz de Carga de Trabajo y Capacidad por Líder</h4>", unsafe_allow_html=True)
     
-    # Cálculo de carga por colaborador
     carga_df = df.groupby(["lider_asignado", "estatus_tiempo"]).size().reset_index(name="Cantidad")
     fig_carga = px.bar(carga_df, x="lider_asignado", y="Cantidad", color="estatus_tiempo", title="Proyectos Asignados por Colaborador", barmode="stack", color_discrete_map={"En tiempo": "#166534", "Retrasado": "#EF4444", "Detenido": "#F59E0B", "Por iniciar": "#94A3B8"})
     fig_carga.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", xaxis_title="Líder Operativo", yaxis_title="Número de Proyectos")
     st.plotly_chart(fig_carga, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (CON ALERTAS SLA Y FINANZAS)
+# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (CON ELIMINACIÓN MASIVA)
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
+    # PANEL DE ELIMINACIÓN MASIVA PARA MODERADORES
+    if es_moderador:
+      with st.expander("🗑️ Eliminación Masiva de Proyectos", expanded=False):
+        st.write("Selecciona los proyectos que deseas eliminar de forma permanente de la base de datos:")
+        opciones_proyectos_borrar = df.apply(lambda x: f"{x['id']} - [{x['folio'] or 'S/F'}] {x['nombre']}", axis=1).tolist()
+        proyectos_a_borrar = st.multiselect("Marcar proyectos para eliminar", opciones_proyectos_borrar)
+        if st.button("🗑️ Eliminar Proyectos Seleccionados", type="secondary"):
+            if proyectos_a_borrar:
+                ids_borrar = [int(p.split(" - ")[0]) for p in proyectos_a_borrar]
+                engine = obtener_engine()
+                with engine.begin() as conn:
+                    for pid in ids_borrar:
+                        conn.execute(sqlalchemy.text("DELETE FROM tareas WHERE proyecto_id = :id"), {"id": pid})
+                        conn.execute(sqlalchemy.text("DELETE FROM bitacora WHERE proyecto_id = :id"), {"id": pid})
+                        conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id = :id"), {"id": pid})
+                limpiar_cache_y_recargar()
+                st.success(f"¡Se eliminaron {len(ids_borrar)} proyectos correctamente!")
+                st.rerun()
+            else:
+                st.warning("Selecciona al menos un proyecto para borrar.")
+
     f_pills1, f_pills2, f_pills3, f_pills4 = st.columns([1.2, 1.2, 1.2, 2.4])
     modo_filtro = f_pills1.radio("Filtros Rápidos", ["Ver Todos", "🚨 Solo Retrasados", "⚠️ Estancados (>20d)", "⭐ Mis Proyectos"], horizontal=True)
 
@@ -529,7 +548,7 @@ with tabs[2]:
         for _, k_row in df_k.iterrows():
           st.markdown(f"<div class='kanban-card'><div class='kanban-title'>{k_row['nombre']}</div><div class='kanban-meta'>👤 {k_row['lider_asignado']}</div><div class='kanban-meta'>📈 {int((k_row['avance_real'] or 0)*100)}% Completado</div><div class='kanban-meta' style='margin-top:6px;'><i>Folio: {k_row['folio'] or 'S/F'}</i></div></div>", unsafe_allow_html=True)
 
-# PESTAÑA 4: NUEVO PROYECTO (INDIVIDUAL + CARGA MASIVA EXCEL CON DATOS FINANCIEROS)
+# PESTAÑA 4: NUEVO PROYECTO
 with tabs[3]:
   st.write("")
   if es_moderador:
@@ -629,16 +648,15 @@ with tabs[3]:
           except Exception as e:
               st.error(f"Error al leer el archivo. Asegúrate de usar la plantilla oficial. Detalle: {e}")
 
-# PESTAÑA 5: BITÁCORA GLOBAL DE ACTIVIDAD (SYSTEM AUDIT LOG)
+# PESTAÑA 5: BITÁCORA GLOBAL DE ACTIVIDAD
 with tabs[4]:
   st.write("")
   st.markdown("<h3 style='color:#0F172A;'>📜 Feed Global de Actividad y Auditoría</h3>", unsafe_allow_html=True)
   st.write("Historial centralizado en tiempo real de todas las actualizaciones ejecutadas en la plataforma.")
   
   if df_bitacora.empty:
-      st.info("Aún no hay movimientos registrados en la bitacora global.")
+      st.info("Aún no hay movimientos registrados en la bitácora global.")
   else:
-      # Cruce con nombres de proyecto
       df_bitacora_ext = df_bitacora.merge(df[["id", "nombre", "folio"]], left_on="proyecto_id", right_on="id", how="left")
       for _, b_row in df_bitacora_ext.head(30).iterrows():
           p_nombre = b_row.get("nombre", "Proyecto General")
@@ -684,13 +702,12 @@ if es_moderador:
 
 
 # ==============================================================================
-# --- MOTOR NLP PROJECT IA (CON PRERICCIÓN DE RIESGOS Y ANÁLISIS FINANCIERO) ---
+# --- MOTOR NLP PROJECT IA (AVANZADO & FLUIDO) ---
 # ==============================================================================
 def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
   p_lower = prompt.lower().strip()
   p_clean = p_lower.replace("?", "").replace("¿", "").replace("!", "").replace("¡", "").strip()
   
-  # 1. INTERCEPTOR DE CORTESÍA (Small Talk)
   if p_clean in ["gracias", "muchas gracias", "excelente", "perfecto", "ok", "entendido", "vale", "va", "listo"]:
       return "¡Con mucho gusto! 🚀 Quedo por aquí por si necesitas consultar algo más."
       
@@ -708,7 +725,6 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       else: resp += "Por fortuna, no tenemos ningún proyecto retrasado. ¿Qué te gustaría consultar hoy?"
       return resp
 
-  # 2. BÚSQUEDA Y EVALUACIÓN DE DATOS
   p_analizar = p_lower
   for s in ["hola ", "buenos dias ", "buenas tardes ", "por favor ", "dime ", "quiero saber ", "quisiera saber ", "me puedes decir "]:
       if p_analizar.startswith(s): p_analizar = p_analizar[len(s):].strip()
@@ -716,7 +732,6 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
   if dataframe.empty:
       return "Actualmente no tenemos proyectos registrados en el portafolio."
 
-  # INTENCIÓN: PREDICCIÓN DE RIESGOS / ESTANCADOS
   busca_riesgo_predictivo = any(k in p_analizar for k in ["riesgo", "estancado", "cuello de botella", "prediccion", "parado", "peligro"])
   if busca_riesgo_predictivo:
       estancados = dataframe[dataframe.get('es_estancado', False) == True]
@@ -735,7 +750,6 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
               for _, r in estancados.iterrows(): res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}** (Últ. act: {r['ultima_actualizacion'] or 'N/A'})\n"
       return res
 
-  # INTENCIÓN: ANÁLISIS FINANCIERO / PRESUPUESTO
   busca_finanzas = any(k in p_analizar for k in ["presupuesto", "dinero", "costo", "roi", "inversion", "cuanto cuesta", "impacto financiero"])
   if busca_finanzas:
       p_tot = dataframe['presupuesto'].sum()
@@ -748,7 +762,6 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
           res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**: `${r['presupuesto']:,.2f}` (ROI: `${r['roi_estimado']:,.2f}`)\n"
       return res
 
-  # INTENCIÓN: Pregunta directa por ESTATUS generales
   busca_estatus_general = any(k in p_analizar for k in ["estatus", "estado", "etapa", "fase", "como van"])
   busca_retrasos = any(k in p_analizar for k in ["retras", "riesgo", "deteni", "critico", "problema", "urgente", "foco rojo"])
   
@@ -762,7 +775,6 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
           res += f"  * 👤 **Líder:** {r['lider_asignado']} | 📈 **Avance:** {pct}%\n\n"
       return res
 
-  # INTENCIÓN: Preguntas de Carga / Quién tiene más proyectos
   busca_top_lider = any(k in p_analizar for k in ["quien", "quién", "lider", "líder", "responsable", "persona", "encargado", "colaborador"]) and any(k in p_analizar for k in ["mas", "más", "mayor", "top", "tiene", "carga"])
   if busca_top_lider and not busca_retrasos:
       counts = dataframe["lider_asignado"].value_counts()
@@ -772,7 +784,6 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
           for l_name, val in counts.items(): res += f"* **{l_name}**: {val} proyecto(s)\n"
           return res
 
-  # INTENCIÓN: Áreas / Gerentes
   busca_top_area = any(k in p_analizar for k in ["area", "área", "departamento"]) and any(k in p_analizar for k in ["mas", "más", "mayor", "top", "tiene"])
   if busca_top_area:
       counts = dataframe["area_negocio"].value_counts()
@@ -782,7 +793,6 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
           for a_name, val in counts.items(): res += f"* **{a_name}**: {val} proyectos\n"
           return res
 
-  # FILTROS COMBINADOS (Área, Persona, Retrasos)
   area_obj = next((a for a in OPCIONES_AREAS if a.lower() in p_analizar), None)
   lideres_y_gerentes = set(obtener_lista_usuarios(df_users_raw) + OPCIONES_GERENTES)
   persona_obj = next((p for p in lideres_y_gerentes if len(p) > 3 and p.lower() in p_analizar), None)
@@ -809,7 +819,6 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
           res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 🏢 **Área:** {r['area_negocio']}\n  * 📌 **Estatus:** `{r['estatus_tiempo']}` | 📍 **Fase:** {r['etapa_actual']} | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
       return res
 
-  # FALLBACK INTELIGENTE
   coincidencias = dataframe[dataframe["nombre"].str.lower().str.contains(p_analizar, na=False) | dataframe["folio"].str.lower().str.contains(p_analizar, na=False)]
   if not coincidencias.empty:
       res = f"🔍 Encontré **{len(coincidencias)} proyectos** asociados a tu consulta:\n\n"
