@@ -13,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS DE ALTO CONTRASTE Y VISIBILIDAD INSTITUCIONAL (SIN ROJOS Y SIN DUPLICADOS) ---
+# --- CSS DE ALTO CONTRASTE Y VISIBILIDAD INSTITUCIONAL (AZUL COPPEL) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -27,7 +27,7 @@ st.markdown("""
     label, [data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] span {
         color: #081754 !important;
         font-weight: 600 !important;
-        font-size: 0.9rem !important;
+        font-size: 0.88rem !important;
     }
 
     input, textarea, select, 
@@ -50,7 +50,7 @@ st.markdown("""
         opacity: 1 !important;
     }
 
-    /* BOTONES PRIMARIOS (AZUL COPPEL) */
+    /* BOTONES PRIMARIOS (AZUL COPPEL - STRICT NO RED) */
     div[data-testid="stFormSubmitButton"] button,
     button[data-testid="baseButton-primary"],
     .stButton > button {
@@ -75,6 +75,19 @@ st.markdown("""
         background-color: #1C42E8 !important;
         background: #1C42E8 !important;
         box-shadow: 0 4px 10px rgba(28, 66, 232, 0.25) !important;
+    }
+
+    /* BOTONES SECUNDARIOS */
+    button[data-testid="baseButton-secondary"],
+    .stButton > button[kind="secondary"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #C9C9C9 !important;
+        color: #4A4A4A !important;
+    }
+    button[data-testid="baseButton-secondary"]:hover,
+    .stButton > button[kind="secondary"]:hover {
+        border-color: #05297A !important;
+        color: #05297A !important;
     }
 
     /* TARJETAS DE MÉTRICAS */
@@ -229,95 +242,174 @@ if not df.empty:
     m4.metric(label="Avance Global", value=f"{prom_avance:.1f}%")
     st.write("")
 
-# --- GENERADOR PDF ---
+# --- GENERADOR DE PDF EJECUTIVO CON ÚLTIMA ACTUALIZACIÓN Y BITÁCORA ---
 if es_moderador and not df.empty:
-    def generar_pdf(dataframe):
-        pdf = FPDF(orientation="L", unit="mm", format="A4"); pdf.add_page()
-        pdf.set_font("Arial", 'B', 18); pdf.set_text_color(8, 23, 84)
-        pdf.cell(0, 10, "Reporte Ejecutivo de Portafolio - Incentivos Coppel", ln=True, align="L")
-        pdf.set_font("Arial", 'I', 10); pdf.set_text_color(74, 74, 74) 
-        pdf.cell(0, 8, f"Generado el: {datetime.now().strftime('%d/%m/%Y')} | Uso Interno Exclusivo", ln=True, align="L"); pdf.ln(8)
+    def generar_pdf_ejecutivo(dataframe):
+        pdf = FPDF(orientation="L", unit="mm", format="A4")
+        pdf.set_auto_page_break(auto=True, margin=15)
+        pdf.add_page()
         
-        pdf.set_font("Arial", 'B', 9); pdf.set_fill_color(241, 245, 249); pdf.set_text_color(8, 23, 84)
-        pdf.cell(20, 10, "Folio", 0, 0, 'L', True); pdf.cell(70, 10, "Proyecto", 0, 0, 'L', True)
-        pdf.cell(45, 10, "Lider Asignado", 0, 0, 'L', True); pdf.cell(25, 10, "Estatus", 0, 0, 'C', True)
-        pdf.cell(20, 10, "Avance", 0, 0, 'C', True); pdf.cell(50, 10, "Etapa Actual", 0, 0, 'L', True); pdf.cell(45, 10, "Ult. Act.", 0, 1, 'L', True)
+        # Encabezado Institucional
+        pdf.set_font("Arial", 'B', 16)
+        pdf.set_text_color(5, 41, 122) # Azul Coppel #05297A
+        pdf.cell(0, 8, "Reporte Ejecutivo de Portafolio - Incentivos Coppel", ln=True, align="L")
         
-        pdf.set_font("Arial", '', 8); pdf.set_text_color(74, 74, 74)
+        pdf.set_font("Arial", '', 9)
+        pdf.set_text_color(100, 100, 100)
+        fecha_emision = datetime.now().strftime('%d/%m/%Y %H:%M hrs')
+        pdf.cell(0, 6, f"Fecha de emisión: {fecha_emision} | Generado por: {st.session_state.nombre_actual}", ln=True, align="L")
+        pdf.ln(4)
+        
+        # Tabla Principal
+        # Ancho total A4 horizontal usable = 277 mm
+        # Folio(22), Proyecto(60), Área(30), Líder(35), Estatus(25), Avance(18), Últ. Actualización(42), Etapa(45) = 277
+        pdf.set_font("Arial", 'B', 8)
+        pdf.set_fill_color(241, 245, 249)
+        pdf.set_text_color(8, 23, 84)
+        
+        pdf.cell(22, 8, "Folio", 1, 0, 'C', True)
+        pdf.cell(60, 8, "Nombre del Proyecto", 1, 0, 'L', True)
+        pdf.cell(30, 8, "Área", 1, 0, 'L', True)
+        pdf.cell(35, 8, "Responsable", 1, 0, 'L', True)
+        pdf.cell(25, 8, "Estatus", 1, 0, 'C', True)
+        pdf.cell(18, 8, "Avance", 1, 0, 'C', True)
+        pdf.cell(42, 8, "Ult. Actualizacion", 1, 0, 'C', True)
+        pdf.cell(45, 8, "Etapa Actual", 1, 1, 'L', True)
+        
+        pdf.set_font("Arial", '', 8)
+        pdf.set_text_color(40, 40, 40)
+        
         for _, row in dataframe.iterrows():
-            pdf.cell(20, 10, str(row['folio'])[:10], 'B'); pdf.cell(70, 10, str(row['nombre'])[:40], 'B')
-            pdf.cell(45, 10, str(row['lider_asignado'])[:25], 'B'); pdf.cell(25, 10, str(row['estatus_tiempo']), 'B', 0, 'C')
-            pdf.cell(20, 10, f"{int((row['avance_real'] or 0)*100)}%", 'B', 0, 'C'); pdf.cell(50, 10, str(row['etapa_actual'])[:30], 'B', 0, 'L'); pdf.cell(45, 10, str(row['ultima_actualizacion'])[:16], 'B', 1, 'L')
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp: pdf.output(tmp.name); return tmp.name
+            folio_str = str(row['folio'] or 'S/F')[:12]
+            nombre_str = str(row['nombre'] or '')[:35]
+            area_str = str(row['area_negocio'] or 'N/A')[:18]
+            lider_str = str(row['lider_asignado'] or 'Sin Asignar')[:22]
+            estatus_str = str(row['estatus_tiempo'] or 'N/A')[:15]
+            avance_str = f"{int((row['avance_real'] or 0)*100)}%"
+            ult_act_str = str(row['ultima_actualizacion'] or 'Sin registro')[:19]
+            etapa_str = str(row['etapa_actual'] or 'N/A')[:25]
+            
+            pdf.cell(22, 7, folio_str, 1, 0, 'C')
+            pdf.cell(60, 7, nombre_str, 1, 0, 'L')
+            pdf.cell(30, 7, area_str, 1, 0, 'L')
+            pdf.cell(35, 7, lider_str, 1, 0, 'L')
+            pdf.cell(25, 7, estatus_str, 1, 0, 'C')
+            pdf.cell(18, 7, avance_str, 1, 0, 'C')
+            pdf.set_font("Arial", 'B', 8) # Resaltar la fecha
+            pdf.cell(42, 7, ult_act_str, 1, 0, 'C')
+            pdf.set_font("Arial", '', 8)
+            pdf.cell(45, 7, etapa_str, 1, 1, 'L')
+            
+            # Fila de bitácora/resumen si existe
+            resumen_txt = str(row['resumen_estatus'] or '').strip()
+            if resumen_txt:
+                pdf.set_font("Arial", 'I', 7)
+                pdf.set_text_color(90, 90, 90)
+                pdf.cell(22, 6, "Bitácora:", "BL", 0, 'R')
+                pdf.cell(255, 6, resumen_txt[:150], "BR", 1, 'L')
+                pdf.set_font("Arial", '', 8)
+                pdf.set_text_color(40, 40, 40)
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            pdf.output(tmp.name)
+            return tmp.name
 
     with st.sidebar:
-        pdf_path = generar_pdf(df)
-        with open(pdf_path, "rb") as file: st.download_button("Descargar PDF", data=file, file_name="Portafolio_Incentivos.pdf", use_container_width=True, type="secondary")
+        pdf_path = generar_pdf_ejecutivo(df)
+        with open(pdf_path, "rb") as file:
+            st.download_button("Descargar PDF Ejecutivo", data=file, file_name=f"Reporte_Portafolio_{datetime.now().strftime('%Y%m%d')}.pdf", use_container_width=True, type="secondary")
 
 # --- PESTAÑAS DINÁMICAS ---
-if es_moderador: tabs = st.tabs(["Seguimiento", "Nuevo Proyecto", "Accesos"])
-else: tabs = st.tabs(["Seguimiento", "Nuevo Proyecto"])
+if es_moderador: tabs = st.tabs(["Seguimiento Operativo", "Nuevo Proyecto", "Accesos"])
+else: tabs = st.tabs(["Seguimiento Operativo", "Nuevo Proyecto"])
 
 # LISTA DINÁMICA DE LÍDERES
 lista_lideres_registrados = obtener_lista_usuarios()
 
-# PESTAÑA 1: LISTADO Y EDICIÓN
+# PESTAÑA 1: LISTADO Y EDICIÓN (CON FILTROS MULTIPARÁMETRO)
 with tabs[0]:
     if df.empty:
         st.info("El portafolio está vacío.")
     else:
-        col_filtro, _ = st.columns([1, 2])
-        filtro_lider = col_filtro.selectbox("Filtrar por Responsable", ["Todos los Responsables"] + lista_lideres_registrados)
+        # --- PANEL DE FILTROS EN EL VISOR ---
+        st.markdown("<h4 style='color:#05297A; margin-bottom:10px;'>🔍 Filtros de Búsqueda</h4>", unsafe_allow_html=True)
+        f_col1, f_col2, f_col3, f_col4 = st.columns(4)
         
+        txt_busqueda = f_col1.text_input("Buscar por Folio o Nombre", placeholder="ej. INC-001 o Banca")
+        filtro_area = f_col2.selectbox("Área del Negocio", ["Todas las Áreas"] + OPCIONES_AREAS)
+        filtro_estatus = f_col3.selectbox("Estatus de Tiempo", ["Todos los Estatus"] + OPCIONES_ESTATUS)
+        filtro_lider = f_col4.selectbox("Responsable", ["Todos los Responsables"] + lista_lideres_registrados)
+        
+        # Aplicación de Filtros
         df_filtrado = df.copy()
+        
+        if txt_busqueda.strip():
+            query = txt_busqueda.strip().lower()
+            df_filtrado = df_filtrado[
+                df_filtrado['nombre'].str.lower().str.contains(query, na=False) | 
+                df_filtrado['folio'].str.lower().str.contains(query, na=False)
+            ]
+            
+        if filtro_area != "Todas las Áreas":
+            df_filtrado = df_filtrado[df_filtrado["area_negocio"] == filtro_area]
+            
+        if filtro_estatus != "Todos los Estatus":
+            df_filtrado = df_filtrado[df_filtrado["estatus_tiempo"] == filtro_estatus]
+            
         if filtro_lider != "Todos los Responsables":
             df_filtrado = df_filtrado[df_filtrado["lider_asignado"] == filtro_lider]
-        
-        st.write("")
-        for _, row in df_filtrado.iterrows():
-            p_id = row["id"]
-            if row["estatus_tiempo"] == "En tiempo": css_class = "status-green"
-            elif row["estatus_tiempo"] == "Retrasado": css_class = "status-gray"
-            elif row["estatus_tiempo"] == "Detenido": css_class = "status-yellow"
-            else: css_class = "status-gray"
             
-            with st.expander(f"{row['folio'] or 'S/F'} | {row['nombre']} — Avance: {int((row['avance_real'] or 0)*100)}%"):
-                st.progress(float(row['avance_real'] or 0.0))
+        st.caption(f"📌 Mostrando **{len(df_filtrado)}** de **{len(df)}** iniciativas en el portafolio.")
+        st.divider()
+        
+        if df_filtrado.empty:
+            st.warning("No se encontraron iniciativas que coincidan con los filtros aplicados.")
+        else:
+            for _, row in df_filtrado.iterrows():
+                p_id = row["id"]
+                if row["estatus_tiempo"] == "En tiempo": css_class = "status-green"
+                elif row["estatus_tiempo"] == "Retrasado": css_class = "status-gray"
+                elif row["estatus_tiempo"] == "Detenido": css_class = "status-yellow"
+                else: css_class = "status-gray"
                 
-                with st.form(f"update_{p_id}"):
-                    c1, c2 = st.columns(2)
-                    c1.markdown(f"<p style='margin:0; font-size:0.9rem;'><span style='color:#4A4A4A;'>Responsable Actual:</span> <b style='color:#081754;'>{row['lider_asignado']}</b></p>", unsafe_allow_html=True)
-                    c2.markdown(f"<p style='margin:0; font-size:0.9rem; text-align:right;'><span style='color:#4A4A4A;'>Actualizado:</span> <b style='color:#081754;'>{row['ultima_actualizacion'] or 'N/A'}</b></p>", unsafe_allow_html=True)
-                    st.divider()
+                with st.expander(f"{row['folio'] or 'S/F'} | {row['nombre']} — Avance: {int((row['avance_real'] or 0)*100)}%"):
+                    st.progress(float(row['avance_real'] or 0.0))
                     
-                    c_form1, c_form2, c_form3 = st.columns(3)
-                    u_etapa = c_form1.selectbox("Fase Actual", OPCIONES_ETAPAS, index=OPCIONES_ETAPAS.index(row["etapa_actual"]) if row["etapa_actual"] in OPCIONES_ETAPAS else 0)
-                    u_estatus = c_form2.selectbox("Estado", OPCIONES_ESTATUS, index=OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0)
-                    u_avance = c_form3.slider("Progreso Validado (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
-                    
-                    if es_moderador:
-                        idx_lider = lista_lideres_registrados.index(row["lider_asignado"]) if row["lider_asignado"] in lista_lideres_registrados else 0
-                        u_lider = st.selectbox("Reasignar Líder de Proyecto", lista_lideres_registrados, index=idx_lider)
-                    else:
-                        u_lider = row["lider_asignado"]
+                    with st.form(f"update_{p_id}"):
+                        c1, c2, c3 = st.columns(3)
+                        c1.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#4A4A4A;'>Responsable:</span> <b style='color:#081754;'>{row['lider_asignado']}</b></p>", unsafe_allow_html=True)
+                        c2.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#4A4A4A;'>Área:</span> <b style='color:#081754;'>{row['area_negocio']}</b></p>", unsafe_allow_html=True)
+                        c3.markdown(f"<p style='margin:0; font-size:0.88rem; text-align:right;'><span style='color:#4A4A4A;'>Última Actualización:</span> <b style='color:#05297A;'>{row['ultima_actualizacion'] or 'Sin registro'}</b></p>", unsafe_allow_html=True)
+                        st.divider()
                         
-                    u_resumen = st.text_area("Bitácora", row["resumen_estatus"] or "", height=80)
-                    
-                    l1, l2 = st.columns(2)
-                    u_carpeta = l1.text_input("Repositorio Drive", row["carpeta_url"] or "")
-                    u_plan = l2.text_input("Plan de Trabajo", row["plan_url"] or "")
-                    
-                    st.write("")
-                    btn1, btn2, btn3 = st.columns([2, 2, 6])
-                    if btn1.form_submit_button("Guardar Cambios", type="primary"):
-                        ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        cursor = conn.cursor()
-                        cursor.execute("UPDATE proyectos SET etapa_actual=?, estatus_tiempo=?, avance_real=?, lider_asignado=?, resumen_estatus=?, carpeta_url=?, plan_url=?, ultima_actualizacion=? WHERE id=?", (u_etapa, u_estatus, u_avance, u_lider, u_resumen, u_carpeta, u_plan, ahora, p_id))
-                        conn.commit(); st.rerun()
-                    
-                    if es_moderador:
-                        if btn2.form_submit_button("Eliminar", type="secondary"):
-                            cursor = conn.cursor(); cursor.execute("DELETE FROM proyectos WHERE id=?", (p_id,)); conn.commit(); st.rerun()
+                        c_form1, c_form2, c_form3 = st.columns(3)
+                        u_etapa = c_form1.selectbox("Fase Actual", OPCIONES_ETAPAS, index=OPCIONES_ETAPAS.index(row["etapa_actual"]) if row["etapa_actual"] in OPCIONES_ETAPAS else 0)
+                        u_estatus = c_form2.selectbox("Estado", OPCIONES_ESTATUS, index=OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0)
+                        u_avance = c_form3.slider("Progreso Validado (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
+                        
+                        if es_moderador:
+                            idx_lider = lista_lideres_registrados.index(row["lider_asignado"]) if row["lider_asignado"] in lista_lideres_registrados else 0
+                            u_lider = st.selectbox("Reasignar Líder de Proyecto", lista_lideres_registrados, index=idx_lider)
+                        else:
+                            u_lider = row["lider_asignado"]
+                            
+                        u_resumen = st.text_area("Bitácora de Estatus / Comentarios", row["resumen_estatus"] or "", height=80)
+                        
+                        l1, l2 = st.columns(2)
+                        u_carpeta = l1.text_input("Repositorio Drive (URL)", row["carpeta_url"] or "")
+                        u_plan = l2.text_input("Plan de Trabajo (URL)", row["plan_url"] or "")
+                        
+                        st.write("")
+                        btn1, btn2, btn3 = st.columns([2, 2, 6])
+                        if btn1.form_submit_button("Guardar Cambios", type="primary"):
+                            ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            cursor = conn.cursor()
+                            cursor.execute("UPDATE proyectos SET etapa_actual=?, estatus_tiempo=?, avance_real=?, lider_asignado=?, resumen_estatus=?, carpeta_url=?, plan_url=?, ultima_actualizacion=? WHERE id=?", (u_etapa, u_estatus, u_avance, u_lider, u_resumen, u_carpeta, u_plan, ahora, p_id))
+                            conn.commit(); st.rerun()
+                        
+                        if es_moderador:
+                            if btn2.form_submit_button("Eliminar", type="secondary"):
+                                cursor = conn.cursor(); cursor.execute("DELETE FROM proyectos WHERE id=?", (p_id,)); conn.commit(); st.rerun()
 
 # PESTAÑA 2: NUEVO PROYECTO
 with tabs[1]:
