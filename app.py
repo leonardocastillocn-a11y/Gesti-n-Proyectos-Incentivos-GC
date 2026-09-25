@@ -137,10 +137,7 @@ st.markdown(
     .kanban-title { font-weight: 700; color: #0F172A; font-size: 0.95rem; margin-bottom: 8px; }
     .kanban-meta { font-size: 0.8rem; color: #64748B; margin-bottom: 4px; }
     
-    /* LOGIN LIMPIO */
-    .login-box { background-color: #FFFFFF; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid #E2E8F0; }
-    
-    /* BOTÓN FLOTANTE "PROJECT IA" AMIGABLE */
+    /* BOTÓN FLOTANTE "PROJECT IA" */
     div[data-testid="stPopover"] { position: fixed !important; bottom: 30px !important; right: 30px !important; z-index: 999999 !important; }
     div[data-testid="stPopover"] > button { 
         background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important; 
@@ -316,7 +313,7 @@ m1, m2, m3, m4 = st.columns(4)
 m1.metric("PROYECTOS ACTIVOS", total_p); m2.metric("EN TIEMPO", en_t); m3.metric("EN RETRASO", ret); m4.metric("AVANCE PROMEDIO", f"{prom:.1f}%")
 st.write("")
 
-# --- PESTAÑAS (TABS CORPORATIVAS LIMPIAS) ---
+# --- PESTAÑAS ---
 if es_moderador: tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban", "➕ Nuevo Proyecto", "👥 Directorio de Accesos"])
 else: tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban", "➕ Nuevo Proyecto"])
 
@@ -334,7 +331,7 @@ with tabs[0]:
       fig2 = px.bar(df_status_count, x="Estatus", y="Volumen", title="Estatus de Salud del Portafolio", color="Estatus", color_discrete_map={"En tiempo": "#166534", "Retrasado": "#475569", "Detenido": "#854D0E", "Por iniciar": "#94A3B8"})
       fig2.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", title_font=dict(size=18, family="Inter", color="#0F172A")); st.plotly_chart(fig2, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (6 FILTROS ESTRATÉGICOS)
+# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
@@ -474,21 +471,95 @@ with tabs[2]:
         for _, k_row in df_k.iterrows():
           st.markdown(f"<div class='kanban-card'><div class='kanban-title'>{k_row['nombre']}</div><div class='kanban-meta'>👤 {k_row['lider_asignado']}</div><div class='kanban-meta'>📈 {int((k_row['avance_real'] or 0)*100)}% Completado</div><div class='kanban-meta' style='margin-top:6px;'><i>Folio: {k_row['folio'] or 'S/F'}</i></div></div>", unsafe_allow_html=True)
 
-# PESTAÑA 4: NUEVO PROYECTO
+# PESTAÑA 4: NUEVO PROYECTO (INDIVIDUAL + CARGA MASIVA EXCEL)
 with tabs[3]:
   st.write("")
   if es_moderador:
-    with st.form("f_nuevo", clear_on_submit=True):
-      st.markdown("<h3 style='font-size:1.2rem; color:#0F172A; margin-bottom:15px;'>Dar de Alta Nuevo Proyecto</h3>", unsafe_allow_html=True)
-      c1, c2, c3 = st.columns(3); folio = c1.text_input("Folio Interno"); nombre = c2.text_input("Nombre de la Iniciativa *"); lider = c3.selectbox("Responsable del Proyecto *", lista_lideres_registrados)
-      c4, c5, c6 = st.columns(3); area = c4.selectbox("Área Solicitante", OPCIONES_AREAS); tipo = c5.selectbox("Categoría Principal", OPCIONES_TIPOS); subtipo = c6.selectbox("Sub-categoría", OPCIONES_SUBTIPOS)
-      c7, c8, c9 = st.columns(3); gerente = c7.selectbox("Gerente Sponsor", OPCIONES_GERENTES); etapa = c8.selectbox("Fase de Arranque", OPCIONES_ETAPAS); estatus_inicial = c9.selectbox("Estado Inicial", OPCIONES_ESTATUS, index=0)
-      if st.form_submit_button("Crear Iniciativa", type="primary"):
-        if nombre.strip():
-          engine = obtener_engine()
-          with engine.begin() as conn: conn.execute(sqlalchemy.text("""INSERT INTO proyectos (folio, nombre, area_negocio, tipo_proyecto, subtipo, gerente, lider_asignado, etapa_actual, estatus_tiempo, avance_real) VALUES (:f, :n, :a, :t, :s, :g, :l, :e, :st, 0)"""), {"f": folio, "n": nombre, "a": area, "t": tipo, "s": subtipo, "g": gerente, "l": lider, "e": etapa, "st": estatus_inicial})
-          limpiar_cache_y_recargar(); st.success("¡Proyecto creado y agregado exitosamente!"); st.rerun()
-        else: st.error("Por favor ingresa el nombre de la iniciativa.")
+    sub_tab1, sub_tab2 = st.tabs(["📝 Alta Individual", "📥 Carga Masiva desde Excel"])
+    
+    with sub_tab1:
+      with st.form("f_nuevo", clear_on_submit=True):
+        st.markdown("<h3 style='font-size:1.2rem; color:#0F172A; margin-bottom:15px;'>Dar de Alta Nuevo Proyecto</h3>", unsafe_allow_html=True)
+        c1, c2, c3 = st.columns(3); folio = c1.text_input("Folio Interno"); nombre = c2.text_input("Nombre de la Iniciativa *"); lider = c3.selectbox("Responsable del Proyecto *", lista_lideres_registrados)
+        c4, c5, c6 = st.columns(3); area = c4.selectbox("Área Solicitante", OPCIONES_AREAS); tipo = c5.selectbox("Categoría Principal", OPCIONES_TIPOS); subtipo = c6.selectbox("Sub-categoría", OPCIONES_SUBTIPOS)
+        c7, c8, c9 = st.columns(3); gerente = c7.selectbox("Gerente Sponsor", OPCIONES_GERENTES); etapa = c8.selectbox("Fase de Arranque", OPCIONES_ETAPAS); estatus_inicial = c9.selectbox("Estado Inicial", OPCIONES_ESTATUS, index=0)
+        if st.form_submit_button("Crear Iniciativa", type="primary"):
+          if nombre.strip():
+            engine = obtener_engine()
+            with engine.begin() as conn: conn.execute(sqlalchemy.text("""INSERT INTO proyectos (folio, nombre, area_negocio, tipo_proyecto, subtipo, gerente, lider_asignado, etapa_actual, estatus_tiempo, avance_real) VALUES (:f, :n, :a, :t, :s, :g, :l, :e, :st, 0)"""), {"f": folio, "n": nombre, "a": area, "t": tipo, "s": subtipo, "g": gerente, "l": lider, "e": etapa, "st": estatus_inicial})
+            limpiar_cache_y_recargar(); st.success("¡Proyecto creado y agregado exitosamente!"); st.rerun()
+          else: st.error("Por favor ingresa el nombre de la iniciativa.")
+
+    with sub_tab2:
+      st.markdown("<h3 style='font-size:1.2rem; color:#0F172A;'>📥 Cargar Portafolio desde Excel o CSV</h3>", unsafe_allow_html=True)
+      st.write("Sube un archivo de Excel con múltiples iniciativas para importarlas masivamente a la base de datos.")
+      
+      # Generar Plantilla Oficial
+      df_plantilla = pd.DataFrame([{
+          "folio": "INC-101",
+          "nombre": "Proyecto Ejemplo Excel",
+          "area_negocio": "Incentivos",
+          "tipo_proyecto": "Esquema de Incentivos",
+          "subtipo": "EI-Nuevo incentivo completo",
+          "gerente": "Andres Avila",
+          "lider_asignado": "Leonardo Castillo",
+          "etapa_actual": "1. Planeación",
+          "estatus_tiempo": "En tiempo",
+          "avance_real": 0.10
+      }])
+      
+      excel_plantilla_buffer = io.BytesIO()
+      with pd.ExcelWriter(excel_plantilla_buffer, engine="openpyxl") as writer:
+          df_plantilla.to_excel(writer, index=False, sheet_name="Plantilla")
+          
+      st.download_button(
+          "📄 Descargar Plantilla Excel Oficial",
+          data=excel_plantilla_buffer.getvalue(),
+          file_name="Plantilla_Importacion_Heading360.xlsx",
+          mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          type="secondary"
+      )
+      
+      st.divider()
+      
+      archivo_subido = st.file_uploader("Selecciona tu archivo de Excel o CSV", type=["xlsx", "xls", "csv"])
+      if archivo_subido is not None:
+          try:
+              if archivo_subido.name.endswith(".csv"):
+                  df_excel = pd.read_csv(archivo_subido)
+              else:
+                  df_excel = pd.read_excel(archivo_subido)
+                  
+              st.markdown("##### 🔍 Previsualización de los Datos a Importar:")
+              st.dataframe(df_excel, use_container_width=True)
+              
+              if st.button("🚀 Importar Todos los Proyectos a la Base de Datos", type="primary"):
+                  engine = obtener_engine()
+                  registros_guardados = 0
+                  with engine.begin() as conn:
+                      for _, row in df_excel.iterrows():
+                          conn.execute(
+                              sqlalchemy.text("""INSERT INTO proyectos (folio, nombre, area_negocio, tipo_proyecto, subtipo, gerente, lider_asignado, etapa_actual, estatus_tiempo, avance_real) 
+                                                 VALUES (:f, :n, :a, :t, :s, :g, :l, :e, :st, :av)"""),
+                              {
+                                  "f": str(row.get("folio", "S/F")),
+                                  "n": str(row.get("nombre", "Proyecto Importado")),
+                                  "a": str(row.get("area_negocio", "Incentivos")),
+                                  "t": str(row.get("tipo_proyecto", "Estratégicos")),
+                                  "s": str(row.get("subtipo", "Otros")),
+                                  "g": str(row.get("gerente", "Andres Avila")),
+                                  "l": str(row.get("lider_asignado", "Leonardo Castillo")),
+                                  "e": str(row.get("etapa_actual", "1. Planeación")),
+                                  "st": str(row.get("estatus_tiempo", "En tiempo")),
+                                  "av": float(row.get("avance_real", 0.0))
+                              }
+                          )
+                          registros_guardados += 1
+                  limpiar_cache_y_recargar()
+                  st.success(f"¡Se importaron con éxito {registros_guardados} proyectos al portafolio!")
+                  st.rerun()
+          except Exception as e:
+              st.error(f"Error al leer el archivo. Asegúrate de usar la plantilla oficial. Detalle: {e}")
 
 # PESTAÑA 5: USUARIOS (Solo Moderador)
 if es_moderador:
@@ -553,7 +624,7 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       else: resp += "Por fortuna, no tenemos ningún proyecto retrasado. ¿Qué te gustaría consultar hoy?"
       return resp
 
-  # --- 2. BÚSQUEDA Y EVALUACIÓN DE CONSULTAS ---
+  # --- 2. BÚSQUEDA Y EVALUACIÓN DE DATOS ---
   p_analizar = p_lower
   for s in ["hola ", "buenos dias ", "buenas tardes ", "por favor ", "dime ", "quiero saber ", "quisiera saber ", "me puedes decir "]:
       if p_analizar.startswith(s): p_analizar = p_analizar[len(s):].strip()
@@ -561,11 +632,10 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
   if dataframe.empty:
       return "Actualmente no tenemos proyectos registrados en el portafolio."
 
-  # A. INTENCIÓN: Pregunta directa por ESTATUS / ETAPAS generales ("en que estatus estan", "como van", etc.)
+  # A. INTENCIÓN: Pregunta directa por ESTATUS / ETAPAS generales
   busca_estatus_general = any(k in p_analizar for k in ["estatus", "estado", "etapa", "fase", "como van"])
   busca_retrasos = any(k in p_analizar for k in ["retras", "riesgo", "deteni", "critico", "problema", "urgente", "foco rojo"])
   
-  # Si el usuario pregunta explícitamente "en que estatus estan" o "en que etapa van" sin especificar filtros
   if busca_estatus_general and not busca_retrasos and not any(a.lower() in p_analizar for a in OPCIONES_AREAS):
       res = f"📌 **Estatus actual de los proyectos en el portafolio ({len(dataframe)}):**\n\n"
       for _, r in dataframe.iterrows():
@@ -623,7 +693,7 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
           res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 🏢 **Área:** {r['area_negocio']}\n  * 📌 **Estatus:** `{r['estatus_tiempo']}` | 📍 **Fase:** {r['etapa_actual']} | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
       return res
 
-  # E. FALLBACK INTELIGENTE (Búsqueda por coincidencia de texto libre o mostrar lista limpia)
+  # E. FALLBACK INTELIGENTE
   coincidencias = dataframe[dataframe["nombre"].str.lower().str.contains(p_analizar, na=False) | dataframe["folio"].str.lower().str.contains(p_analizar, na=False)]
   if not coincidencias.empty:
       res = f"🔍 Encontré **{len(coincidencias)} proyectos** asociados a tu consulta:\n\n"
@@ -631,7 +701,6 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
           res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 📌 **Estatus:** `{r['estatus_tiempo']}` | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
       return res
 
-  # Si la pregunta fue algo vaga pero hay proyectos, les mostramos el resumen interactivo en lugar de dar error
   res_general = f"📋 **Aquí está el desglose actual de tus proyectos ({len(dataframe)}):**\n\n"
   for _, r in dataframe.iterrows():
       pct = int((r['avance_real'] or 0) * 100)
