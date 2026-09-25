@@ -1,4 +1,5 @@
 import io
+import re
 from datetime import datetime, timedelta
 import tempfile
 from fpdf import FPDF
@@ -334,12 +335,12 @@ with tabs[0]:
       fig2 = px.bar(df_status_count, x="Estatus", y="Volumen", title="Estatus de Salud del Portafolio", color="Estatus", color_discrete_map={"En tiempo": "#166534", "Retrasado": "#475569", "Detenido": "#854D0E", "Por iniciar": "#94A3B8"})
       fig2.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", title_font=dict(size=18, family="Inter", color="#0F172A")); st.plotly_chart(fig2, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS
+# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (MEGA-FILTROS)
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
     f_pills1, f_pills2, f_pills3, f_pills4 = st.columns([1.2, 1.2, 1.2, 2.4])
-    modo_filtro = f_pills1.radio("Filtros Rápidos", ["Ver Todos", "🚨 Solo Retrasados", "🟢 En Tiempo", "⭐ Mis Proyectos"], horizontal=True)
+    modo_filtro = f_pills1.radio("Filtros de Acceso Rápido", ["Ver Todos", "🚨 Solo Retrasados", "🟢 En Tiempo", "⭐ Mis Proyectos"], horizontal=True)
 
     st.markdown("<h5 style='color:#334155; margin-top:15px; margin-bottom:15px; font-size:0.9rem;'>Filtros Avanzados</h5>", unsafe_allow_html=True)
     f_col1, f_col2, f_col3 = st.columns(3)
@@ -529,24 +530,24 @@ if es_moderador:
 
 
 # ==============================================================================
-# --- MOTOR NLP J.A.R.V.I.S STYLE (AMIGABLE, INTELIGENTE Y FLUIDO) ---
+# --- MOTOR NLP J.A.R.V.I.S STYLE (SÚPER FLUIDO Y CONTEXTUAL) ---
 # ==============================================================================
 def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
   p_lower = prompt.lower().strip()
   
-  # --- 1. DETECCIÓN DE CORTESÍA (Small Talk Amigable) ---
+  # --- 1. DETECCIÓN DE CORTESÍA ---
   p_clean = p_lower.replace("?", "").replace("¿", "").replace("!", "").replace("¡", "").strip()
   
   if p_clean in ["gracias", "muchas gracias", "excelente", "perfecto", "ok", "entendido", "vale", "va", "listo"]:
-      return "¡Con mucho gusto! 🚀 Estaré por aquí si necesitas buscar algo más."
+      return "¡Con mucho gusto! 🚀 Quedo por aquí por si necesitas buscar algo más en el portafolio."
       
-  if any(x == p_clean for x in ["como estas", "como andas", "todo bien", "que tal", "como te va"]):
-      return f"¡Hola **{usuario_nombre}**, operando al 100%! ✨ ¿Qué información del portafolio te gustaría consultar?"
+  if any(x == p_clean or p_clean.startswith(x) for x in ["como estas", "como andas", "todo bien", "que tal", "como te va"]):
+      return f"¡Hola **{usuario_nombre}**, operando al 100%! ✨ ¿De qué proyecto o colaborador te gustaría conocer los avances hoy?"
       
   if any(x in p_clean for x in ["quien eres", "que haces", "para que sirves", "quien sos"]):
-      return "Soy **Project IA**, tu asistente inteligente dentro del sistema. Mi trabajo es ayudarte a buscar información de la base de datos de forma rápida.\n\nPuedes preguntarme cosas como:\n* *¿Qué proyectos tenemos retrasados?*\n* *¿Cuántos proyectos tiene el área de Banco?*\n* *¿Qué gerente tiene más proyectos asignados?*"
+      return "Soy **Project IA**, tu asistente inteligente dentro de la plataforma. Mi trabajo es ayudarte a buscar información de la base de datos de forma rápida.\n\nPuedes preguntarme cosas como:\n* *¿Qué proyectos tenemos retrasados?*\n* *¿Cuántos proyectos tiene el área de Banco?*\n* *¿Qué gerente tiene más proyectos asignados?*"
 
-  if p_clean in ["hola", "buenas", "buenos dias", "buenas tardes", "buenas noches", "saludos"]:
+  if p_clean in ["hola", "buenas", "buenos dias", "buenas tardes", "buenas noches", "saludos", "hola bot", "hola project ia"]:
       tot = len(dataframe)
       ret = len(dataframe[dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])]) if not dataframe.empty else 0
       resp = f"¡Hola, **{usuario_nombre}**! 👋 Qué gusto saludarte.\n\nActualmente administro **{tot} proyectos activos**. "
@@ -554,31 +555,30 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       else: resp += "Por fortuna, no tenemos ningún proyecto retrasado. ¿Qué te gustaría consultar hoy?"
       return resp
 
+
   # --- 2. EVALUACIÓN Y MOTOR DE BÚSQUEDA ---
-  # Remover saludos si están en la misma línea de una pregunta (Ej: "Hola que proyectos...")
   p_analizar = p_lower
   for s in ["hola ", "buenos dias ", "buenas tardes ", "por favor ", "dime ", "quiero saber ", "quisiera saber ", "me puedes decir "]:
       if p_analizar.startswith(s): p_analizar = p_analizar[len(s):].strip()
 
   if len(p_analizar) <= 2 or dataframe.empty:
       if dataframe.empty: return "Por el momento, no tenemos proyectos registrados en el portafolio."
-      return "No entendí muy bien. Intenta preguntarme por un líder, área o proyectos retrasados."
+      return "No entendí muy bien tu pregunta. Intenta ser más específico, por ejemplo preguntando por un líder o un área."
 
-  # Variables de cruce
+  # Variables
   area_obj = next((a for a in OPCIONES_AREAS if a.lower() in p_analizar), None)
   lideres_y_gerentes = set(obtener_lista_usuarios(df_users_raw) + OPCIONES_GERENTES)
   persona_obj = next((p for p in lideres_y_gerentes if len(p) > 3 and p.lower() in p_analizar), None)
   
-  # Intenciones
-  busca_retrasos = any(k in p_analizar for k in ["retras", "riesgo", "deteni", "critico", "problema", "urgente"])
+  # Intenciones (MÁS FLEXIBLES PARA EVITAR FALLOS CON LENGUAJE NATURAL)
+  busca_retrasos = any(k in p_analizar for k in ["retras", "riesgo", "deteni", "critico", "problema", "urgente", "foco rojo"])
   busca_top_gerente = any(k in p_analizar for k in ["gerente", "sponsor", "patrocinador"]) and any(k in p_analizar for k in ["mas", "mayor", "top"])
-  busca_top_lider = any(k in p_analizar for k in ["quien", "quién", "lider", "persona", "responsable", "colaborador"]) and any(k in p_analizar for k in ["mas", "mayor", "proyectos", "tiene", "carga"])
-  busca_top_area = any(k in p_analizar for k in ["area", "departamento", "division"]) and any(k in p_analizar for k in ["mas", "mayor", "top"])
-  busca_resumen = any(k in p_analizar for k in ["cuantos", "total", "resumen", "estado"])
+  busca_top_lider = any(k in p_analizar for k in ["quien", "quién", "lider", "líder", "responsable", "persona", "encargado", "colaborador"]) and any(k in p_analizar for k in ["mas", "más", "mayor", "top", "tiene", "carga"])
+  busca_top_area = any(k in p_analizar for k in ["area", "área", "departamento", "donde"]) and any(k in p_analizar for k in ["mas", "más", "mayor", "top", "tiene"])
+  busca_resumen = any(k in p_analizar for k in ["como vamos", "resumen", "estatus global", "estado del portafolio", "cuantos proyectos", "total"])
 
-  # --- 3. RESPUESTAS FLUIDAS Y CONTEXTUALES ---
+  # --- 3. RESPUESTAS CONTEXTUALES FLUIDAS ---
   
-  # A. Preguntas de Carga (Top Líder / Quién tiene más proyectos)
   if busca_top_lider and not busca_retrasos:
       counts = dataframe["lider_asignado"].value_counts()
       if not counts.empty:
@@ -587,7 +587,6 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
           for l_name, val in counts.items(): res += f"* **{l_name}**: {val} proyecto(s)\n"
           return res
 
-  # B. Preguntas de Área (Qué área tiene más proyectos)
   if busca_top_area:
       counts = dataframe["area_negocio"].value_counts()
       if not counts.empty:
@@ -596,7 +595,6 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
           for a_name, val in counts.items(): res += f"* **{a_name}**: {val} proyectos\n"
           return res
           
-  # C. Preguntas de Gerentes
   if busca_top_gerente:
       counts = dataframe["gerente"].value_counts()
       if not counts.empty:
@@ -605,7 +603,6 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
           for g_name, val in counts.items(): res += f"* **{g_name}**: {val} proyectos\n"
           return res
 
-  # D. Búsqueda de Cruces Específicos (Filtros en cadena)
   df_result = dataframe.copy()
   criterios = []
   
@@ -619,22 +616,19 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       df_result = df_result[df_result["estatus_tiempo"].isin(["Retrasado", "Detenido"])]
       criterios.append("Estatus: **Retrasado**")
 
-  # Si el usuario aplicó al menos un filtro claro
   if len(criterios) > 0:
       if df_result.empty:
-          return f"🔍 Estuve buscando, pero no encontré proyectos que coincidan con tus filtros: " + " | ".join(criterios)
+          return f"🔍 Estuve buscando, pero no encontré proyectos que coincidan exactamente con tus filtros: " + " | ".join(criterios)
       
-      res = f"🔍 **¡Aquí tienes la información!**\n\nEncontré **{len(df_result)}** proyectos:\n\n"
+      res = f"🔍 **¡Aquí tienes la información!** (" + " | ".join(criterios) + f")\n\nEncontré **{len(df_result)}** proyectos:\n\n"
       for _, r in df_result.iterrows():
           res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 🏢 **Área:** {r['area_negocio']}\n  * 📌 **Estatus:** `{r['estatus_tiempo']}` | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
       return res
 
-  # E. Resumen
   if busca_resumen:
       tot = len(dataframe); en_t = len(dataframe[dataframe["estatus_tiempo"] == "En tiempo"]); ret = len(dataframe[dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])])
       return f"📊 **Aquí tienes el estatus global:**\n* **Total:** {tot} proyectos\n* 🟢 **En tiempo:** {en_t}\n* 🚨 **Retrasados:** {ret}\n\nSi necesitas detalles de algún área, ¡solo dímelo!"
 
-  # F. Fallback por coincidencia de texto libre
   coincidencias = dataframe[dataframe["nombre"].str.lower().str.contains(p_analizar, na=False) | dataframe["folio"].str.lower().str.contains(p_analizar, na=False)]
   if not coincidencias.empty:
       res = f"🔍 Encontré **{len(coincidencias)} proyectos** que coinciden con tu búsqueda:\n\n"
@@ -642,43 +636,42 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
           res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 📌 **Estatus:** `{r['estatus_tiempo']}` | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
       return res
 
-  return f"Lo siento, **{usuario_nombre}**. No logré encontrar esa información exacta. Puedes intentar hacer la pregunta más sencilla, como: *'¿Quién tiene más proyectos?'* o *'Muéstrame los proyectos de Banco'*."
+  return f"Lo siento, **{usuario_nombre}**. No logré encontrar esa información exacta. Puedes intentar hacer la pregunta de forma diferente, como: *'¿Quién tiene más proyectos?'* o *'Muéstrame los proyectos de Banco'*."
 
-# --- BOTÓN FLOTANTE "PROJECT IA" CON AUTO-BORRADO DE CHAT ---
+
+# --- BOTÓN FLOTANTE "PROJECT IA" CON LIMPIEZA RÁPIDA ---
 with st.popover("🤖 Project IA", help="Haz clic para charlar con tu asistente inteligente"):
-  # Encabezado con Botón de Limpiar Chat
+  # CABECERA CON BOTÓN PARA LIMPIAR CHAT (UX PRO)
   col1, col2 = st.columns([3, 1])
   with col1:
       st.markdown("<h3 style='color:#05297A; margin-bottom: 0px; font-weight:800; letter-spacing:-1px;'>🤖 Project IA</h3>", unsafe_allow_html=True)
   with col2:
-      if st.button("🧹 Borrar"):
+      if st.button("🧹 Borrar", help="Limpia la conversación actual"):
           st.session_state.chat_history_fast = []
           st.rerun()
+          
   st.caption("Asistente Analítico Inteligente de Coppel.")
   st.divider()
 
   mensaje_bienvenida = {"role": "assistant", "content": f"¡Hola **{st.session_state.nombre_actual}**! 👋 Soy **Project IA**, tu asistente. ¿Qué te gustaría consultar del portafolio hoy?"}
 
-  # Validamos si existe el historial
+  # Control de historial y borrado inteligente
   if "chat_history_fast" not in st.session_state or len(st.session_state.chat_history_fast) == 0:
     st.session_state.chat_history_fast = [mensaje_bienvenida]
 
   chat_box = st.container(height=350)
-  
-  prompt_fast = st.chat_input("Escribe tu pregunta (ej. ¿Quién tiene más proyectos?)...", key="ia_fast_input")
+  prompt_fast = st.chat_input("Pregúntame algo (ej. ¿Quién tiene más proyectos?)...", key="ia_fast_input")
   
   if prompt_fast:
-      # Si el usuario escribió, agregamos al historial
       st.session_state.chat_history_fast.append({"role": "user", "content": prompt_fast})
       ans = consultar_ia_ultra_rapido(prompt_fast, df, st.session_state.nombre_actual)
       st.session_state.chat_history_fast.append({"role": "assistant", "content": ans})
   else:
-      # ¡MAGIA DEL AUTO-BORRADO!
-      # Si el script se vuelve a ejecutar por un click externo (ej. cambiar de pestaña o usar un filtro)
-      # el "prompt_fast" vuelve a ser nulo. En ese momento, reiniciamos el chat para que quede limpio
+      # Lógica de limpieza: Si el usuario cambia de pestaña o toca un filtro de la app principal,
+      # el input queda vacío (None) y la conversación del bot se reinicia, manteniéndose limpio.
       st.session_state.chat_history_fast = [mensaje_bienvenida]
 
-  # Dibujamos el chat en pantalla
+  # Mostrar la conversación en pantalla
   with chat_box:
     for msg in st.session_state.chat_history_fast:
       avatar_img = URL_ROBOT if msg["role"] == "assistant" else URL_USER
