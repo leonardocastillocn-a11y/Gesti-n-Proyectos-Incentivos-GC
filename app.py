@@ -7,14 +7,6 @@ import plotly.express as px
 import sqlalchemy
 import streamlit as st
 
-# Importación segura de IA
-try:
-  import google.generativeai as genai
-
-  HAS_GEMINI = True
-except ImportError:
-  HAS_GEMINI = False
-
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
     page_title="Portafolio de Incentivos Coppel",
@@ -23,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- CSS PREMIUM / ENTERPRISE UI CON BOTÓN FLOTANTE DE IA ---
+# --- CSS PREMIUM / ENTERPRISE UI CON BOTÓN FLOTANTE "PROJECT IA" ---
 st.markdown(
     """
     <style>
@@ -37,7 +29,7 @@ st.markdown(
     .stTextInput > div > div, .stSelectbox > div > div, .stTextArea > div > div { border-radius: 8px !important; border: 1px solid #CBD5E1 !important; background-color: #F8FAFC !important; transition: all 0.2s ease; }
     .stTextInput > div > div:focus-within, .stSelectbox > div > div:focus-within { border-color: #05297A !important; box-shadow: 0 0 0 2px rgba(5, 41, 122, 0.2) !important; background-color: #FFFFFF !important; }
     
-    /* BOTONES PRIMARIOS Y SECUNDARIOS */
+    /* BOTONES */
     div[data-testid="stFormSubmitButton"] button, .stButton > button[kind="primary"] { background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important; color: #FFFFFF !important; border: none !important; border-radius: 8px !important; font-weight: 600 !important; padding: 0.5rem 1rem !important; box-shadow: 0 4px 6px -1px rgba(28, 66, 232, 0.2) !important; transition: all 0.3s ease !important; }
     div[data-testid="stFormSubmitButton"] button:hover, .stButton > button[kind="primary"]:hover { transform: translateY(-1px); box-shadow: 0 10px 15px -3px rgba(28, 66, 232, 0.3) !important; }
     button[data-testid="baseButton-secondary"], .stButton > button[kind="secondary"] { background-color: #FFFFFF !important; border: 1px solid #CBD5E1 !important; color: #334155 !important; border-radius: 8px !important; font-weight: 500 !important; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; transition: all 0.2s ease !important; }
@@ -52,7 +44,7 @@ st.markdown(
     .stTabs [aria-selected="true"] { border-bottom: 3px solid #05297A !important; font-weight: 700 !important; color: #05297A !important; background-color: transparent !important; }
     .stTabs [aria-selected="false"] { color: #64748B !important; font-weight: 500 !important; }
     
-    /* ACORDEONES & BADGES */
+    /* BADGES & TARJETAS */
     .streamlit-expanderHeader { background-color: #FFFFFF !important; color: #0F172A !important; font-weight: 600 !important; border-radius: 12px !important; border: 1px solid #E2E8F0 !important; padding: 1rem !important; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important; }
     .streamlit-expanderContent { border: 1px solid #E2E8F0 !important; border-top: none !important; background-color: #FFFFFF !important; padding: 24px !important; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
     .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em; display: inline-block; }
@@ -60,7 +52,6 @@ st.markdown(
     .status-yellow { background-color: #FEF9C3; color: #854D0E !important; border: 1px solid #FEF08A;}
     .status-gray { background-color: #F1F5F9; color: #475569 !important; border: 1px solid #E2E8F0;}
     
-    /* KANBAN & TIMELINE */
     .kanban-card { background: #FFFFFF; padding: 15px; border-radius: 10px; border: 1px solid #E2E8F0; border-left: 4px solid #05297A; box-shadow: 0 2px 4px rgba(0,0,0,0.02); margin-bottom: 15px; transition: transform 0.2s;}
     .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
     .kanban-title { font-weight: 700; color: #0F172A; font-size: 0.95rem; margin-bottom: 8px; line-height: 1.2; }
@@ -70,9 +61,7 @@ st.markdown(
     .timeline-date { font-size: 0.75rem; color: #64748B; font-weight: 600; margin-bottom: 2px; }
     .timeline-text { font-size: 0.85rem; color: #1E293B; }
     
-    /* ================================================================= */
-    /* ESTILOS DEL BOTÓN FLOTANTE DE IA "PROJECT IA" EN LA ESQUINA DERECHA */
-    /* ================================================================= */
+    /* BOTÓN FLOTANTE "PROJECT IA" DERECHA INFERIOR */
     div[data-testid="stPopover"] {
         position: fixed !important;
         bottom: 30px !important;
@@ -94,10 +83,7 @@ st.markdown(
         transform: scale(1.05) translateY(-2px) !important;
         box-shadow: 0 14px 30px rgba(28, 66, 232, 0.5) !important;
     }
-    div[data-testid="stPopover"] > button p {
-        color: #FFFFFF !important;
-        font-weight: 700 !important;
-    }
+    div[data-testid="stPopover"] > button p { color: #FFFFFF !important; font-weight: 700 !important; }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     </style>
@@ -271,6 +257,122 @@ def calcular_fechas_tarea(proyecto_id):
     df_t.at[idx, "fecha_fin"] = fin
     fechas_fin[t_id] = fin
   return df_t
+
+
+# --- MOTOR DE IA LOCAL / NATIVO (100% SEGURO Y ANTI-BLOQUEOS) ---
+def consultar_project_ia_local(prompt, dataframe):
+  p_lower = prompt.lower().strip()
+  if dataframe.empty:
+    return "ℹ️ El portafolio no contiene proyectos registrados aún."
+
+  # 1. Proyectos retrasados o en riesgo
+  if any(
+      k in p_lower for k in ["retras", "riesgo", "deteni", "critico", "problema"]
+  ):
+    p_ret = dataframe[
+        dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])
+    ]
+    if p_ret.empty:
+      return (
+          "✅ **Excelente noticia**: No hay proyectos retrasados o detenidos en"
+          " este momento."
+      )
+    resp = f"🚨 **Encontré {len(p_ret)} iniciativa(s) en riesgo o retraso:**\n\n"
+    for _, r in p_ret.iterrows():
+      resp += (
+          f"* **{r['folio'] or 'S/F'} - {r['nombre']}**\n  * **Área:**"
+          f" {r['area_negocio']} | **Líder:** {r['lider_asignado']} |"
+          f" **Estatus:** `{r['estatus_tiempo']}` | **Avance:**"
+          f" {int((r['avance_real'] or 0)*100)}%\n"
+      )
+    return resp
+
+  # 2. Búsqueda por Área
+  areas_encontradas = [a for a in OPCIONES_AREAS if a.lower() in p_lower]
+  if areas_encontradas:
+    area = areas_encontradas[0]
+    p_area = dataframe[dataframe["area_negocio"] == area]
+    if p_area.empty:
+      return (
+          f"ℹ️ No hay iniciativas registradas actualmente para el área de"
+          f" **{area}**."
+      )
+    resp = f"📂 **Iniciativas en el Área {area} ({len(p_area)}):**\n\n"
+    for _, r in p_area.iterrows():
+      resp += (
+          f"* **{r['nombre']}** (`{r['folio'] or 'S/F'}`)\n  * **Líder:**"
+          f" {r['lider_asignado']} | **Estatus:** `{r['estatus_tiempo']}` |"
+          f" **Avance:** {int((r['avance_real'] or 0)*100)}%\n"
+      )
+    return resp
+
+  # 3. Búsqueda por Líder / Responsable
+  lideres = obtener_lista_usuarios()
+  lideres_encontrados = [l for l in lideres if l.lower() in p_lower]
+  if lideres_encontrados:
+    lid = lideres_encontrados[0]
+    p_lid = dataframe[dataframe["lider_asignado"] == lid]
+    if p_lid.empty:
+      return f"👤 **{lid}** no tiene proyectos asignados actualmente."
+    resp = f"👤 **Proyectos a cargo de {lid} ({len(p_lid)}):**\n\n"
+    for _, r in p_lid.iterrows():
+      resp += (
+          f"* **{r['nombre']}**\n  * **Área:** {r['area_negocio']} |"
+          f" **Estatus:** `{r['estatus_tiempo']}` | **Avance:**"
+          f" {int((r['avance_real'] or 0)*100)}%\n"
+      )
+    return resp
+
+  # 4. Resumen General / Métricas
+  if any(
+      k in p_lower
+      for k in [
+          "resumen",
+          "general",
+          "avance",
+          "metrica",
+          "total",
+          "cuantos",
+          "estado",
+      ]
+  ):
+    tot = len(dataframe)
+    en_t = len(dataframe[dataframe["estatus_tiempo"] == "En tiempo"])
+    ret = len(
+        dataframe[dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])]
+    )
+    prom = dataframe["avance_real"].mean() * 100
+    return f"""📊 **Resumen Ejecutivo del Portafolio:**
+* **Total de proyectos:** {tot}
+* **En tiempo:** {en_t}
+* **En riesgo / retraso:** {ret}
+* **Avance global promedio:** {prom:.1f}%
+"""
+
+  # 5. Coincidencia por palabra clave
+  coincidencias = dataframe[
+      dataframe["nombre"].str.lower().str.contains(p_lower, na=False)
+      | dataframe["folio"].str.lower().str.contains(p_lower, na=False)
+  ]
+  if not coincidencias.empty:
+    resp = f"🔍 **Resultados de la búsqueda ({len(coincidencias)}):**\n\n"
+    for _, r in coincidencias.iterrows():
+      resp += (
+          f"* **{r['folio'] or 'S/F'} - {r['nombre']}**\n  * **Área:**"
+          f" {r['area_negocio']} | **Líder:** {r['lider_asignado']} |"
+          f" **Estatus:** `{r['estatus_tiempo']}` | **Avance:**"
+          f" {int((r['avance_real'] or 0)*100)}%\n"
+      )
+    return resp
+
+  # Mensaje sugerencia por defecto
+  return f"""🤖 **Project IA (Modo Interno):**
+No encontré una regla directa para tu consulta. Intenta preguntarme sobre:
+* 🚨 *Proyectos retrasados o en riesgo*
+* 📂 *Áreas de negocio (ej. Retail, Banco, Afore)*
+* 👤 *Líderes de proyecto (ej. Leonardo Castillo)*
+* 📊 *Resumen general o avance del portafolio*
+"""
 
 
 # --- LOGIN ---
@@ -465,7 +567,7 @@ with st.sidebar:
     st.session_state.autenticado = False
     st.rerun()
 
-# --- HEADER Y MÉTRICAS PERMANENTES ---
+# --- HEADER Y MÉTRICAS ---
 st.markdown(
     "<h2 style='margin-bottom: 25px; color:#0F172A;'>📊 Visión General del"
     " Portafolio</h2>",
@@ -939,114 +1041,42 @@ if es_moderador:
             st.rerun()
 
 # ==============================================================================
-# --- BOTÓN FLOTANTE ROBOT "PROJECT IA" (ESQUINA INFERIOR DERECHA) ---
+# --- BOTÓN FLOTANTE Y CHAT ROBÓTICO "PROJECT IA" (100% OFFLINE Y SEGURO) ---
 # ==============================================================================
-api_key_gemini = (
-    st.secrets.get("GEMINI_API_KEY", None)
-    or st.secrets.get("gemini", {}).get("api_key", None)
-    if "gemini" in st.secrets or "GEMINI_API_KEY" in st.secrets
-    else None
-)
-
 with st.popover(
     "🤖 Project IA",
-    help="Haz clic aquí para realizar consultas avanzadas a la IA",
+    help="Haz clic aquí para consultar sobre proyectos, áreas o retrasos",
 ):
   st.markdown(
       "<h3 style='color:#05297A; margin-bottom: 0px;'>🤖 Project IA</h3>",
       unsafe_allow_html=True,
   )
   st.caption(
-      "Asistente Robótico Inteligente en tiempo real para el Portafolio Coppel."
+      "Asistente Robótico Interno para consultas rápidas sobre el Portafolio."
   )
   st.divider()
 
-  if not api_key_gemini and HAS_GEMINI:
-    api_key_gemini = st.text_input(
-        "🔑 Gemini API Key:",
-        type="password",
-        help="Añade GEMINI_API_KEY en Secrets de Streamlit para no pedirla.",
+  if "chat_history_local" not in st.session_state:
+    st.session_state.chat_history_local = []
+
+  # Contenedor para la conversación
+  chat_container = st.container(height=320)
+  with chat_container:
+    for msg in st.session_state.chat_history_local:
+      with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
+  if prompt_user := st.chat_input(
+      "Ej: ¿Qué proyectos están retrasados?", key="ia_local_input"
+  ):
+    st.session_state.chat_history_local.append(
+        {"role": "user", "content": prompt_user}
     )
 
-  if HAS_GEMINI and api_key_gemini:
-    try:
-      genai.configure(api_key=api_key_gemini)
+    # Genera la respuesta procesando la BD en Python directamente
+    respuesta_bot = consultar_project_ia_local(prompt_user, df)
 
-      if "chat_history_global" not in st.session_state:
-        st.session_state.chat_history_global = []
-
-      # Contenedor con scroll para los mensajes dentro del Popover
-      chat_container = st.container(height=320)
-      with chat_container:
-        for msg in st.session_state.chat_history_global:
-          with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-      if prompt_ia := st.chat_input(
-          "Ej: ¿Qué proyectos están retrasados?", key="floating_chat_input"
-      ):
-        st.session_state.chat_history_global.append(
-            {"role": "user", "content": prompt_ia}
-        )
-
-        str_proyectos = df[[
-            "folio",
-            "nombre",
-            "area_negocio",
-            "lider_asignado",
-            "etapa_actual",
-            "estatus_tiempo",
-            "avance_real",
-            "ultima_actualizacion",
-        ]].to_string(index=False)
-        str_bitacora = (
-            df_bitacora[["proyecto_id", "fecha_hora", "comentario"]]
-            .head(20)
-            .to_string(index=False)
-            if not df_bitacora.empty
-            else "Sin bitácoras"
-        )
-        str_tareas = (
-            df_tareas_all[[
-                "proyecto_id",
-                "nombre_tarea",
-                "responsable",
-                "fecha_fin",
-                "porcentaje_avance",
-            ]].to_string(index=False)
-            if not df_tareas_all.empty
-            else "Sin tareas"
-        )
-
-        system_instruction = f"""
-                Eres Project IA, un copiloto ejecutivo robótico de Inteligencia Artificial para el Portafolio de Incentivos Coppel.
-                Responde siempre con profesionalismo, brevedad y usando viñetas directas o tablas si es necesario.
-                
-                BASE DE DATOS EN TIEMPO REAL:
-                PROYECTOS:
-                {str_proyectos}
-
-                BITÁCORAS / HISTORIAL:
-                {str_bitacora}
-
-                TAREAS:
-                {str_tareas}
-                """
-
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        respuesta = model.generate_content(
-            f"{system_instruction}\n\nPregunta: {prompt_ia}"
-        )
-
-        st.session_state.chat_history_global.append(
-            {"role": "assistant", "content": respuesta.text}
-        )
-        st.rerun()
-
-    except Exception as err:
-      st.error(f"Error en Project IA: {err}")
-  else:
-    st.info(
-        "💡 Para activar a **Project IA**, agrega `GEMINI_API_KEY = 'tu_clave'`"
-        " en los **Secrets** de Streamlit Cloud."
+    st.session_state.chat_history_local.append(
+        {"role": "assistant", "content": respuesta_bot}
     )
+    st.rerun()
