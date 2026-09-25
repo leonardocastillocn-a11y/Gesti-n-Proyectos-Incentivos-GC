@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- CSS ENTERPRISE & PRO UI ---
+# --- CSS ENTERPRISE UI & BOTÓN FLOTANTE ---
 st.markdown(
     """
     <style>
@@ -145,7 +145,7 @@ OPCIONES_GERENTES = [
 ]
 
 
-# --- OPTIMIZACIÓN DE MOTOR DE BASE DE DATOS Y CACHÉ (ULTRA RÁPIDO) ---
+# --- BASE DE DATOS Y CACHÉ ---
 @st.cache_resource
 def obtener_engine():
   db_url = (
@@ -205,7 +205,6 @@ def inicializar_db():
 inicializar_db()
 
 
-# Carga optimizada con caché de 3 segundos
 @st.cache_data(ttl=3)
 def cargar_datos_completos():
   engine = obtener_engine()
@@ -316,7 +315,7 @@ if not st.session_state.autenticado:
               st.error("Credenciales incorrectas.")
   st.stop()
 
-# --- CARGA DE DATOS EN MEMORIA RÁPIDA ---
+# --- CARGA DE DATOS EN MEMORIA ---
 df, df_bitacora, df_tareas_all, df_users_raw = cargar_datos_completos()
 es_moderador = st.session_state.rol == "Moderador"
 lista_lideres_registrados = obtener_lista_usuarios(df_users_raw)
@@ -530,12 +529,11 @@ with tabs[0]:
       )
       st.plotly_chart(fig2, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO OPERATIVO CON FILTROS RÁPIDOS
+# PESTAÑA 2: SEGUIMIENTO OPERATIVO
 with tabs[1]:
   if df.empty:
     st.info("El portafolio está vacío.")
   else:
-    # BANDA DE FILTROS RÁPIDOS (SMART PILLS)
     f_pills1, f_pills2, f_pills3, f_pills4 = st.columns([1.2, 1.2, 1.2, 2.4])
     modo_filtro = f_pills1.radio(
         "Filtro Rápido",
@@ -557,7 +555,6 @@ with tabs[1]:
 
     df_filtrado = df.copy()
 
-    # Lógica de Filtro Rápido
     if modo_filtro == "🚨 Solo Retrasados":
       df_filtrado = df_filtrado[
           df_filtrado["estatus_tiempo"].isin(["Retrasado", "Detenido"])
@@ -948,83 +945,335 @@ if es_moderador:
             st.rerun()
 
 
-# --- MOTOR PROJECT IA LOCAL ULTRARRÁPIDO (<5ms) ---
-def consultar_ia_ultra_rapido(prompt, dataframe):
+# ==============================================================================
+# --- MOTOR NLP REESTRUCTURADO (RESPUESTAS ANALÍTICAS Y DINÁMICAS) ---
+# ==============================================================================
+def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
   p_lower = prompt.lower().strip()
-  if dataframe.empty:
-    return "ℹ️ El portafolio está vacío."
 
-  if any(k in p_lower for k in ["retras", "riesgo", "deteni", "critico"]):
+  # 1. Saludos
+  saludos = [
+      "hola",
+      "buenos dias",
+      "buenas tardes",
+      "buenas noches",
+      "que tal",
+      "que onda",
+      "ey",
+      "saludos",
+      "buenas",
+  ]
+  if any(
+      p_lower == s
+      or p_lower.startswith(s + " ")
+      or p_lower.endswith(" " + s)
+      or s in p_lower
+      for s in saludos
+  ):
+    tot = len(dataframe) if not dataframe.empty else 0
+    ret = (
+        len(
+            dataframe[
+                dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])
+            ]
+        )
+        if not dataframe.empty
+        else 0
+    )
+    resp = (
+        f"¡Hola, **{usuario_nombre}**! 👋 Soy **Project IA**.\n\n"
+        f"Actualmente superviso **{tot} iniciativas** en el portafolio. "
+    )
+    if ret > 0:
+      resp += (
+          f"⚠️ Tienes **{ret} proyectos que requieren atención** por estar"
+          " retrasados. ¿Qué te gustaría consultar hoy?"
+      )
+    else:
+      resp += (
+          " Todo marcha al día sin retrasos críticos. ¿En qué te puedo apoyar?"
+      )
+    return resp
+
+  # 2. Cortesía y Charla Ligera
+  if any(
+      k in p_lower
+      for k in [
+          "gracias",
+          "muchas gracias",
+          "excelente",
+          "buenisimo",
+          "genial",
+          "perfecto",
+          "ok",
+          "adios",
+      ]
+  ):
+    return (
+        "¡Con mucho gusto! 😉 Aquí sigo disponible para cualquier consulta que"
+        " necesites sobre el portafolio."
+  )
+
+  if any(k in p_lower for k in ["como estas", "como andas", "todo bien"]):
+    return (
+        "¡Todo excelente por acá, listo para analizar datos! 🚀 ¿Qué"
+        " información sobre proyectos o colaboradores deseas revisar?"
+    )
+
+  if any(
+      k in p_lower
+      for k in ["quien eres", "quien sos", "que haces", "para que sirves"]
+  ):
+    return (
+        "🤖 **Soy Project IA**, tu copiloto analítico de proyectos. Puedo"
+        " decirte qué área tiene más proyectos, quién es el líder con más"
+        " carga, los avances por equipo o detectar retrasos en tiempo real."
+    )
+
+  if dataframe.empty:
+    return (
+        "Actualmente el portafolio está vacío. Registra iniciativas en la"
+        " pestaña **Nuevo Proyecto** para comenzar."
+    )
+
+  # 3. PREGUNTA CLAVE: Desglose / Distribución de ÁREAS (Solución a la imagen)
+  if any(k in p_lower for k in ["area", "áreas", "área"]):
+    if any(
+        k in p_lower
+        for k in [
+            "mas",
+            "más",
+            "mayor",
+            "top",
+            "concentra",
+            "tiene mas",
+            "tengo mas",
+            "de que",
+            "cuales",
+        ]
+    ):
+      counts = dataframe["area_negocio"].value_counts()
+      top_area = counts.index[0]
+      top_val = counts.iloc[0]
+      pct_top = (top_val / len(dataframe)) * 100
+
+      res = (
+          f"Analizando el portafolio, la área con **mayor cantidad de"
+          f" proyectos** es **{top_area}**, con **{top_val} iniciativa(s)**"
+          f" ({pct_top:.0f}% del total).\n\n"
+      )
+      res += "📌 **Desglose completo por áreas:**\n"
+      for area_n, val in counts.items():
+        pct = (val / len(dataframe)) * 100
+        res += f"* **{area_n}**: {val} proyecto(s) ({pct:.0f}%)\n"
+      return res
+
+  # 4. PREGUNTA CLAVE: Carga de LÍDERES
+  if any(
+      k in p_lower for k in ["lider", "líder", "responsable", "colaborador"]
+  ) and any(
+      k in p_lower for k in ["mas", "más", "mayor", "quien", "quién", "carga"]
+  ):
+    counts_lider = dataframe["lider_asignado"].value_counts()
+    top_lid = counts_lider.index[0]
+    top_val = counts_lider.iloc[0]
+    res = (
+        f"El colaborador con **más iniciativas a su cargo** es **{top_lid}**"
+        f" con **{top_val} proyecto(s)**.\n\n"
+    )
+    res += "📌 **Carga de trabajo por líder:**\n"
+    for lid_n, val in counts_lider.items():
+      res += f"* **{lid_n}**: {val} proyecto(s)\n"
+    return res
+
+  # 5. PREGUNTA CLAVE: Mayor / Menor AVANCE
+  if any(
+      k in p_lower
+      for k in [
+          "mas avanzado",
+          "más avanzado",
+          "mayor avance",
+          "mejor progreso",
+          "quien va mejor",
+      ]
+  ):
+    df_sorted = dataframe.sort_values(by="avance_real", ascending=False)
+    top_proj = df_sorted.iloc[0]
+    pct = int((top_proj["avance_real"] or 0) * 100)
+    return (
+        f"La iniciativa con **mayor progreso** es **{top_proj['nombre']}**"
+        f" (`{top_proj['folio'] or 'S/F'}`), liderada por"
+        f" **{top_proj['lider_asignado']}** en el área de"
+        f" **{top_proj['area_negocio']}**, registrando un **{pct}% de"
+        " avance**."
+    )
+
+  if any(
+      k in p_lower
+      for k in [
+          "menos avanzado",
+          "menor avance",
+          "mas atrasado",
+          "más atrasado",
+      ]
+  ):
+    df_sorted = dataframe.sort_values(by="avance_real", ascending=True)
+    top_proj = df_sorted.iloc[0]
+    pct = int((top_proj["avance_real"] or 0) * 100)
+    return (
+        f"El proyecto con **menor porcentaje de avance** es"
+        f" **{top_proj['nombre']}** (`{top_proj['folio'] or 'S/F'}`), asignado a"
+        f" **{top_proj['lider_asignado']}**, con solo un **{pct}% de progreso**"
+        f" (`{top_proj['estatus_tiempo']}`)."
+    )
+
+  # 6. Retrasados / Riesgo
+  if any(
+      k in p_lower
+      for k in [
+          "retras",
+          "riesgo",
+          "deteni",
+          "critico",
+          "problema",
+          "urgente",
+          "alerta",
+      ]
+  ):
     p_ret = dataframe[
         dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])
     ]
     if p_ret.empty:
-      return "✅ No hay proyectos retrasados ni detenidos en este momento."
-    res = f"🚨 **Encontré {len(p_ret)} proyectos en riesgo:**\n\n"
+      return (
+          "🎉 ¡Excelente noticias! No hay ningún proyecto registrado como"
+          " retrasado o detenido en este momento. Todo avanza según el plan."
+      )
+    res = (
+        f"🚨 **Atención requerida:** Encontré **{len(p_ret)} iniciativa(s)** en"
+        " riesgo o retraso:\n\n"
+    )
     for _, r in p_ret.iterrows():
       res += (
-          f"* **{r['folio'] or 'S/F'} - {r['nombre']}** | Área:"
-          f" {r['area_negocio']} | Líder: {r['lider_asignado']} | Avance:"
-          f" {int((r['avance_real'] or 0)*100)}%\n"
+          f"* **{r['folio'] or 'S/F'} — {r['nombre']}**\n  * 🏢 **Área:**"
+          f" {r['area_negocio']} | 👤 **Líder:** {r['lider_asignado']}\n  * ⚠️"
+          f" **Estado:** `{r['estatus_tiempo']}` | 📈 **Avance:**"
+          f" {int((r['avance_real'] or 0)*100)}%\n\n"
       )
     return res
 
+  # 7. Filtro por Área específica
   areas_found = [a for a in OPCIONES_AREAS if a.lower() in p_lower]
   if areas_found:
     area = areas_found[0]
     p_area = dataframe[dataframe["area_negocio"] == area]
     if p_area.empty:
-      return f"ℹ️ Sin proyectos registrados en **{area}**."
-    res = f"📂 **Proyectos en {area} ({len(p_area)}):**\n\n"
+      return (
+          f"Actualmente no tenemos iniciativas registradas para el área de"
+          f" **{area}**."
+      )
+    res = (
+        f"📂 En el área de **{area}** tenemos registrados **{len(p_area)}"
+        " proyecto(s)**:\n\n"
+    )
     for _, r in p_area.iterrows():
       res += (
-          f"* **{r['nombre']}** | Líder: {r['lider_asignado']} | Estatus:"
-          f" `{r['estatus_tiempo']}`\n"
+          f"* **{r['nombre']}** (`{r['folio'] or 'S/F'}`)\n  * 👤 **Líder:**"
+          f" {r['lider_asignado']} | 📌 **Estatus:** `{r['estatus_tiempo']}` | 📈"
+          f" **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
       )
     return res
 
+  # 8. Filtro por Líder específico
+  lideres = obtener_lista_usuarios(df_users_raw)
+  lideres_encontrados = [l for l in lideres if l.lower() in p_lower]
+  if lideres_encontrados:
+    lid = lideres_encontrados[0]
+    p_lid = dataframe[dataframe["lider_asignado"] == lid]
+    if p_lid.empty:
+      return (
+          f"Actualmente **{lid}** no tiene proyectos asignados bajo su"
+          " responsabilidad."
+      )
+    res = f"👤 **{lid}** tiene a su cargo **{len(p_lid)} proyecto(s)**:\n\n"
+    for _, r in p_lid.iterrows():
+      res += (
+          f"* **{r['nombre']}** (`{r['folio'] or 'S/F'}`)\n  * 🏢 **Área:**"
+          f" {r['area_negocio']} | 📌 **Estatus:** `{r['estatus_tiempo']}` | 📈"
+          f" **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
+      )
+    return res
+
+  # 9. Coincidencia por nombre / texto libre
+  coincidencias = dataframe[
+      dataframe["nombre"].str.lower().str.contains(p_lower, na=False)
+      | dataframe["folio"].str.lower().str.contains(p_lower, na=False)
+  ]
+  if not coincidencias.empty:
+    res = (
+        f"🔍 Encontré **{len(coincidencias)} iniciativa(s)** que coinciden con"
+        " tu búsqueda:\n\n"
+    )
+    for _, r in coincidencias.iterrows():
+      res += (
+          f"* **{r['folio'] or 'S/F'} — {r['nombre']}**\n  * 🏢 **Área:**"
+          f" {r['area_negocio']} | 👤 **Líder:** {r['lider_asignado']} | 📌"
+          f" **Estatus:** `{r['estatus_tiempo']}`"
+          f" ({int((r['avance_real'] or 0)*100)}%)\n\n"
+      )
+    return res
+
+  # 10. Fallback Conversacional Dinámico
   tot = len(dataframe)
   en_t = len(dataframe[dataframe["estatus_tiempo"] == "En tiempo"])
   ret = len(
       dataframe[dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])]
   )
-  prom = dataframe["avance_real"].mean() * 100
-  return f"""📊 **Resumen Ejecutivo:**
-* Total proyectos: **{tot}**
-* En tiempo: **{en_t}**
-* Retrasados/Detenidos: **{ret}**
-* Avance promedio: **{prom:.1f}%**
-"""
+
+  return (
+      f"Entendido, **{usuario_nombre}**. Actualmente administro **{tot}"
+      f" proyecto(s)** ({en_t} en tiempo y {ret} en riesgo).\n\nPuedes probar"
+      " preguntándome cosas concretas como:\n* *¿De qué área hay más"
+      " proyectos?*\n* *¿Quién es el líder con más proyectos?*\n* *¿Cuál es el"
+      " proyecto más avanzado?*\n* *Proyectos en Retail o Banco*"
+  )
 
 
-# --- BOTÓN FLOTANTE "PROJECT IA" DERECHA INFERIOR ---
+# --- BOTÓN FLOTANTE "PROJECT IA" ---
 with st.popover(
     "🤖 Project IA",
-    help="Haz clic aquí para consultar proyectos, áreas o retrasos",
+    help="Haz clic para chatear con la IA sobre proyectos, áreas o retrasos",
 ):
   st.markdown(
       "<h3 style='color:#05297A; margin-bottom: 0px;'>🤖 Project IA</h3>",
       unsafe_allow_html=True,
   )
-  st.caption("Asistente ultrarrápido sin dependencias de red externa.")
+  st.caption("Copiloto Inteligente en tiempo real para el Portafolio Coppel.")
   st.divider()
 
   if "chat_history_fast" not in st.session_state:
-    st.session_state.chat_history_fast = []
+    st.session_state.chat_history_fast = [
+        {
+            "role": "assistant",
+            "content": (
+                f"¡Hola **{st.session_state.nombre_actual}**! 👋 Soy **Project"
+                " IA**. ¿En qué puedo ayudarte hoy?"
+            ),
+        }
+    ]
 
-  chat_box = st.container(height=300)
+  chat_box = st.container(height=320)
   with chat_box:
     for msg in st.session_state.chat_history_fast:
       with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-  if prompt_fast := st.chat_input(
-      "Ej: Proyectos retrasados", key="ia_fast_input"
-  ):
+  if prompt_fast := st.chat_input("Escribe tu consulta...", key="ia_fast_input"):
     st.session_state.chat_history_fast.append(
         {"role": "user", "content": prompt_fast}
     )
-    ans = consultar_ia_ultra_rapido(prompt_fast, df)
+    ans = consultar_ia_ultra_rapido(
+        prompt_fast, df, st.session_state.nombre_actual
+    )
     st.session_state.chat_history_fast.append(
         {"role": "assistant", "content": ans}
     )
