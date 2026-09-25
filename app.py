@@ -116,7 +116,7 @@ st.markdown(
     div[data-testid="metric-container"] label { color: #64748B !important; font-size: 0.85rem !important; font-weight: 600 !important; }
     div[data-testid="metric-container"] [data-testid="stMetricValue"] div { color: #0F172A !important; font-size: 2rem !important; font-weight: 800 !important; letter-spacing: -0.02em; }
     
-    /* PESTAÑAS (TABS) AMIGABLES */
+    /* PESTAÑAS AMIGABLES */
     .stTabs [data-baseweb="tab-list"] { gap: 24px; border-bottom: 2px solid #E2E8F0; }
     .stTabs [aria-selected="true"] { border-bottom: 3px solid #05297A !important; font-weight: 700 !important; color: #05297A !important; background-color: transparent !important; }
     .stTabs [aria-selected="false"] { color: #64748B !important; font-weight: 500 !important; }
@@ -182,19 +182,27 @@ def obtener_engine():
 
 def inicializar_db():
   engine = obtener_engine()
+  
+  # 1. Crear tablas estructurales
   with engine.begin() as conn:
     conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS proyectos (id SERIAL PRIMARY KEY, folio TEXT, nombre TEXT NOT NULL, area_negocio TEXT, tipo_proyecto TEXT, subtipo TEXT, gerente TEXT, lider_asignado TEXT, etapa_actual TEXT, estatus_tiempo TEXT, avance_real REAL, resumen_estatus TEXT, carpeta_url TEXT, plan_url TEXT, ultima_actualizacion TEXT, presupuesto REAL DEFAULT 0.0, roi_estimado REAL DEFAULT 0.0)"""))
     conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS usuarios (correo TEXT PRIMARY KEY, password TEXT NOT NULL, rol TEXT NOT NULL, nombre TEXT)"""))
     conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS tareas (id SERIAL PRIMARY KEY, proyecto_id INTEGER, nombre_tarea TEXT NOT NULL, responsable TEXT, fecha_inicio TEXT, duracion_dias INTEGER, fecha_fin TEXT, porcentaje_avance REAL, predecesoras TEXT)"""))
     conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS bitacora (id SERIAL PRIMARY KEY, proyecto_id INTEGER, usuario_nombre TEXT, fecha_hora TEXT, comentario TEXT)"""))
     
-    try:
-      conn.execute(sqlalchemy.text("ALTER TABLE proyectos ADD COLUMN presupuesto REAL DEFAULT 0.0"))
-    except Exception: pass
-    try:
-      conn.execute(sqlalchemy.text("ALTER TABLE proyectos ADD COLUMN roi_estimado REAL DEFAULT 0.0"))
-    except Exception: pass
+  # 2. Migraciones en transacciones individuales totalmente aisladas (Evita aborted transactions en PostgreSQL)
+  for col_sql in [
+      "ALTER TABLE proyectos ADD COLUMN presupuesto REAL DEFAULT 0.0",
+      "ALTER TABLE proyectos ADD COLUMN roi_estimado REAL DEFAULT 0.0"
+  ]:
+      try:
+          with engine.begin() as conn:
+              conn.execute(sqlalchemy.text(col_sql))
+      except Exception:
+          pass
 
+  # 3. Usuario administrador por defecto
+  with engine.begin() as conn:
     res = conn.execute(sqlalchemy.text("SELECT COUNT(*) FROM usuarios")).fetchone()
     if res[0] == 0:
       conn.execute(sqlalchemy.text("INSERT INTO usuarios VALUES ('leonardo.castillo@coppel.com', 'Coppel2026', 'Moderador', 'Leonardo Castillo')"))
@@ -290,7 +298,7 @@ df, df_bitacora, df_tareas_all, df_users_raw = cargar_datos_completos()
 es_moderador = st.session_state.rol == "Moderador"
 lista_lideres_registrados = obtener_lista_usuarios(df_users_raw)
 
-# Identificación de Proyectos Estancados (>20 días sin movimientos)
+# Identificación de Proyectos Estancados
 if not df.empty:
   df['es_estancado'] = df['ultima_actualizacion'].apply(evaluar_estancamiento) & (~df['etapa_actual'].str.contains("Cierre", case=False, na=False))
   proyectos_estancados = df[df['es_estancado']]
@@ -385,7 +393,6 @@ with tabs[0]:
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
-    # PANEL DE ELIMINACIÓN MASIVA PARA MODERADORES
     if es_moderador:
       with st.expander("🗑️ Eliminación Masiva de Proyectos", expanded=False):
         st.write("Selecciona los proyectos que deseas eliminar de forma permanente de la base de datos:")
