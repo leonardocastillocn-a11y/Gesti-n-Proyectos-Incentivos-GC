@@ -234,6 +234,16 @@ def limpiar_cache_y_recargar():
 def obtener_lista_usuarios(df_u):
   return df_u["nombre"].tolist() if not df_u.empty else ["Leonardo Castillo"]
 
+# FUNCIÓN DE RE-CÁLCULO AUTOMÁTICO DE AVANCE INTERCONECTADO CON GANTT
+def auto_sincronizar_avance_proyecto(engine, p_id):
+  with engine.begin() as conn:
+    res = conn.execute(sqlalchemy.text("SELECT AVG(porcentaje_avance) FROM tareas WHERE proyecto_id = :pid"), {"pid": p_id}).fetchone()
+    if res and res[0] is not None:
+      promedio_real = round(float(res[0]) / 100.0, 4)
+      ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+      conn.execute(sqlalchemy.text("UPDATE proyectos SET avance_real = :a, ultima_actualizacion = :u WHERE id = :pid"),
+                   {"a": promedio_real, "u": ahora, "pid": p_id})
+
 def calcular_fechas_tarea_df(df_tareas_proyecto):
   if df_tareas_proyecto.empty: return df_tareas_proyecto
   df_t = df_tareas_proyecto.copy()
@@ -441,11 +451,10 @@ with tabs[0]:
     fig_carga.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", xaxis_title="Líder Operativo", yaxis_title="Número de Proyectos")
     st.plotly_chart(fig_carga, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (BASELINES + APROBACIONES PENDIENTES)
+# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (PROGRESO INTERCONECTADO CON GANTT)
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
-    # APROBACIÓN DE RE-BASELINE PARA MODERADORES Y GERENTES
     if es_moderador and not df_solicitudes_baseline.empty:
       sol_pendientes = df_solicitudes_baseline[df_solicitudes_baseline["estado"] == "Pendiente"]
       if not sol_pendientes.empty:
@@ -548,8 +557,18 @@ with tabs[1]:
       es_mi_proyecto = (row["lider_asignado"] == st.session_state.nombre_actual)
       puedo_editar = es_moderador or es_mi_proyecto
 
-      with st.expander(f"[{row['folio'] or 'S/F'}] {row['nombre']} — Avance Real: {int((row['avance_real'] or 0)*100)}%{desviacion_str}"):
-        st.progress(float(row["avance_real"] or 0.0))
+      # CÁLCULO DE INTERCONEXIÓN CON GANTT
+      df_tareas_proj = df_tareas_all[df_tareas_all["proyecto_id"] == p_id]
+      tiene_tareas = not df_tareas_proj.empty
+
+      if tiene_tareas:
+          avance_calculado_gantt = round(float(df_tareas_proj["porcentaje_avance"].mean() / 100.0), 4)
+          avance_display = avance_calculado_gantt
+      else:
+          avance_display = float(row["avance_real"] or 0.0)
+
+      with st.expander(f"[{row['folio'] or 'S/F'}] {row['nombre']} — Avance Real: {int(avance_display*100)}%{desviacion_str}"):
+        st.progress(float(avance_display))
 
         if puedo_editar:
           with st.form(f"update_{p_id}"):
@@ -562,7 +581,13 @@ with tabs[1]:
             c_form1, c_form2, c_form3 = st.columns(3)
             u_etapa = c_form1.selectbox("Fase del Proyecto", OPCIONES_ETAPAS, index=(OPCIONES_ETAPAS.index(row["etapa_actual"]) if row["etapa_actual"] in OPCIONES_ETAPAS else 0))
             u_estatus = c_form2.selectbox("Estatus Declarado", OPCIONES_ESTATUS, index=(OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0))
-            u_avance = c_form3.slider("Progreso General (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
+            
+            # INTERCONEXIÓN: Si hay tareas en el Gantt, se bloquea el control manual y se muestra el avance auto-sincronizado
+            if tiene_tareas:
+                c_form3.markdown(f"<p style='margin-top:18px; font-size:0.8rem; color:#05297A; font-weight:700;'>⚡ AVANCE INTERCONECTADO (GANTT):<br/><span style='font-size:1.5rem; font-weight:800;'>{int(avance_calculado_gantt*100)}%</span></p>", unsafe_allow_html=True)
+                u_avance = avance_calculado_gantt
+            else:
+                u_avance = c_form3.slider("Progreso General (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
             
             f1, f2 = st.columns(2)
             u_presupuesto = f1.number_input("Presupuesto Asignado ($)", min_value=0.0, value=float(row.get("presupuesto", 0.0)), step=1000.0)
@@ -597,7 +622,6 @@ with tabs[1]:
               with engine.begin() as conn: conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id=:id"), {"id": p_id})
               limpiar_cache_y_recargar(); st.rerun()
 
-          # SECCIÓN DE CONTROL DE CAMBIOS / RE-BASELINE EN POPOVER (SOLUCIÓN ANIDACIÓN)
           st.markdown("---")
           col_sol1, col_sol2 = st.columns([3, 1])
           with col_sol1:
@@ -637,8 +661,7 @@ with tabs[1]:
           for _, h_row in historial_proyecto.iterrows():
             st.markdown(f"<div class='timeline-item'><div class='timeline-date'>{h_row['fecha_hora']} | Por: {h_row['usuario_nombre']}</div><div class='timeline-text'>{h_row['comentario']}</div></div>", unsafe_allow_html=True)
 
-        st.markdown("<h4 style='color:#0F172A; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #CBD5E1; font-size:1.1rem;'>📅 Plan de Trabajo (Gantt)</h4>", unsafe_allow_html=True)
-        df_tareas_proj = df_tareas_all[df_tareas_all["proyecto_id"] == p_id]
+        st.markdown("<h4 style='color:#0F172A; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #CBD5E1; font-size:1.1rem;'>📅 Plan de Trabajo (Gantt Interconectado)</h4>", unsafe_allow_html=True)
         df_tareas_calc = calcular_fechas_tarea_df(df_tareas_proj)
 
         if not df_tareas_calc.empty:
@@ -654,7 +677,7 @@ with tabs[1]:
           st.plotly_chart(fig, use_container_width=True)
 
           if puedo_editar:
-            st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#05297A;'>✏️ Actualizar Avance por Tarea</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#05297A;'>✏️ Actualizar Avance por Tarea (Afecta el Progreso General)</p>", unsafe_allow_html=True)
             with st.form(f"upd_t_{p_id}", clear_on_submit=True):
               col_sel, col_val, col_btn = st.columns([2, 1, 1])
               opciones_tareas = df_tareas_calc.apply(lambda x: f"{x['id']} - {x['nombre_tarea']}", axis=1).tolist()
@@ -671,11 +694,14 @@ with tabs[1]:
                       conn.execute(sqlalchemy.text("UPDATE tareas SET porcentaje_avance=:a WHERE id=:id"), {"a": t_val, "id": t_id_real})
                       conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), 
                                    {"p_id": p_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": f"Se actualizó la tarea '{t_nombre_txt}' al {t_val}% de avance."})
+                  
+                  # RE-CALCULAR Y AUTO-SINCRONIZAR AVANCE GENERAL EN BASE DE DATOS
+                  auto_sincronizar_avance_proyecto(engine, p_id)
                   limpiar_cache_y_recargar(); st.rerun()
         else: st.info("No has agregado tareas al plan de trabajo todavía.")
 
         if puedo_editar:
-          with st.expander("➕ Agregar Nueva Tarea"):
+          with st.expander("➕ Agregar Nueva Tarea al Gantt"):
             with st.form(f"ft_{p_id}", clear_on_submit=True):
               t_nom = st.text_input("Nombre de la Tarea *")
               c_t1, c_t2, c_t3, c_t4 = st.columns(4)
@@ -691,6 +717,9 @@ with tabs[1]:
                       conn.execute(sqlalchemy.text("""INSERT INTO tareas (proyecto_id, nombre_tarea, responsable, fecha_inicio, duracion_dias, fecha_fin, porcentaje_avance, predecesoras) VALUES (:pid, :n, :r, :fi, :d, :ff, 0.0, :p)"""), {"pid": p_id, "n": t_nom, "r": t_res, "fi": str(t_ini), "d": t_dur, "ff": str(pd.to_datetime(t_ini) + timedelta(days=t_dur - 1)), "p": t_pre})
                       conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), 
                                    {"p_id": p_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": f"Se añadió la nueva tarea '{t_nom}' al cronograma Gantt."})
+                  
+                  # RE-CALCULAR Y AUTO-SINCRONIZAR AVANCE GENERAL EN BASE DE DATOS
+                  auto_sincronizar_avance_proyecto(engine, p_id)
                   limpiar_cache_y_recargar(); st.rerun()
 
 # PESTAÑA 3: VISTA KANBAN
