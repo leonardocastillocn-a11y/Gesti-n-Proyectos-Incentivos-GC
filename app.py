@@ -138,6 +138,9 @@ st.markdown(
     .kanban-title { font-weight: 700; color: #0F172A; font-size: 0.95rem; margin-bottom: 8px; }
     .kanban-meta { font-size: 0.8rem; color: #64748B; margin-bottom: 4px; }
     
+    /* LOGIN LIMPIO */
+    .login-box { background-color: #FFFFFF; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid #E2E8F0; }
+    
     /* BOTÓN FLOTANTE "PROJECT IA" */
     div[data-testid="stPopover"] { position: fixed !important; bottom: 30px !important; right: 30px !important; z-index: 999999 !important; }
     div[data-testid="stPopover"] > button { 
@@ -291,7 +294,7 @@ def calcular_metricas_baseline(row):
           estatus = "En tiempo"
       elif hoy > f_fin and avance_real < 1.0:
           estatus = "Retrasado"
-      elif desviacion < -0.10: # Más de 10% por debajo del plan
+      elif desviacion < -0.10:
           estatus = "Retrasado"
       else:
           estatus = row.get("estatus_tiempo", "En tiempo")
@@ -341,7 +344,6 @@ if not df.empty:
   df['es_estancado'] = df['ultima_actualizacion'].apply(evaluar_estancamiento) & (~df['etapa_actual'].str.contains("Cierre", case=False, na=False))
   proyectos_estancados = df[df['es_estancado']]
   
-  # Recalcular estatus basado en Baseline si existe
   df['info_baseline'] = df.apply(calcular_metricas_baseline, axis=1)
   df['estatus_calculado'] = df.apply(lambda r: r['info_baseline']['estatus_sugerido'], axis=1)
   
@@ -439,7 +441,7 @@ with tabs[0]:
     fig_carga.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", xaxis_title="Líder Operativo", yaxis_title="Número de Proyectos")
     st.plotly_chart(fig_carga, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (BASELINES + APROBACIONES)
+# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (BASELINES + APROBACIONES PENDIENTES)
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
@@ -447,40 +449,41 @@ with tabs[1]:
     if es_moderador and not df_solicitudes_baseline.empty:
       sol_pendientes = df_solicitudes_baseline[df_solicitudes_baseline["estado"] == "Pendiente"]
       if not sol_pendientes.empty:
-          with st.expander(f"📬 Solicitudes de Cambio de Baseline Pendientes ({len(sol_pendientes)})", expanded=True):
-              st.write("Revisa y aprueba o rechaza las modificaciones de fecha de compromiso baseline enviadas por los líderes de proyecto:")
-              for _, sol in sol_pendientes.iterrows():
-                  p_rel = df[df["id"] == sol["proyecto_id"]].iloc[0] if not df[df["id"] == sol["proyecto_id"]].empty else None
-                  p_nom = p_rel["nombre"] if p_rel is not None else "Proyecto Desconocido"
-                  f_actual = p_rel["fecha_fin_baseline"] if (p_rel is not None and p_rel["fecha_fin_baseline"]) else "Sin Baseline"
-                  
-                  c_s1, c_s2, c_s3, c_s4 = st.columns([2.5, 2, 1, 1])
-                  c_s1.markdown(f"**Proyecto:** [{p_rel['folio'] if p_rel is not None else ''}] {p_nom}\n\n*Solicitante:* {sol['solicitante']} | *Motivo:* {sol['motivo']}")
-                  c_s2.markdown(f"**Fecha Actual:** `{f_actual}`\n\n**Nueva Propuesta:** `{sol['fecha_fin_propuesta']}`")
-                  
-                  if c_s3.button("✅ Aprobar", key=f"btn_aprb_{sol['id']}"):
-                      ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                      engine = obtener_engine()
-                      with engine.begin() as conn:
-                          conn.execute(sqlalchemy.text("UPDATE proyectos SET fecha_fin_baseline = :n_f WHERE id = :pid"),
-                                       {"n_f": sol['fecha_fin_propuesta'], "pid": sol['proyecto_id']})
-                          conn.execute(sqlalchemy.text("UPDATE solicitudes_baseline SET estado = 'Aprobado', aprobador = :ap WHERE id = :sid"),
-                                       {"ap": st.session_state.nombre_actual, "sid": sol['id']})
-                          conn.execute(sqlalchemy.text("INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:pid, :usr, :fh, :com)"),
-                                       {"pid": sol['proyecto_id'], "usr": st.session_state.nombre_actual, "fh": ahora, "com": f"Aprobación de Re-baseline: Nueva fecha fin comprometida {sol['fecha_fin_propuesta']}."})
-                      limpiar_cache_y_recargar()
-                      st.success("¡Baseline actualizado y notificado!")
-                      st.rerun()
+          st.markdown(f"### 📬 Control de Cambios: Solicitudes de Re-baseline Pendientes ({len(sol_pendientes)})")
+          st.write("Revisa y aprueba o rechaza las modificaciones de fecha de compromiso baseline enviadas por los líderes:")
+          for _, sol in sol_pendientes.iterrows():
+              p_rel_df = df[df["id"] == sol["proyecto_id"]]
+              p_rel = p_rel_df.iloc[0] if not p_rel_df.empty else None
+              p_nom = p_rel["nombre"] if p_rel is not None else "Proyecto General"
+              f_actual = p_rel["fecha_fin_baseline"] if (p_rel is not None and p_rel["fecha_fin_baseline"]) else "Sin Baseline"
+              
+              c_s1, c_s2, c_s3, c_s4 = st.columns([2.5, 2, 1, 1])
+              c_s1.markdown(f"**Proyecto:** [{p_rel['folio'] if p_rel is not None else ''}] {p_nom}\n\n*Solicitante:* {sol['solicitante']} | *Motivo:* {sol['motivo']}")
+              c_s2.markdown(f"**Fecha Actual:** `{f_actual}`\n\n**Nueva Propuesta:** `{sol['fecha_fin_propuesta']}`")
+              
+              if c_s3.button("✅ Aprobar", key=f"btn_aprb_{sol['id']}"):
+                  ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                  engine = obtener_engine()
+                  with engine.begin() as conn:
+                      conn.execute(sqlalchemy.text("UPDATE proyectos SET fecha_fin_baseline = :n_f WHERE id = :pid"),
+                                   {"n_f": sol['fecha_fin_propuesta'], "pid": sol['proyecto_id']})
+                      conn.execute(sqlalchemy.text("UPDATE solicitudes_baseline SET estado = 'Aprobado', aprobador = :ap WHERE id = :sid"),
+                                   {"ap": st.session_state.nombre_actual, "sid": sol['id']})
+                      conn.execute(sqlalchemy.text("INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:pid, :usr, :fh, :com)"),
+                                   {"pid": sol['proyecto_id'], "usr": st.session_state.nombre_actual, "fh": ahora, "com": f"Aprobación de Re-baseline: Nueva fecha fin comprometida {sol['fecha_fin_propuesta']}."})
+                  limpiar_cache_y_recargar()
+                  st.success("¡Baseline actualizado y notificado!")
+                  st.rerun()
 
-                  if c_s4.button("❌ Rechazar", key=f"btn_rchz_{sol['id']}"):
-                      engine = obtener_engine()
-                      with engine.begin() as conn:
-                          conn.execute(sqlalchemy.text("UPDATE solicitudes_baseline SET estado = 'Rechazado', aprobador = :ap WHERE id = :sid"),
-                                       {"ap": st.session_state.nombre_actual, "sid": sol['id']})
-                      limpiar_cache_y_recargar()
-                      st.info("Solicitud rechazada.")
-                      st.rerun()
-                  st.divider()
+              if c_s4.button("❌ Rechazar", key=f"btn_rchz_{sol['id']}"):
+                  engine = obtener_engine()
+                  with engine.begin() as conn:
+                      conn.execute(sqlalchemy.text("UPDATE solicitudes_baseline SET estado = 'Rechazado', aprobador = :ap WHERE id = :sid"),
+                                   {"ap": st.session_state.nombre_actual, "sid": sol['id']})
+                  limpiar_cache_y_recargar()
+                  st.info("Solicitud rechazada.")
+                  st.rerun()
+              st.divider()
 
     if es_moderador:
       with st.expander("🗑️ Eliminación Masiva de Proyectos (Solo Moderadores)", expanded=False):
@@ -594,25 +597,32 @@ with tabs[1]:
               with engine.begin() as conn: conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id=:id"), {"id": p_id})
               limpiar_cache_y_recargar(); st.rerun()
 
-          # FORMULARIO DE SOLICITUD DE RE-BASELINE
-          with st.expander("📩 Solicitar Cambio de Fecha Fin Baseline (Re-baseline)", expanded=False):
-              st.write("Si requieres ajustar la fecha compromiso comprometida en el Baseline, envía una solicitud formal para aprobación directiva:")
-              with st.form(f"f_sol_baseline_{p_id}"):
-                  n_f_prop = st.date_input("Nueva Fecha Fin Propuesta")
-                  n_motivo = st.text_area("Justificación / Motivo del Ajuste de Tiempo *", placeholder="Ej. Retraso por parte del proveedor tecnológico en la entrega del servidor...")
-                  if st.form_submit_button("Enviar Solicitud de Re-baseline", type="secondary"):
-                      if n_motivo.strip():
-                          ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                          engine = obtener_engine()
-                          with engine.begin() as conn:
-                              conn.execute(sqlalchemy.text("""INSERT INTO solicitudes_baseline (proyecto_id, solicitante, fecha_fin_propuesta, motivo, estado, fecha_solicitud) 
-                                                             VALUES (:pid, :sol, :ff, :mot, 'Pendiente', :fsol)"""),
-                                           {"pid": p_id, "sol": st.session_state.nombre_actual, "ff": str(n_f_prop), "mot": n_motivo.strip(), "fsol": ahora})
-                          limpiar_cache_y_recargar()
-                          st.success("¡Solicitud enviada a la junta directiva para aprobación!")
-                          st.rerun()
-                      else:
-                          st.error("La justificación es obligatoria.")
+          # SECCIÓN DE CONTROL DE CAMBIOS / RE-BASELINE EN POPOVER (SOLUCIÓN ANIDACIÓN)
+          st.markdown("---")
+          col_sol1, col_sol2 = st.columns([3, 1])
+          with col_sol1:
+              st.markdown("##### 📩 Control de Cambios (Solicitud de Re-baseline)")
+              st.caption("Si requieres ajustar la fecha compromiso baseline, envía una solicitud formal a dirección.")
+          with col_sol2:
+              pop_sol = st.popover("📝 Crear Solicitud", use_container_width=True)
+              with pop_sol:
+                  st.markdown("<b>Solicitar Cambio de Fecha Fin Baseline</b>", unsafe_allow_html=True)
+                  with st.form(f"f_sol_baseline_{p_id}"):
+                      n_f_prop = st.date_input("Nueva Fecha Fin Propuesta")
+                      n_motivo = st.text_area("Justificación / Motivo del Ajuste *", placeholder="Ej. Retraso de proveedor externo en entrega de servidores...")
+                      if st.form_submit_button("Enviar a Aprobación", type="primary"):
+                          if n_motivo.strip():
+                              ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                              engine = obtener_engine()
+                              with engine.begin() as conn:
+                                  conn.execute(sqlalchemy.text("""INSERT INTO solicitudes_baseline (proyecto_id, solicitante, fecha_fin_propuesta, motivo, estado, fecha_solicitud) 
+                                                                 VALUES (:pid, :sol, :ff, :mot, 'Pendiente', :fsol)"""),
+                                               {"pid": p_id, "sol": st.session_state.nombre_actual, "ff": str(n_f_prop), "mot": n_motivo.strip(), "fsol": ahora})
+                              limpiar_cache_y_recargar()
+                              st.success("¡Solicitud enviada a la junta directiva para aprobación!")
+                              st.rerun()
+                          else:
+                              st.error("La justificación es obligatoria.")
 
         else:
           st.info(f"🔒 **Modo Lectura:** Perteneces al perfil de Usuario. Solo el responsable asignado (**{row['lider_asignado']}**) o un Moderador pueden realizar cambios en este proyecto.")
@@ -832,7 +842,7 @@ if es_moderador:
             p_folio = b_row.get("folio", "S/F")
             st.markdown(f"<div class='timeline-item'><div class='timeline-date'>{b_row['fecha_hora']} | Autor: <b>{b_row['usuario_nombre']}</b> | Proyecto: <b>[{p_folio}] {p_nombre}</b></div><div class='timeline-text'>{b_row['comentario']}</div></div>", unsafe_allow_html=True)
 
-  # PESTAÑA 6: USUARIOS (GESTIÓN Y EDICIÓN COMPLETA)
+  # PESTAÑA 6: USUARIOS
   with tabs[5]:
     st.write("")
     df_users = df_users_raw.copy()
