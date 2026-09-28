@@ -450,11 +450,11 @@ with tabs[0]:
     fig_carga.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", xaxis_title="Líder Operativo", yaxis_title="Número de Proyectos")
     st.plotly_chart(fig_carga, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (PANEL CENTRAL DE CONTROL DE CAMBIOS)
+# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (VISTA DE LECTURA MINIMALISTA + EDICIÓN EN EMERGENTE)
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
-    # 1. PANEL DE APROBACIONES PENDIENTES (PARA MODERADORES)
+    # 1. PANEL DE APROBACIONES PENDIENTES
     if es_moderador and not df_solicitudes_baseline.empty:
       sol_pendientes = df_solicitudes_baseline[df_solicitudes_baseline["estado"] == "Pendiente"]
       if not sol_pendientes.empty:
@@ -494,7 +494,7 @@ with tabs[1]:
                   st.rerun()
               st.divider()
 
-    # 2. PANEL CENTRAL DE SOLICITUD DE RE-BASELINE (UNIFICADO ARRIBA)
+    # 2. PANEL CENTRAL DE SOLICITUD DE RE-BASELINE
     with st.expander("📩 Solicitar Cambio de Baseline (Re-baseline)", expanded=False):
       st.write("Si requieres ajustar la fecha compromiso baseline de una iniciativa, selecciona el proyecto y envía tu solicitud formal a dirección:")
       df_mis_proyectos = df if es_moderador else df[df["lider_asignado"] == st.session_state.nombre_actual]
@@ -600,70 +600,73 @@ with tabs[1]:
       with st.expander(f"[{row['folio'] or 'S/F'}] {row['nombre']} — Avance Real: {int(avance_display*100)}%{desviacion_str}"):
         st.progress(float(avance_display))
 
+        # RESUMEN DE METADATOS LIMPIO Y ELEGANTE
+        st.markdown(f"""
+        <div style='background-color:#F8FAFC; padding:16px; border-radius:10px; border:1px solid #E2E8F0; margin-bottom:15px;'>
+            <div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;'>
+                <div><span style='color:#64748B; font-size:0.8rem;'>RESPONSABLE:</span><br/><b style='color:#0F172A; font-size:0.95rem;'>{row['lider_asignado']}</b></div>
+                <div><span style='color:#64748B; font-size:0.8rem;'>ÁREA:</span><br/><b style='color:#0F172A; font-size:0.95rem;'>{row['area_negocio']}</b></div>
+                <div><span style='color:#64748B; font-size:0.8rem;'>FASE:</span><br/><b style='color:#05297A; font-size:0.95rem;'>{row['etapa_actual']}</b></div>
+                <div><span style='color:#64748B; font-size:0.8rem;'>ESTATUS:</span><br/><span class='status-badge {badge_status}'>{row['estatus_calculado']}</span>{tag_estancado}</div>
+                <div><span style='color:#64748B; font-size:0.8rem;'>FECHA FIN BASELINE:</span><br/><b style='color:#05297A; font-size:0.95rem;'>{info_b.get('fecha_fin_baseline', 'Sin Fecha')}</b></div>
+                <div><span style='color:#64748B; font-size:0.8rem;'>PRESUPUESTO / ROI:</span><br/><b style='color:#166534; font-size:0.95rem;'>${float(row.get('presupuesto', 0.0)):,.2f} / ${float(row.get('roi_estimado', 0.0)):,.2f}</b></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # BOTÓN EMERGENTE DE EDICIÓN (SOLO SI TIENE PERMISOS)
         if puedo_editar:
-          with st.form(f"update_{p_id}"):
-            c1, c2, c3 = st.columns(3)
-            c1.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#64748B;'>Responsable:</span> <b style='color:#0F172A;'>{row['lider_asignado']}</b></p>", unsafe_allow_html=True)
-            c2.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#64748B;'>Estatus Calculado:</span> <span class='status-badge {badge_status}'>{row['estatus_calculado']}</span>{tag_estancado}</p>", unsafe_allow_html=True)
-            c3.markdown(f"<p style='margin:0; font-size:0.88rem; text-align:right;'><span style='color:#64748B;'>Fecha Fin Baseline:</span> <b style='color:#05297A;'>{info_b.get('fecha_fin_baseline', 'Sin Fecha')}</b></p>", unsafe_allow_html=True)
-            st.divider()
+          col_btn_edit, _ = st.columns([1, 4])
+          with col_btn_edit:
+              pop_edit = st.popover("✏️ Editar Proyecto", use_container_width=True)
+              with pop_edit:
+                  st.markdown(f"<b>Editar Proyecto [{row['folio'] or 'S/F'}]</b>", unsafe_allow_html=True)
+                  with st.form(f"form_pop_edit_{p_id}"):
+                      u_etapa = st.selectbox("Fase del Proyecto", OPCIONES_ETAPAS, index=(OPCIONES_ETAPAS.index(row["etapa_actual"]) if row["etapa_actual"] in OPCIONES_ETAPAS else 0))
+                      u_estatus = st.selectbox("Estatus Declarado", OPCIONES_ESTATUS, index=(OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0))
+                      
+                      if tiene_tareas:
+                          st.info(f"⚡ Avance auto-sincronizado con Gantt: **{int(avance_calculado_gantt*100)}%**")
+                          u_avance = avance_calculado_gantt
+                      else:
+                          u_avance = st.slider("Progreso General (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
+                      
+                      f1, f2 = st.columns(2)
+                      u_presupuesto = f1.number_input("Presupuesto ($)", min_value=0.0, value=float(row.get("presupuesto", 0.0)), step=1000.0)
+                      u_roi = f2.number_input("ROI Estimado ($)", min_value=0.0, value=float(row.get("roi_estimado", 0.0)), step=1000.0)
 
-            c_form1, c_form2, c_form3 = st.columns(3)
-            u_etapa = c_form1.selectbox("Fase del Proyecto", OPCIONES_ETAPAS, index=(OPCIONES_ETAPAS.index(row["etapa_actual"]) if row["etapa_actual"] in OPCIONES_ETAPAS else 0))
-            u_estatus = c_form2.selectbox("Estatus Declarado", OPCIONES_ESTATUS, index=(OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0))
-            
-            if tiene_tareas:
-                c_form3.markdown(f"<p style='margin-top:18px; font-size:0.8rem; color:#05297A; font-weight:700;'>⚡ AVANCE INTERCONECTADO (GANTT):<br/><span style='font-size:1.5rem; font-weight:800;'>{int(avance_calculado_gantt*100)}%</span></p>", unsafe_allow_html=True)
-                u_avance = avance_calculado_gantt
-            else:
-                u_avance = c_form3.slider("Progreso General (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
-            
-            f1, f2 = st.columns(2)
-            u_presupuesto = f1.number_input("Presupuesto Asignado ($)", min_value=0.0, value=float(row.get("presupuesto", 0.0)), step=1000.0)
-            u_roi = f2.number_input("Impacto / ROI Estimado ($)", min_value=0.0, value=float(row.get("roi_estimado", 0.0)), step=1000.0)
+                      u_comentario = st.text_input("Añadir Comentario a Bitácora", placeholder="Ej. Avance en fase de pruebas...")
+                      u_carpeta = st.text_input("Carpeta Drive (URL)", row["carpeta_url"] or "")
+                      u_plan = st.text_input("Link a Plan Anexo", row["plan_url"] or "")
+                      
+                      st.write("")
+                      if st.form_submit_button("Guardar Cambios", type="primary", use_container_width=True):
+                          ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                          texto_bitacora = u_comentario.strip() or f"Actualización general: Estatus '{u_estatus}', Fase '{u_etapa}' y Avance al {int(u_avance*100)}%."
 
-            st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#334155; margin-top:8px; margin-bottom:4px;'>AÑADIR COMENTARIO A BITÁCORA</p>", unsafe_allow_html=True)
-            u_comentario = st.text_input("Escribe el estatus de la semana...", placeholder="Ej. Se finalizó la fase de documentación...")
-            
-            l1, l2 = st.columns(2)
-            u_carpeta = l1.text_input("Carpeta Drive (URL)", row["carpeta_url"] or "")
-            u_plan = l2.text_input("Link a Plan Anexo (Opcional)", row["plan_url"] or "")
-            
-            st.write("")
-            btn1, btn2, btn3 = st.columns([3, 3, 6])
-            if btn1.form_submit_button("Guardar Cambios", type="primary"):
-              ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-              
-              texto_bitacora = u_comentario.strip()
-              if not texto_bitacora:
-                  texto_bitacora = f"Actualización general: Estatus '{u_estatus}', Fase '{u_etapa}' y Avance al {int(u_avance*100)}%."
+                          engine = obtener_engine()
+                          with engine.begin() as conn:
+                              conn.execute(sqlalchemy.text("""UPDATE proyectos SET etapa_actual=:e, estatus_tiempo=:s, avance_real=:a, carpeta_url=:c, plan_url=:p, ultima_actualizacion=:u, presupuesto=:pr, roi_estimado=:ro WHERE id=:id"""), 
+                                           {"e": u_etapa, "s": u_estatus, "a": u_avance, "c": u_carpeta, "p": u_plan, "u": ahora, "pr": u_presupuesto, "ro": u_roi, "id": p_id})
+                              conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), 
+                                           {"p_id": p_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": texto_bitacora})
+                          limpiar_cache_y_recargar(); st.rerun()
 
-              engine = obtener_engine()
-              with engine.begin() as conn:
-                conn.execute(sqlalchemy.text("""UPDATE proyectos SET etapa_actual=:e, estatus_tiempo=:s, avance_real=:a, carpeta_url=:c, plan_url=:p, ultima_actualizacion=:u, presupuesto=:pr, roi_estimado=:ro WHERE id=:id"""), 
-                             {"e": u_etapa, "s": u_estatus, "a": u_avance, "c": u_carpeta, "p": u_plan, "u": ahora, "pr": u_presupuesto, "ro": u_roi, "id": p_id})
-                conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), 
-                             {"p_id": p_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": texto_bitacora})
-              limpiar_cache_y_recargar(); st.rerun()
-
-            if es_moderador and btn2.form_submit_button("Eliminar Proyecto", type="secondary"):
-              engine = obtener_engine()
-              with engine.begin() as conn: conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id=:id"), {"id": p_id})
-              limpiar_cache_y_recargar(); st.rerun()
-
+                      if es_moderador and st.form_submit_button("Eliminar Proyecto", type="secondary", use_container_width=True):
+                          engine = obtener_engine()
+                          with engine.begin() as conn: conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id=:id"), {"id": p_id})
+                          limpiar_cache_y_recargar(); st.rerun()
         else:
-          st.info(f"🔒 **Modo Lectura:** Perteneces al perfil de Usuario. Solo el responsable asignado (**{row['lider_asignado']}**) o un Moderador pueden realizar cambios en este proyecto.")
-          c1, c2, c3 = st.columns(3)
-          c1.write(f"**Área:** {row['area_negocio']}")
-          c2.write(f"**Estatus Calculado:** `{row['estatus_calculado']}`")
-          c3.write(f"**Fase Actual:** {row['etapa_actual']}")
+          st.info(f"🔒 **Modo Lectura:** Solo el responsable asignado (**{row['lider_asignado']}**) o un Moderador pueden editar este proyecto.")
 
+        # HISTORIAL DE BITÁCORA
         historial_proyecto = df_bitacora[df_bitacora["proyecto_id"] == p_id]
         if not historial_proyecto.empty:
           st.markdown("<h5 style='margin-top: 15px; color:#0F172A; font-size:1.05rem;'>📜 Historial de Comentarios</h5>", unsafe_allow_html=True)
           for _, h_row in historial_proyecto.iterrows():
             st.markdown(f"<div class='timeline-item'><div class='timeline-date'>{h_row['fecha_hora']} | Por: {h_row['usuario_nombre']}</div><div class='timeline-text'>{h_row['comentario']}</div></div>", unsafe_allow_html=True)
 
+        # DIAGRAMA GANTT INTERCONECTADO
         st.markdown("<h4 style='color:#0F172A; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #CBD5E1; font-size:1.1rem;'>📅 Plan de Trabajo (Gantt Interconectado)</h4>", unsafe_allow_html=True)
         df_tareas_calc = calcular_fechas_tarea_df(df_tareas_proj)
 
@@ -680,7 +683,7 @@ with tabs[1]:
           st.plotly_chart(fig, use_container_width=True)
 
           if puedo_editar:
-            st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#05297A;'>✏️ Actualizar Avance por Tarea (Afecta el Progreso General)</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#05297A;'>✏️ Actualizar Avance por Tarea</p>", unsafe_allow_html=True)
             with st.form(f"upd_t_{p_id}", clear_on_submit=True):
               col_sel, col_val, col_btn = st.columns([2, 1, 1])
               opciones_tareas = df_tareas_calc.apply(lambda x: f"{x['id']} - {x['nombre_tarea']}", axis=1).tolist()
