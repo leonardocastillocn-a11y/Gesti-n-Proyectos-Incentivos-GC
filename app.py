@@ -52,13 +52,13 @@ st.markdown(
     }
     
     /* INPUTS LIMPIOS Y REDONDEADOS */
-    .stTextInput > div > div, .stSelectbox > div > div, .stTextArea > div > div, .stNumberInput > div > div { 
+    .stTextInput > div > div, .stSelectbox > div > div, .stTextArea > div > div, .stNumberInput > div > div, .stDateInput > div > div { 
         border-radius: 8px !important; 
         border: 1px solid #CBD5E1 !important; 
         background-color: #F8FAFC !important; 
         transition: all 0.2s ease; 
     }
-    .stTextInput > div > div:focus-within, .stSelectbox > div > div:focus-within, .stNumberInput > div > div:focus-within { 
+    .stTextInput > div > div:focus-within, .stSelectbox > div > div:focus-within, .stNumberInput > div > div:focus-within, .stDateInput > div > div:focus-within { 
         border-color: #05297A !important; 
         box-shadow: 0 0 0 2px rgba(5, 41, 122, 0.15) !important; 
         background-color: #FFFFFF !important; 
@@ -138,9 +138,6 @@ st.markdown(
     .kanban-title { font-weight: 700; color: #0F172A; font-size: 0.95rem; margin-bottom: 8px; }
     .kanban-meta { font-size: 0.8rem; color: #64748B; margin-bottom: 4px; }
     
-    /* LOGIN LIMPIO */
-    .login-box { background-color: #FFFFFF; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid #E2E8F0; }
-    
     /* BOTÓN FLOTANTE "PROJECT IA" */
     div[data-testid="stPopover"] { position: fixed !important; bottom: 30px !important; right: 30px !important; z-index: 999999 !important; }
     div[data-testid="stPopover"] > button { 
@@ -184,14 +181,17 @@ def inicializar_db():
   engine = obtener_engine()
   
   with engine.begin() as conn:
-    conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS proyectos (id SERIAL PRIMARY KEY, folio TEXT, nombre TEXT NOT NULL, area_negocio TEXT, tipo_proyecto TEXT, subtipo TEXT, gerente TEXT, lider_asignado TEXT, etapa_actual TEXT, estatus_tiempo TEXT, avance_real REAL, resumen_estatus TEXT, carpeta_url TEXT, plan_url TEXT, ultima_actualizacion TEXT, presupuesto REAL DEFAULT 0.0, roi_estimado REAL DEFAULT 0.0)"""))
+    conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS proyectos (id SERIAL PRIMARY KEY, folio TEXT, nombre TEXT NOT NULL, area_negocio TEXT, tipo_proyecto TEXT, subtipo TEXT, gerente TEXT, lider_asignado TEXT, etapa_actual TEXT, estatus_tiempo TEXT, avance_real REAL, resumen_estatus TEXT, carpeta_url TEXT, plan_url TEXT, ultima_actualizacion TEXT, presupuesto REAL DEFAULT 0.0, roi_estimado REAL DEFAULT 0.0, fecha_inicio_baseline TEXT, fecha_fin_baseline TEXT)"""))
     conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS usuarios (correo TEXT PRIMARY KEY, password TEXT NOT NULL, rol TEXT NOT NULL, nombre TEXT)"""))
     conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS tareas (id SERIAL PRIMARY KEY, proyecto_id INTEGER, nombre_tarea TEXT NOT NULL, responsable TEXT, fecha_inicio TEXT, duracion_dias INTEGER, fecha_fin TEXT, porcentaje_avance REAL, predecesoras TEXT)"""))
     conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS bitacora (id SERIAL PRIMARY KEY, proyecto_id INTEGER, usuario_nombre TEXT, fecha_hora TEXT, comentario TEXT)"""))
-    
+    conn.execute(sqlalchemy.text("""CREATE TABLE IF NOT EXISTS solicitudes_baseline (id SERIAL PRIMARY KEY, proyecto_id INTEGER, solicitante TEXT, fecha_fin_propuesta TEXT, motivo TEXT, estado TEXT DEFAULT 'Pendiente', fecha_solicitud TEXT, aprobador TEXT)"""))
+
   for col_sql in [
       "ALTER TABLE proyectos ADD COLUMN presupuesto REAL DEFAULT 0.0",
-      "ALTER TABLE proyectos ADD COLUMN roi_estimado REAL DEFAULT 0.0"
+      "ALTER TABLE proyectos ADD COLUMN roi_estimado REAL DEFAULT 0.0",
+      "ALTER TABLE proyectos ADD COLUMN fecha_inicio_baseline TEXT",
+      "ALTER TABLE proyectos ADD COLUMN fecha_fin_baseline TEXT"
   ]:
       try:
           with engine.begin() as conn:
@@ -213,13 +213,17 @@ def cargar_datos_completos():
   df_b = pd.read_sql("SELECT * FROM bitacora ORDER BY id DESC", engine)
   df_t = pd.read_sql("SELECT * FROM tareas ORDER BY id ASC", engine)
   df_u = pd.read_sql("SELECT nombre, correo, password, rol FROM usuarios ORDER BY nombre ASC", engine)
+  df_s = pd.read_sql("SELECT * FROM solicitudes_baseline ORDER BY id DESC", engine)
   
   if 'presupuesto' not in df_p.columns: df_p['presupuesto'] = 0.0
   if 'roi_estimado' not in df_p.columns: df_p['roi_estimado'] = 0.0
+  if 'fecha_inicio_baseline' not in df_p.columns: df_p['fecha_inicio_baseline'] = None
+  if 'fecha_fin_baseline' not in df_p.columns: df_p['fecha_fin_baseline'] = None
+  
   df_p['presupuesto'] = df_p['presupuesto'].fillna(0.0)
   df_p['roi_estimado'] = df_p['roi_estimado'].fillna(0.0)
   
-  return df_p, df_b, df_t, df_u
+  return df_p, df_b, df_t, df_u, df_s
 
 def limpiar_cache_y_recargar():
   cargar_datos_completos.clear()
@@ -259,6 +263,43 @@ def evaluar_estancamiento(fecha_actualizacion_str):
   except Exception:
     return False
 
+# --- MOTOR DE CÁLCULO BASELINE VS. REAL ---
+def calcular_metricas_baseline(row):
+  f_fin_b_str = row.get("fecha_fin_baseline")
+  if not f_fin_b_str or str(f_fin_b_str).strip() in ["", "None", "N/A"]:
+      return {"pct_planeado": 0.0, "desviacion": 0.0, "estatus_sugerido": row.get("estatus_tiempo", "En tiempo"), "tiene_baseline": False}
+  
+  try:
+      f_ini_b_str = row.get("fecha_inicio_baseline")
+      f_ini = datetime.strptime(str(f_ini_b_str)[:10], "%Y-%m-%d") if f_ini_b_str and str(f_ini_b_str).strip() not in ["", "None"] else datetime.now() - timedelta(days=30)
+      f_fin = datetime.strptime(str(f_fin_b_str)[:10], "%Y-%m-%d")
+      hoy = datetime.now()
+
+      if hoy <= f_ini:
+          pct_planeado = 0.0
+      elif hoy >= f_fin:
+          pct_planeado = 1.0
+      else:
+          dias_totales = max((f_fin - f_ini).days, 1)
+          dias_transcurridos = (hoy - f_ini).days
+          pct_planeado = min(max(dias_transcurridos / dias_totales, 0.0), 1.0)
+
+      avance_real = float(row.get("avance_real") or 0.0)
+      desviacion = avance_real - pct_planeado
+
+      if avance_real >= 1.0:
+          estatus = "En tiempo"
+      elif hoy > f_fin and avance_real < 1.0:
+          estatus = "Retrasado"
+      elif desviacion < -0.10: # Más de 10% por debajo del plan
+          estatus = "Retrasado"
+      else:
+          estatus = row.get("estatus_tiempo", "En tiempo")
+
+      return {"pct_planeado": pct_planeado, "desviacion": desviacion, "estatus_sugerido": estatus, "tiene_baseline": True, "fecha_fin_baseline": str(f_fin_b_str)[:10]}
+  except Exception:
+      return {"pct_planeado": 0.0, "desviacion": 0.0, "estatus_sugerido": row.get("estatus_tiempo", "En tiempo"), "tiene_baseline": False}
+
 # --- LOGIN GATEWAY ---
 if "autenticado" not in st.session_state:
   st.session_state.autenticado = False; st.session_state.correo_actual = None; st.session_state.nombre_actual = None; st.session_state.rol = None
@@ -291,21 +332,28 @@ if not st.session_state.autenticado:
   st.stop()
 
 # --- CARGA DE DATOS EN MEMORIA ---
-df, df_bitacora, df_tareas_all, df_users_raw = cargar_datos_completos()
+df, df_bitacora, df_tareas_all, df_users_raw, df_solicitudes_baseline = cargar_datos_completos()
 es_moderador = st.session_state.rol == "Moderador"
 lista_lideres_registrados = obtener_lista_usuarios(df_users_raw)
 
-# Identificación de Proyectos Estancados
+# Identificación de Proyectos Estancados y Evaluación Baseline
 if not df.empty:
   df['es_estancado'] = df['ultima_actualizacion'].apply(evaluar_estancamiento) & (~df['etapa_actual'].str.contains("Cierre", case=False, na=False))
   proyectos_estancados = df[df['es_estancado']]
-  proyectos_retrasados = df[df["estatus_tiempo"].isin(["Retrasado", "Detenido"])]
+  
+  # Recalcular estatus basado en Baseline si existe
+  df['info_baseline'] = df.apply(calcular_metricas_baseline, axis=1)
+  df['estatus_calculado'] = df.apply(lambda r: r['info_baseline']['estatus_sugerido'], axis=1)
+  
+  proyectos_retrasados = df[df["estatus_calculado"].isin(["Retrasado", "Detenido"])]
   
   if not proyectos_retrasados.empty and "alerta_mostrada" not in st.session_state:
     st.toast(f"¡Hola! Tienes {len(proyectos_retrasados)} iniciativas que requieren atención por retraso.", icon="🚨")
     st.session_state.alerta_mostrada = True
 else:
   df['es_estancado'] = False
+  df['info_baseline'] = None
+  df['estatus_calculado'] = "En tiempo"
   proyectos_estancados = pd.DataFrame()
   proyectos_retrasados = pd.DataFrame()
 
@@ -340,15 +388,18 @@ with st.sidebar:
     with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer: df.to_excel(writer, index=False, sheet_name="Proyectos")
     st.download_button("Exportar a Excel (.xlsx)", data=excel_buffer.getvalue(), file_name=f"Base_Datos_{datetime.now().strftime('%Y%m%d')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, type="secondary")
 
+    csv_data = df.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
+    st.download_button("📊 Exportar para Google Sheets (.csv)", data=csv_data, file_name=f"Heading360_GoogleSheets_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv", use_container_width=True, type="secondary")
+
   st.write("")
   if st.button("Cerrar Sesión", use_container_width=True): st.session_state.autenticado = False; st.rerun()
 
-# --- HEADER Y MÉTRICAS GENERALES + FINANCIERAS ---
+# --- HEADER Y MÉTRICAS GENERALES ---
 st.markdown("<h2 style='margin-bottom: 20px; color:#0F172A;'>📊 Visión General del Portafolio</h2>", unsafe_allow_html=True)
 if not df.empty and not proyectos_retrasados.empty:
-  st.markdown(f"<div style='background-color:#FEF2F2; border-left: 5px solid #EF4444; padding: 16px; border-radius: 8px; margin-bottom: 20px;'><p style='color:#991B1B; margin:0; font-weight:600;'>⚠️ Tienes {len(proyectos_retrasados)} iniciativas en Retraso y {len(proyectos_estancados)} estancadas sin movimientos recientes.</p></div>", unsafe_allow_html=True)
+  st.markdown(f"<div style='background-color:#FEF2F2; border-left: 5px solid #EF4444; padding: 16px; border-radius: 8px; margin-bottom: 20px;'><p style='color:#991B1B; margin:0; font-weight:600;'>⚠️ Tienes {len(proyectos_retrasados)} iniciativas en Retraso vs Baseline y {len(proyectos_estancados)} estancadas sin movimientos recientes.</p></div>", unsafe_allow_html=True)
 
-total_p = len(df); en_t = len(df[df["estatus_tiempo"] == "En tiempo"]) if total_p > 0 else 0; ret = len(proyectos_retrasados) if total_p > 0 else 0
+total_p = len(df); en_t = len(df[df["estatus_calculado"] == "En tiempo"]) if total_p > 0 else 0; ret = len(proyectos_retrasados) if total_p > 0 else 0
 presupuesto_total = df["presupuesto"].sum() if total_p > 0 else 0.0
 roi_total = df["roi_estimado"].sum() if total_p > 0 else 0.0
 
@@ -366,7 +417,7 @@ if es_moderador:
 else: 
   tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban"])
 
-# PESTAÑA 1: DASHBOARD CON MATRIZ DE CARGA
+# PESTAÑA 1: DASHBOARD
 with tabs[0]:
   st.write("")
   if df.empty: st.info("Agrega algunos proyectos para visualizar los gráficos analíticos.")
@@ -376,22 +427,61 @@ with tabs[0]:
       fig1 = px.pie(df, names="area_negocio", title="Distribución por Área Solicitante", hole=0.45, color_discrete_sequence=px.colors.qualitative.Prism)
       fig1.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", title_font=dict(size=18, family="Inter", color="#0F172A")); st.plotly_chart(fig1, use_container_width=True)
     with d_col2:
-      df_status_count = df["estatus_tiempo"].value_counts().reset_index(); df_status_count.columns = ["Estatus", "Volumen"]
-      fig2 = px.bar(df_status_count, x="Estatus", y="Volumen", title="Estatus de Salud del Portafolio", color="Estatus", color_discrete_map={"En tiempo": "#166534", "Retrasado": "#475569", "Detenido": "#854D0E", "Por iniciar": "#94A3B8"})
+      df_status_count = df["estatus_calculado"].value_counts().reset_index(); df_status_count.columns = ["Estatus", "Volumen"]
+      fig2 = px.bar(df_status_count, x="Estatus", y="Volumen", title="Estatus de Salud (Baseline vs. Real)", color="Estatus", color_discrete_map={"En tiempo": "#166534", "Retrasado": "#EF4444", "Detenido": "#854D0E", "Por iniciar": "#94A3B8"})
       fig2.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", title_font=dict(size=18, family="Inter", color="#0F172A")); st.plotly_chart(fig2, use_container_width=True)
 
     st.divider()
     st.markdown("<h4 style='color:#0F172A; margin-bottom:15px;'>👥 Matriz de Carga de Trabajo y Capacidad por Líder</h4>", unsafe_allow_html=True)
     
-    carga_df = df.groupby(["lider_asignado", "estatus_tiempo"]).size().reset_index(name="Cantidad")
-    fig_carga = px.bar(carga_df, x="lider_asignado", y="Cantidad", color="estatus_tiempo", title="Proyectos Asignados por Colaborador", barmode="stack", color_discrete_map={"En tiempo": "#166534", "Retrasado": "#EF4444", "Detenido": "#F59E0B", "Por iniciar": "#94A3B8"})
+    carga_df = df.groupby(["lider_asignado", "estatus_calculado"]).size().reset_index(name="Cantidad")
+    fig_carga = px.bar(carga_df, x="lider_asignado", y="Cantidad", color="estatus_calculado", title="Proyectos Asignados por Colaborador", barmode="stack", color_discrete_map={"En tiempo": "#166534", "Retrasado": "#EF4444", "Detenido": "#F59E0B", "Por iniciar": "#94A3B8"})
     fig_carga.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", xaxis_title="Líder Operativo", yaxis_title="Número de Proyectos")
     st.plotly_chart(fig_carga, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (AUDITORÍA AUTOMÁTICA Y EDICIÓN GRANULAR)
+# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (BASELINES + APROBACIONES)
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
+    # APROBACIÓN DE RE-BASELINE PARA MODERADORES Y GERENTES
+    if es_moderador and not df_solicitudes_baseline.empty:
+      sol_pendientes = df_solicitudes_baseline[df_solicitudes_baseline["estado"] == "Pendiente"]
+      if not sol_pendientes.empty:
+          with st.expander(f"📬 Solicitudes de Cambio de Baseline Pendientes ({len(sol_pendientes)})", expanded=True):
+              st.write("Revisa y aprueba o rechaza las modificaciones de fecha de compromiso baseline enviadas por los líderes de proyecto:")
+              for _, sol in sol_pendientes.iterrows():
+                  p_rel = df[df["id"] == sol["proyecto_id"]].iloc[0] if not df[df["id"] == sol["proyecto_id"]].empty else None
+                  p_nom = p_rel["nombre"] if p_rel is not None else "Proyecto Desconocido"
+                  f_actual = p_rel["fecha_fin_baseline"] if (p_rel is not None and p_rel["fecha_fin_baseline"]) else "Sin Baseline"
+                  
+                  c_s1, c_s2, c_s3, c_s4 = st.columns([2.5, 2, 1, 1])
+                  c_s1.markdown(f"**Proyecto:** [{p_rel['folio'] if p_rel is not None else ''}] {p_nom}\n\n*Solicitante:* {sol['solicitante']} | *Motivo:* {sol['motivo']}")
+                  c_s2.markdown(f"**Fecha Actual:** `{f_actual}`\n\n**Nueva Propuesta:** `{sol['fecha_fin_propuesta']}`")
+                  
+                  if c_s3.button("✅ Aprobar", key=f"btn_aprb_{sol['id']}"):
+                      ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                      engine = obtener_engine()
+                      with engine.begin() as conn:
+                          conn.execute(sqlalchemy.text("UPDATE proyectos SET fecha_fin_baseline = :n_f WHERE id = :pid"),
+                                       {"n_f": sol['fecha_fin_propuesta'], "pid": sol['proyecto_id']})
+                          conn.execute(sqlalchemy.text("UPDATE solicitudes_baseline SET estado = 'Aprobado', aprobador = :ap WHERE id = :sid"),
+                                       {"ap": st.session_state.nombre_actual, "sid": sol['id']})
+                          conn.execute(sqlalchemy.text("INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:pid, :usr, :fh, :com)"),
+                                       {"pid": sol['proyecto_id'], "usr": st.session_state.nombre_actual, "fh": ahora, "com": f"Aprobación de Re-baseline: Nueva fecha fin comprometida {sol['fecha_fin_propuesta']}."})
+                      limpiar_cache_y_recargar()
+                      st.success("¡Baseline actualizado y notificado!")
+                      st.rerun()
+
+                  if c_s4.button("❌ Rechazar", key=f"btn_rchz_{sol['id']}"):
+                      engine = obtener_engine()
+                      with engine.begin() as conn:
+                          conn.execute(sqlalchemy.text("UPDATE solicitudes_baseline SET estado = 'Rechazado', aprobador = :ap WHERE id = :sid"),
+                                       {"ap": st.session_state.nombre_actual, "sid": sol['id']})
+                      limpiar_cache_y_recargar()
+                      st.info("Solicitud rechazada.")
+                      st.rerun()
+                  st.divider()
+
     if es_moderador:
       with st.expander("🗑️ Eliminación Masiva de Proyectos (Solo Moderadores)", expanded=False):
         st.write("Selecciona los proyectos que deseas eliminar de forma permanente de la base de datos:")
@@ -409,8 +499,6 @@ with tabs[1]:
                 limpiar_cache_y_recargar()
                 st.success(f"¡Se eliminaron {len(ids_borrar)} proyectos correctamente!")
                 st.rerun()
-            else:
-                st.warning("Selecciona al menos un proyecto para borrar.")
 
     f_pills1, f_pills2, f_pills3, f_pills4 = st.columns([1.2, 1.2, 1.2, 2.4])
     modo_filtro = f_pills1.radio("Filtros Rápidos", ["Ver Todos", "🚨 Solo Retrasados", "⚠️ Estancados (>20d)", "⭐ Mis Proyectos"], horizontal=True)
@@ -428,7 +516,7 @@ with tabs[1]:
 
     df_filtrado = df.copy()
 
-    if modo_filtro == "🚨 Solo Retrasados": df_filtrado = df_filtrado[df_filtrado["estatus_tiempo"].isin(["Retrasado", "Detenido"])]
+    if modo_filtro == "🚨 Solo Retrasados": df_filtrado = df_filtrado[df_filtrado["estatus_calculado"].isin(["Retrasado", "Detenido"])]
     elif modo_filtro == "⚠️ Estancados (>20d)": df_filtrado = df_filtrado[df_filtrado["es_estancado"] == True]
     elif modo_filtro == "⭐ Mis Proyectos": df_filtrado = df_filtrado[df_filtrado["lider_asignado"] == st.session_state.nombre_actual]
 
@@ -443,26 +531,34 @@ with tabs[1]:
 
     for _, row in df_filtrado.iterrows():
       p_id = row["id"]
-      badge_status = "status-green" if row["estatus_tiempo"] == "En tiempo" else ("status-yellow" if row["estatus_tiempo"] == "Detenido" else "status-gray")
-      tag_estancado = " <span class='status-badge status-red'>⚠️ Estancado (>20d)</span>" if row.get("es_estancado", False) else ""
+      info_b = row.get("info_baseline") or calcular_metricas_baseline(row)
       
+      badge_status = "status-green" if row["estatus_calculado"] == "En tiempo" else ("status-yellow" if row["estatus_calculado"] == "Detenido" else "status-red")
+      tag_estancado = " <span class='status-badge status-red'>⚠️ Estancado (>20d)</span>" if row.get("es_estancado", False) else ""
+
+      desviacion_str = ""
+      if info_b["tiene_baseline"]:
+          desv_pct = int(info_b["desviacion"] * 100)
+          signo = "+" if desv_pct >= 0 else ""
+          desviacion_str = f" | Planeado: {int(info_b['pct_planeado']*100)}% ({signo}{desv_pct}% desv)"
+
       es_mi_proyecto = (row["lider_asignado"] == st.session_state.nombre_actual)
       puedo_editar = es_moderador or es_mi_proyecto
 
-      with st.expander(f"[{row['folio'] or 'S/F'}] {row['nombre']} — Avance: {int((row['avance_real'] or 0)*100)}%"):
+      with st.expander(f"[{row['folio'] or 'S/F'}] {row['nombre']} — Avance Real: {int((row['avance_real'] or 0)*100)}%{desviacion_str}"):
         st.progress(float(row["avance_real"] or 0.0))
 
         if puedo_editar:
           with st.form(f"update_{p_id}"):
             c1, c2, c3 = st.columns(3)
             c1.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#64748B;'>Responsable:</span> <b style='color:#0F172A;'>{row['lider_asignado']}</b></p>", unsafe_allow_html=True)
-            c2.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#64748B;'>Estatus Actual:</span> <span class='status-badge {badge_status}'>{row['estatus_tiempo']}</span>{tag_estancado}</p>", unsafe_allow_html=True)
-            c3.markdown(f"<p style='margin:0; font-size:0.88rem; text-align:right;'><span style='color:#64748B;'>Últ. Actualización:</span> <b style='color:#05297A;'>{row['ultima_actualizacion'] or 'N/A'}</b></p>", unsafe_allow_html=True)
+            c2.markdown(f"<p style='margin:0; font-size:0.88rem;'><span style='color:#64748B;'>Estatus Calculado:</span> <span class='status-badge {badge_status}'>{row['estatus_calculado']}</span>{tag_estancado}</p>", unsafe_allow_html=True)
+            c3.markdown(f"<p style='margin:0; font-size:0.88rem; text-align:right;'><span style='color:#64748B;'>Fecha Fin Baseline:</span> <b style='color:#05297A;'>{info_b.get('fecha_fin_baseline', 'Sin Fecha')}</b></p>", unsafe_allow_html=True)
             st.divider()
 
             c_form1, c_form2, c_form3 = st.columns(3)
             u_etapa = c_form1.selectbox("Fase del Proyecto", OPCIONES_ETAPAS, index=(OPCIONES_ETAPAS.index(row["etapa_actual"]) if row["etapa_actual"] in OPCIONES_ETAPAS else 0))
-            u_estatus = c_form2.selectbox("Estatus de Tiempo", OPCIONES_ESTATUS, index=(OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0))
+            u_estatus = c_form2.selectbox("Estatus Declarado", OPCIONES_ESTATUS, index=(OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0))
             u_avance = c_form3.slider("Progreso General (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
             
             f1, f2 = st.columns(2)
@@ -481,7 +577,6 @@ with tabs[1]:
             if btn1.form_submit_button("Guardar Cambios", type="primary"):
               ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
               
-              # REGISTRO DE AUDITORÍA AUTOMÁTICO EN BITÁCORA
               texto_bitacora = u_comentario.strip()
               if not texto_bitacora:
                   texto_bitacora = f"Actualización general: Estatus '{u_estatus}', Fase '{u_etapa}' y Avance al {int(u_avance*100)}%."
@@ -498,17 +593,33 @@ with tabs[1]:
               engine = obtener_engine()
               with engine.begin() as conn: conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id=:id"), {"id": p_id})
               limpiar_cache_y_recargar(); st.rerun()
+
+          # FORMULARIO DE SOLICITUD DE RE-BASELINE
+          with st.expander("📩 Solicitar Cambio de Fecha Fin Baseline (Re-baseline)", expanded=False):
+              st.write("Si requieres ajustar la fecha compromiso comprometida en el Baseline, envía una solicitud formal para aprobación directiva:")
+              with st.form(f"f_sol_baseline_{p_id}"):
+                  n_f_prop = st.date_input("Nueva Fecha Fin Propuesta")
+                  n_motivo = st.text_area("Justificación / Motivo del Ajuste de Tiempo *", placeholder="Ej. Retraso por parte del proveedor tecnológico en la entrega del servidor...")
+                  if st.form_submit_button("Enviar Solicitud de Re-baseline", type="secondary"):
+                      if n_motivo.strip():
+                          ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                          engine = obtener_engine()
+                          with engine.begin() as conn:
+                              conn.execute(sqlalchemy.text("""INSERT INTO solicitudes_baseline (proyecto_id, solicitante, fecha_fin_propuesta, motivo, estado, fecha_solicitud) 
+                                                             VALUES (:pid, :sol, :ff, :mot, 'Pendiente', :fsol)"""),
+                                           {"pid": p_id, "sol": st.session_state.nombre_actual, "ff": str(n_f_prop), "mot": n_motivo.strip(), "fsol": ahora})
+                          limpiar_cache_y_recargar()
+                          st.success("¡Solicitud enviada a la junta directiva para aprobación!")
+                          st.rerun()
+                      else:
+                          st.error("La justificación es obligatoria.")
+
         else:
           st.info(f"🔒 **Modo Lectura:** Perteneces al perfil de Usuario. Solo el responsable asignado (**{row['lider_asignado']}**) o un Moderador pueden realizar cambios en este proyecto.")
           c1, c2, c3 = st.columns(3)
           c1.write(f"**Área:** {row['area_negocio']}")
-          c2.write(f"**Estatus:** `{row['estatus_tiempo']}`")
+          c2.write(f"**Estatus Calculado:** `{row['estatus_calculado']}`")
           c3.write(f"**Fase Actual:** {row['etapa_actual']}")
-          
-          c4, c5, c6 = st.columns(3)
-          c4.write(f"**Gerente Sponsor:** {row['gerente']}")
-          c5.write(f"**Presupuesto:** ${float(row.get('presupuesto', 0.0)):,.2f}")
-          c6.write(f"**Última Actualización:** {row['ultima_actualizacion'] or 'N/A'}")
 
         historial_proyecto = df_bitacora[df_bitacora["proyecto_id"] == p_id]
         if not historial_proyecto.empty:
@@ -581,7 +692,7 @@ with tabs[2]:
     for i, status in enumerate(OPCIONES_ESTATUS):
       with k_cols[i]:
         st.markdown(f"<div style='background-color:#FFFFFF; padding:8px; border-radius:8px; border:1px solid #E2E8F0; border-top:3px solid #05297A; text-align:center; font-weight:700; color:#0F172A; font-size:0.85rem; margin-bottom:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);'>{status.upper()}</div>", unsafe_allow_html=True)
-        df_k = df[df["estatus_tiempo"] == status]
+        df_k = df[df["estatus_calculado"] == status]
         for _, k_row in df_k.iterrows():
           st.markdown(f"<div class='kanban-card'><div class='kanban-title'>{k_row['nombre']}</div><div class='kanban-meta'>👤 {k_row['lider_asignado']}</div><div class='kanban-meta'>📈 {int((k_row['avance_real'] or 0)*100)}% Completado</div><div class='kanban-meta' style='margin-top:6px;'><i>Folio: {k_row['folio'] or 'S/F'}</i></div></div>", unsafe_allow_html=True)
 
@@ -599,6 +710,11 @@ if es_moderador:
         c4, c5, c6 = st.columns(3); area = c4.selectbox("Área Solicitante", OPCIONES_AREAS); tipo = c5.selectbox("Categoría Principal", OPCIONES_TIPOS); subtipo = c6.selectbox("Sub-categoría", OPCIONES_SUBTIPOS)
         c7, c8, c9 = st.columns(3); gerente = c7.selectbox("Gerente Sponsor", OPCIONES_GERENTES); etapa = c8.selectbox("Fase de Arranque", OPCIONES_ETAPAS); estatus_inicial = c9.selectbox("Estado Inicial", OPCIONES_ESTATUS, index=0)
         
+        st.markdown("<h5 style='font-size:0.95rem; color:#0F172A; margin-top:10px;'>Fechas Compromiso Baseline</h5>", unsafe_allow_html=True)
+        cb1, cb2 = st.columns(2)
+        f_ini_b = cb1.date_input("Fecha Inicio Baseline", value=datetime.now())
+        f_fin_b = cb2.date_input("Fecha Fin Baseline (Compromiso)", value=datetime.now() + timedelta(days=90))
+
         st.markdown("<h5 style='font-size:0.95rem; color:#0F172A; margin-top:10px;'>Estimación Financiera</h5>", unsafe_allow_html=True)
         cf1, cf2 = st.columns(2)
         presupuesto_in = cf1.number_input("Presupuesto Asignado ($)", min_value=0.0, value=0.0, step=1000.0)
@@ -609,14 +725,13 @@ if es_moderador:
             engine = obtener_engine()
             ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             with engine.begin() as conn: 
-                res_ins = conn.execute(sqlalchemy.text("""INSERT INTO proyectos (folio, nombre, area_negocio, tipo_proyecto, subtipo, gerente, lider_asignado, etapa_actual, estatus_tiempo, avance_real, ultima_actualizacion, presupuesto, roi_estimado) VALUES (:f, :n, :a, :t, :s, :g, :l, :e, :st, 0, :u, :pr, :ro) RETURNING id"""), 
-                                                     {"f": folio, "n": nombre, "a": area, "t": tipo, "s": subtipo, "g": gerente, "l": lider, "e": etapa, "st": estatus_inicial, "u": ahora, "pr": presupuesto_in, "ro": roi_in})
+                res_ins = conn.execute(sqlalchemy.text("""INSERT INTO proyectos (folio, nombre, area_negocio, tipo_proyecto, subtipo, gerente, lider_asignado, etapa_actual, estatus_tiempo, avance_real, ultima_actualizacion, presupuesto, roi_estimado, fecha_inicio_baseline, fecha_fin_baseline) VALUES (:f, :n, :a, :t, :s, :g, :l, :e, :st, 0, :u, :pr, :ro, :fib, :ffb) RETURNING id"""), 
+                                                     {"f": folio, "n": nombre, "a": area, "t": tipo, "s": subtipo, "g": gerente, "l": lider, "e": etapa, "st": estatus_inicial, "u": ahora, "pr": presupuesto_in, "ro": roi_in, "fib": str(f_ini_b), "ffb": str(f_fin_b)})
                 
-                # Insertar bitácora automática de creación
                 new_id = res_ins.fetchone()[0] if res_ins.returns_rows else None
                 if new_id:
                     conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), 
-                                 {"p_id": new_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": "Creación e inicio de expediente de proyecto."})
+                                 {"p_id": new_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": f"Creación de expediente con Baseline comprometido al {f_fin_b}."})
 
             limpiar_cache_y_recargar(); st.success("¡Proyecto creado y agregado exitosamente!"); st.rerun()
           else: st.error("Por favor ingresa el nombre de la iniciativa.")
@@ -637,7 +752,9 @@ if es_moderador:
           "estatus_tiempo": "En tiempo",
           "avance_real": 0.10,
           "presupuesto": 50000.0,
-          "roi_estimado": 120000.0
+          "roi_estimado": 120000.0,
+          "fecha_inicio_baseline": "2026-01-01",
+          "fecha_fin_baseline": "2026-06-30"
       }])
       
       excel_plantilla_buffer = io.BytesIO()
@@ -669,8 +786,8 @@ if es_moderador:
                   with engine.begin() as conn:
                       for _, row in df_excel.iterrows():
                           res_imp = conn.execute(
-                              sqlalchemy.text("""INSERT INTO proyectos (folio, nombre, area_negocio, tipo_proyecto, subtipo, gerente, lider_asignado, etapa_actual, estatus_tiempo, avance_real, ultima_actualizacion, presupuesto, roi_estimado) 
-                                                 VALUES (:f, :n, :a, :t, :s, :g, :l, :e, :st, :av, :u, :pr, :ro) RETURNING id"""),
+                              sqlalchemy.text("""INSERT INTO proyectos (folio, nombre, area_negocio, tipo_proyecto, subtipo, gerente, lider_asignado, etapa_actual, estatus_tiempo, avance_real, ultima_actualizacion, presupuesto, roi_estimado, fecha_inicio_baseline, fecha_fin_baseline) 
+                                                 VALUES (:f, :n, :a, :t, :s, :g, :l, :e, :st, :av, :u, :pr, :ro, :fib, :ffb) RETURNING id"""),
                               {
                                   "f": str(row.get("folio", "S/F")),
                                   "n": str(row.get("nombre", "Proyecto Importado")),
@@ -684,7 +801,9 @@ if es_moderador:
                                   "av": float(row.get("avance_real", 0.0)),
                                   "u": ahora,
                                   "pr": float(row.get("presupuesto", 0.0)),
-                                  "ro": float(row.get("roi_estimado", 0.0))
+                                  "ro": float(row.get("roi_estimado", 0.0)),
+                                  "fib": str(row.get("fecha_inicio_baseline", datetime.now().strftime("%Y-%m-%d"))),
+                                  "ffb": str(row.get("fecha_fin_baseline", (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")))
                               }
                           )
                           imp_id = res_imp.fetchone()[0] if res_imp.returns_rows else None
@@ -790,9 +909,9 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
 
   if p_clean in ["hola", "buenas", "buenos dias", "buenas tardes", "buenas noches", "saludos", "hola bot", "hola project ia"]:
       tot = len(dataframe)
-      ret = len(dataframe[dataframe["estatus_tiempo"].isin(["Retrasado", "Detenido"])]) if not dataframe.empty else 0
+      ret = len(dataframe[dataframe["estatus_calculado"].isin(["Retrasado", "Detenido"])]) if not dataframe.empty else 0
       resp = f"¡Hola, **{usuario_nombre}**! 👋 Qué gusto saludarte.\n\nActualmente administro **{tot} proyectos activos**. "
-      if ret > 0: resp += f"⚠️ Noté que hay **{ret} proyectos retrasados**. ¿Te gustaría que te muestre cuáles son?"
+      if ret > 0: resp += f"⚠️ Noté que hay **{ret} proyectos retrasados vs. su Baseline**. ¿Te gustaría que te muestre cuáles son?"
       else: resp += "Por fortuna, no tenemos ningún proyecto retrasado. ¿Qué te gustaría consultar hoy?"
       return resp
 
@@ -806,15 +925,15 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
   busca_riesgo_predictivo = any(k in p_analizar for k in ["riesgo", "estancado", "cuello de botella", "prediccion", "parado", "peligro"])
   if busca_riesgo_predictivo:
       estancados = dataframe[dataframe.get('es_estancado', False) == True]
-      retrasados = dataframe[dataframe['estatus_tiempo'].isin(["Retrasado", "Detenido"])]
+      retrasados = dataframe[dataframe['estatus_calculado'].isin(["Retrasado", "Detenido"])]
       
       res = "🔮 **Diagnóstico Predictivo de Riesgos en el Portafolio:**\n\n"
       if estancados.empty and retrasados.empty:
-          res += "🟢 **Estado Saludable:** No se detectan cuellos de botella ni proyectos estancados sin movimiento por más de 20 días."
+          res += "🟢 **Estado Saludable:** No se detectan cuellos de botella ni desviaciones negativas vs Baseline."
       else:
           if not retrasados.empty:
-              res += f"🚨 **{len(retrasados)} Proyecto(s) en Retraso Crítico:**\n"
-              for _, r in retrasados.iterrows(): res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}** (`{r['estatus_tiempo']}`)\n"
+              res += f"🚨 **{len(retrasados)} Proyecto(s) en Retraso Crítico vs Baseline:**\n"
+              for _, r in retrasados.iterrows(): res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}** (`{r['estatus_calculado']}`)\n"
               res += "\n"
           if not estancados.empty:
               res += f"⚠️ **{len(estancados)} Proyecto(s) Estancado(s) (>20 días sin actualización):**\n"
@@ -840,9 +959,9 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       res = f"📌 **Estatus actual de los proyectos en el portafolio ({len(dataframe)}):**\n\n"
       for _, r in dataframe.iterrows():
           pct = int((r['avance_real'] or 0) * 100)
-          badge = "🟢" if r['estatus_tiempo'] == "En tiempo" else ("⚠️" if r['estatus_tiempo'] in ["Retrasado", "Detenido"] else "⚪")
+          badge = "🟢" if r['estatus_calculado'] == "En tiempo" else ("⚠️" if r['estatus_calculado'] in ["Retrasado", "Detenido"] else "⚪")
           res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n"
-          res += f"  * {badge} **Estatus:** `{r['estatus_tiempo']}` | 📍 **Fase:** {r['etapa_actual']}\n"
+          res += f"  * {badge} **Estatus:** `{r['estatus_calculado']}` | 📍 **Fase:** {r['etapa_actual']}\n"
           res += f"  * 👤 **Líder:** {r['lider_asignado']} | 📈 **Avance:** {pct}%\n\n"
       return res
 
@@ -878,7 +997,7 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       df_result = df_result[(df_result["lider_asignado"] == persona_obj) | (df_result["gerente"] == persona_obj)]
       criterios.append(f"Involucrado: **{persona_obj}**")
   if busca_retrasos:
-      df_result = df_result[df_result["estatus_tiempo"].isin(["Retrasado", "Detenido"])]
+      df_result = df_result[df_result["estatus_calculado"].isin(["Retrasado", "Detenido"])]
       criterios.append("Estatus: **Retrasado**")
 
   if len(criterios) > 0:
@@ -887,20 +1006,20 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       
       res = f"🔍 **Resultados de la búsqueda** (" + " | ".join(criterios) + f"):\n\nEncontré **{len(df_result)}** proyectos:\n\n"
       for _, r in df_result.iterrows():
-          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 🏢 **Área:** {r['area_negocio']}\n  * 📌 **Estatus:** `{r['estatus_tiempo']}` | 📍 **Fase:** {r['etapa_actual']} | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
+          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 🏢 **Área:** {r['area_negocio']}\n  * 📌 **Estatus:** `{r['estatus_calculado']}` | 📍 **Fase:** {r['etapa_actual']} | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
       return res
 
   coincidencias = dataframe[dataframe["nombre"].str.lower().str.contains(p_analizar, na=False) | dataframe["folio"].str.lower().str.contains(p_analizar, na=False)]
   if not coincidencias.empty:
       res = f"🔍 Encontré **{len(coincidencias)} proyectos** asociados a tu consulta:\n\n"
       for _, r in coincidencias.iterrows():
-          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 📌 **Estatus:** `{r['estatus_tiempo']}` | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
+          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 📌 **Estatus:** `{r['estatus_calculado']}` | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
       return res
 
   res_general = f"📋 **Aquí está el desglose actual de tus proyectos ({len(dataframe)}):**\n\n"
   for _, r in dataframe.iterrows():
       pct = int((r['avance_real'] or 0) * 100)
-      res_general += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}** — `{r['estatus_tiempo']}` ({pct}% avance)\n"
+      res_general += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}** — `{r['estatus_calculado']}` ({pct}% avance)\n"
   return res_general
 
 
