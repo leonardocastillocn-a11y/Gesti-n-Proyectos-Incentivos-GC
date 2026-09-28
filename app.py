@@ -399,9 +399,6 @@ with st.sidebar:
     with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer: df.to_excel(writer, index=False, sheet_name="Proyectos")
     st.download_button("Exportar a Excel (.xlsx)", data=excel_buffer.getvalue(), file_name=f"Base_Datos_{datetime.now().strftime('%Y%m%d')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, type="secondary")
 
-    csv_data = df.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
-    st.download_button("📊 Exportar para Google Sheets (.csv)", data=csv_data, file_name=f"Heading360_GoogleSheets_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv", use_container_width=True, type="secondary")
-
   st.write("")
   if st.button("Cerrar Sesión", use_container_width=True): st.session_state.autenticado = False; st.rerun()
 
