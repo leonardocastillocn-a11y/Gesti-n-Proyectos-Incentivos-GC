@@ -447,7 +447,7 @@ with tabs[0]:
     fig_carga.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", xaxis_title="Líder Operativo", yaxis_title="Número de Proyectos")
     st.plotly_chart(fig_carga, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (VISTA DE LECTURA MINIMALISTA + EDICIÓN EN EMERGENTE)
+# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (TARJETAS MINIMALISTAS SIN HISTORIAL INDIVIDUAL)
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
@@ -568,7 +568,7 @@ with tabs[1]:
 
     st.markdown(f"<p style='color: #64748B; font-size: 0.85rem; margin-top: 15px;'>📌 Mostrando <b>{len(df_filtrado)}</b> de <b>{len(df)}</b> proyectos según tus filtros.</p>", unsafe_allow_html=True)
 
-    # 5. TARJETAS DE PROYECTO LIMPIAS
+    # 5. TARJETAS DE PROYECTO
     for _, row in df_filtrado.iterrows():
       p_id = row["id"]
       info_b = row.get("info_baseline") or calcular_metricas_baseline(row)
@@ -611,7 +611,7 @@ with tabs[1]:
         </div>
         """, unsafe_allow_html=True)
 
-        # BOTÓN EMERGENTE DE EDICIÓN (SOLO SI TIENE PERMISOS)
+        # BOTÓN EMERGENTE DE EDICIÓN
         if puedo_editar:
           col_btn_edit, _ = st.columns([1, 4])
           with col_btn_edit:
@@ -632,7 +632,7 @@ with tabs[1]:
                       u_presupuesto = f1.number_input("Presupuesto ($)", min_value=0.0, value=float(row.get("presupuesto", 0.0)), step=1000.0)
                       u_roi = f2.number_input("ROI Estimado ($)", min_value=0.0, value=float(row.get("roi_estimado", 0.0)), step=1000.0)
 
-                      u_comentario = st.text_input("Añadir Comentario a Bitácora", placeholder="Ej. Avance en fase de pruebas...")
+                      u_comentario = st.text_input("Añadir Comentario a Bitácora Global", placeholder="Ej. Avance en fase de pruebas...")
                       u_carpeta = st.text_input("Carpeta Drive (URL)", row["carpeta_url"] or "")
                       u_plan = st.text_input("Link a Plan Anexo", row["plan_url"] or "")
                       
@@ -656,15 +656,8 @@ with tabs[1]:
         else:
           st.info(f"🔒 **Modo Lectura:** Solo el responsable asignado (**{row['lider_asignado']}**) o un Moderador pueden editar este proyecto.")
 
-        # HISTORIAL DE BITÁCORA
-        historial_proyecto = df_bitacora[df_bitacora["proyecto_id"] == p_id]
-        if not historial_proyecto.empty:
-          st.markdown("<h5 style='margin-top: 15px; color:#0F172A; font-size:1.05rem;'>📜 Historial de Comentarios</h5>", unsafe_allow_html=True)
-          for _, h_row in historial_proyecto.iterrows():
-            st.markdown(f"<div class='timeline-item'><div class='timeline-date'>{h_row['fecha_hora']} | Por: {h_row['usuario_nombre']}</div><div class='timeline-text'>{h_row['comentario']}</div></div>", unsafe_allow_html=True)
-
         # DIAGRAMA GANTT INTERCONECTADO
-        st.markdown("<h4 style='color:#0F172A; margin-top: 30px; padding-top: 15px; border-top: 1px dashed #CBD5E1; font-size:1.1rem;'>📅 Plan de Trabajo (Gantt Interconectado)</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color:#0F172A; margin-top: 20px; padding-top: 15px; border-top: 1px dashed #CBD5E1; font-size:1.1rem;'>📅 Plan de Trabajo (Gantt Interconectado)</h4>", unsafe_allow_html=True)
         df_tareas_calc = calcular_fechas_tarea_df(df_tareas_proj)
 
         if not df_tareas_calc.empty:
