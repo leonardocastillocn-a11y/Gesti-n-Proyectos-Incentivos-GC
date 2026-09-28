@@ -234,7 +234,6 @@ def limpiar_cache_y_recargar():
 def obtener_lista_usuarios(df_u):
   return df_u["nombre"].tolist() if not df_u.empty else ["Leonardo Castillo"]
 
-# FUNCIÓN DE RE-CÁLCULO AUTOMÁTICO DE AVANCE INTERCONECTADO CON GANTT
 def auto_sincronizar_avance_proyecto(engine, p_id):
   with engine.begin() as conn:
     res = conn.execute(sqlalchemy.text("SELECT AVG(porcentaje_avance) FROM tareas WHERE proyecto_id = :pid"), {"pid": p_id}).fetchone()
@@ -451,10 +450,11 @@ with tabs[0]:
     fig_carga.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", xaxis_title="Líder Operativo", yaxis_title="Número de Proyectos")
     st.plotly_chart(fig_carga, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (PROGRESO INTERCONECTADO CON GANTT)
+# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (PANEL CENTRAL DE CONTROL DE CAMBIOS)
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
+    # 1. PANEL DE APROBACIONES PENDIENTES (PARA MODERADORES)
     if es_moderador and not df_solicitudes_baseline.empty:
       sol_pendientes = df_solicitudes_baseline[df_solicitudes_baseline["estado"] == "Pendiente"]
       if not sol_pendientes.empty:
@@ -494,6 +494,35 @@ with tabs[1]:
                   st.rerun()
               st.divider()
 
+    # 2. PANEL CENTRAL DE SOLICITUD DE RE-BASELINE (UNIFICADO ARRIBA)
+    with st.expander("📩 Solicitar Cambio de Baseline (Re-baseline)", expanded=False):
+      st.write("Si requieres ajustar la fecha compromiso baseline de una iniciativa, selecciona el proyecto y envía tu solicitud formal a dirección:")
+      df_mis_proyectos = df if es_moderador else df[df["lider_asignado"] == st.session_state.nombre_actual]
+      if df_mis_proyectos.empty:
+          st.info("No tienes proyectos asignados para solicitar re-baseline.")
+      else:
+          opciones_p_sol = df_mis_proyectos.apply(lambda x: f"{x['id']} - [{x['folio'] or 'S/F'}] {x['nombre']}", axis=1).tolist()
+          with st.form("f_sol_baseline_central"):
+              p_sol_elegido = st.selectbox("Proyecto a modificar", opciones_p_sol)
+              col_b1, col_b2 = st.columns(2)
+              n_f_prop = col_b1.date_input("Nueva Fecha Fin Propuesta")
+              n_motivo = st.text_area("Justificación / Motivo del Ajuste *", placeholder="Ej. Retraso de proveedor externo en entrega de servidores...")
+              if st.form_submit_button("Enviar Solicitud de Re-baseline", type="primary"):
+                  if n_motivo.strip() and p_sol_elegido:
+                      pid_sol = int(p_sol_elegido.split(" - ")[0])
+                      ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                      engine = obtener_engine()
+                      with engine.begin() as conn:
+                          conn.execute(sqlalchemy.text("""INSERT INTO solicitudes_baseline (proyecto_id, solicitante, fecha_fin_propuesta, motivo, estado, fecha_solicitud) 
+                                                         VALUES (:pid, :sol, :ff, :mot, 'Pendiente', :fsol)"""),
+                                       {"pid": pid_sol, "sol": st.session_state.nombre_actual, "ff": str(n_f_prop), "mot": n_motivo.strip(), "fsol": ahora})
+                      limpiar_cache_y_recargar()
+                      st.success("¡Solicitud de Re-baseline enviada para aprobación!")
+                      st.rerun()
+                  else:
+                      st.error("La justificación es obligatoria.")
+
+    # 3. ELIMINACIÓN MASIVA
     if es_moderador:
       with st.expander("🗑️ Eliminación Masiva de Proyectos (Solo Moderadores)", expanded=False):
         st.write("Selecciona los proyectos que deseas eliminar de forma permanente de la base de datos:")
@@ -512,6 +541,7 @@ with tabs[1]:
                 st.success(f"¡Se eliminaron {len(ids_borrar)} proyectos correctamente!")
                 st.rerun()
 
+    # 4. FILTROS
     f_pills1, f_pills2, f_pills3, f_pills4 = st.columns([1.2, 1.2, 1.2, 2.4])
     modo_filtro = f_pills1.radio("Filtros Rápidos", ["Ver Todos", "🚨 Solo Retrasados", "⚠️ Estancados (>20d)", "⭐ Mis Proyectos"], horizontal=True)
 
@@ -541,6 +571,7 @@ with tabs[1]:
 
     st.markdown(f"<p style='color: #64748B; font-size: 0.85rem; margin-top: 15px;'>📌 Mostrando <b>{len(df_filtrado)}</b> de <b>{len(df)}</b> proyectos según tus filtros.</p>", unsafe_allow_html=True)
 
+    # 5. TARJETAS DE PROYECTO LIMPIAS
     for _, row in df_filtrado.iterrows():
       p_id = row["id"]
       info_b = row.get("info_baseline") or calcular_metricas_baseline(row)
@@ -557,7 +588,6 @@ with tabs[1]:
       es_mi_proyecto = (row["lider_asignado"] == st.session_state.nombre_actual)
       puedo_editar = es_moderador or es_mi_proyecto
 
-      # CÁLCULO DE INTERCONEXIÓN CON GANTT
       df_tareas_proj = df_tareas_all[df_tareas_all["proyecto_id"] == p_id]
       tiene_tareas = not df_tareas_proj.empty
 
@@ -582,7 +612,6 @@ with tabs[1]:
             u_etapa = c_form1.selectbox("Fase del Proyecto", OPCIONES_ETAPAS, index=(OPCIONES_ETAPAS.index(row["etapa_actual"]) if row["etapa_actual"] in OPCIONES_ETAPAS else 0))
             u_estatus = c_form2.selectbox("Estatus Declarado", OPCIONES_ESTATUS, index=(OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0))
             
-            # INTERCONEXIÓN: Si hay tareas en el Gantt, se bloquea el control manual y se muestra el avance auto-sincronizado
             if tiene_tareas:
                 c_form3.markdown(f"<p style='margin-top:18px; font-size:0.8rem; color:#05297A; font-weight:700;'>⚡ AVANCE INTERCONECTADO (GANTT):<br/><span style='font-size:1.5rem; font-weight:800;'>{int(avance_calculado_gantt*100)}%</span></p>", unsafe_allow_html=True)
                 u_avance = avance_calculado_gantt
@@ -621,32 +650,6 @@ with tabs[1]:
               engine = obtener_engine()
               with engine.begin() as conn: conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id=:id"), {"id": p_id})
               limpiar_cache_y_recargar(); st.rerun()
-
-          st.markdown("---")
-          col_sol1, col_sol2 = st.columns([3, 1])
-          with col_sol1:
-              st.markdown("##### 📩 Control de Cambios (Solicitud de Re-baseline)")
-              st.caption("Si requieres ajustar la fecha compromiso baseline, envía una solicitud formal a dirección.")
-          with col_sol2:
-              pop_sol = st.popover("📝 Crear Solicitud", use_container_width=True)
-              with pop_sol:
-                  st.markdown("<b>Solicitar Cambio de Fecha Fin Baseline</b>", unsafe_allow_html=True)
-                  with st.form(f"f_sol_baseline_{p_id}"):
-                      n_f_prop = st.date_input("Nueva Fecha Fin Propuesta")
-                      n_motivo = st.text_area("Justificación / Motivo del Ajuste *", placeholder="Ej. Retraso de proveedor externo en entrega de servidores...")
-                      if st.form_submit_button("Enviar a Aprobación", type="primary"):
-                          if n_motivo.strip():
-                              ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                              engine = obtener_engine()
-                              with engine.begin() as conn:
-                                  conn.execute(sqlalchemy.text("""INSERT INTO solicitudes_baseline (proyecto_id, solicitante, fecha_fin_propuesta, motivo, estado, fecha_solicitud) 
-                                                                 VALUES (:pid, :sol, :ff, :mot, 'Pendiente', :fsol)"""),
-                                               {"pid": p_id, "sol": st.session_state.nombre_actual, "ff": str(n_f_prop), "mot": n_motivo.strip(), "fsol": ahora})
-                              limpiar_cache_y_recargar()
-                              st.success("¡Solicitud enviada a la junta directiva para aprobación!")
-                              st.rerun()
-                          else:
-                              st.error("La justificación es obligatoria.")
 
         else:
           st.info(f"🔒 **Modo Lectura:** Perteneces al perfil de Usuario. Solo el responsable asignado (**{row['lider_asignado']}**) o un Moderador pueden realizar cambios en este proyecto.")
@@ -695,7 +698,6 @@ with tabs[1]:
                       conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), 
                                    {"p_id": p_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": f"Se actualizó la tarea '{t_nombre_txt}' al {t_val}% de avance."})
                   
-                  # RE-CALCULAR Y AUTO-SINCRONIZAR AVANCE GENERAL EN BASE DE DATOS
                   auto_sincronizar_avance_proyecto(engine, p_id)
                   limpiar_cache_y_recargar(); st.rerun()
         else: st.info("No has agregado tareas al plan de trabajo todavía.")
@@ -718,7 +720,6 @@ with tabs[1]:
                       conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), 
                                    {"p_id": p_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": f"Se añadió la nueva tarea '{t_nom}' al cronograma Gantt."})
                   
-                  # RE-CALCULAR Y AUTO-SINCRONIZAR AVANCE GENERAL EN BASE DE DATOS
                   auto_sincronizar_avance_proyecto(engine, p_id)
                   limpiar_cache_y_recargar(); st.rerun()
 
