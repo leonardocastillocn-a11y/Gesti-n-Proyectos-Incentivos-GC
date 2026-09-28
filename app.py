@@ -388,7 +388,7 @@ with tabs[0]:
     fig_carga.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", xaxis_title="Líder Operativo", yaxis_title="Número de Proyectos")
     st.plotly_chart(fig_carga, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (PERMISOS DE EDICIÓN GRANULARES)
+# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (AUDITORÍA AUTOMÁTICA Y EDICIÓN GRANULAR)
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
@@ -480,11 +480,18 @@ with tabs[1]:
             btn1, btn2, btn3 = st.columns([3, 3, 6])
             if btn1.form_submit_button("Guardar Cambios", type="primary"):
               ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+              
+              # REGISTRO DE AUDITORÍA AUTOMÁTICO EN BITÁCORA
+              texto_bitacora = u_comentario.strip()
+              if not texto_bitacora:
+                  texto_bitacora = f"Actualización general: Estatus '{u_estatus}', Fase '{u_etapa}' y Avance al {int(u_avance*100)}%."
+
               engine = obtener_engine()
               with engine.begin() as conn:
                 conn.execute(sqlalchemy.text("""UPDATE proyectos SET etapa_actual=:e, estatus_tiempo=:s, avance_real=:a, carpeta_url=:c, plan_url=:p, ultima_actualizacion=:u, presupuesto=:pr, roi_estimado=:ro WHERE id=:id"""), 
                              {"e": u_etapa, "s": u_estatus, "a": u_avance, "c": u_carpeta, "p": u_plan, "u": ahora, "pr": u_presupuesto, "ro": u_roi, "id": p_id})
-                if u_comentario.strip(): conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), {"p_id": p_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": u_comentario.strip()})
+                conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), 
+                             {"p_id": p_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": texto_bitacora})
               limpiar_cache_y_recargar(); st.rerun()
 
             if es_moderador and btn2.form_submit_button("Eliminar Proyecto", type="secondary"):
@@ -536,8 +543,13 @@ with tabs[1]:
               if col_btn.form_submit_button("Guardar % Avance", type="secondary"):
                 if t_sel:
                   t_id_real = int(t_sel.split(" - ")[0])
+                  t_nombre_txt = t_sel.split(" - ")[1]
+                  ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                   engine = obtener_engine()
-                  with engine.begin() as conn: conn.execute(sqlalchemy.text("UPDATE tareas SET porcentaje_avance=:a WHERE id=:id"), {"a": t_val, "id": t_id_real})
+                  with engine.begin() as conn: 
+                      conn.execute(sqlalchemy.text("UPDATE tareas SET porcentaje_avance=:a WHERE id=:id"), {"a": t_val, "id": t_id_real})
+                      conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), 
+                                   {"p_id": p_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": f"Se actualizó la tarea '{t_nombre_txt}' al {t_val}% de avance."})
                   limpiar_cache_y_recargar(); st.rerun()
         else: st.info("No has agregado tareas al plan de trabajo todavía.")
 
@@ -552,8 +564,12 @@ with tabs[1]:
               t_pre = c_t4.text_input("Predecesoras (Ej. 1, 2)")
               if st.form_submit_button("Añadir a Gantt"):
                 if t_nom.strip():
+                  ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                   engine = obtener_engine()
-                  with engine.begin() as conn: conn.execute(sqlalchemy.text("""INSERT INTO tareas (proyecto_id, nombre_tarea, responsable, fecha_inicio, duracion_dias, fecha_fin, porcentaje_avance, predecesoras) VALUES (:pid, :n, :r, :fi, :d, :ff, 0.0, :p)"""), {"pid": p_id, "n": t_nom, "r": t_res, "fi": str(t_ini), "d": t_dur, "ff": str(pd.to_datetime(t_ini) + timedelta(days=t_dur - 1)), "p": t_pre})
+                  with engine.begin() as conn: 
+                      conn.execute(sqlalchemy.text("""INSERT INTO tareas (proyecto_id, nombre_tarea, responsable, fecha_inicio, duracion_dias, fecha_fin, porcentaje_avance, predecesoras) VALUES (:pid, :n, :r, :fi, :d, :ff, 0.0, :p)"""), {"pid": p_id, "n": t_nom, "r": t_res, "fi": str(t_ini), "d": t_dur, "ff": str(pd.to_datetime(t_ini) + timedelta(days=t_dur - 1)), "p": t_pre})
+                      conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), 
+                                   {"p_id": p_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": f"Se añadió la nueva tarea '{t_nom}' al cronograma Gantt."})
                   limpiar_cache_y_recargar(); st.rerun()
 
 # PESTAÑA 3: VISTA KANBAN
@@ -592,8 +608,16 @@ if es_moderador:
           if nombre.strip():
             engine = obtener_engine()
             ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            with engine.begin() as conn: conn.execute(sqlalchemy.text("""INSERT INTO proyectos (folio, nombre, area_negocio, tipo_proyecto, subtipo, gerente, lider_asignado, etapa_actual, estatus_tiempo, avance_real, ultima_actualizacion, presupuesto, roi_estimado) VALUES (:f, :n, :a, :t, :s, :g, :l, :e, :st, 0, :u, :pr, :ro)"""), 
+            with engine.begin() as conn: 
+                res_ins = conn.execute(sqlalchemy.text("""INSERT INTO proyectos (folio, nombre, area_negocio, tipo_proyecto, subtipo, gerente, lider_asignado, etapa_actual, estatus_tiempo, avance_real, ultima_actualizacion, presupuesto, roi_estimado) VALUES (:f, :n, :a, :t, :s, :g, :l, :e, :st, 0, :u, :pr, :ro) RETURNING id"""), 
                                                      {"f": folio, "n": nombre, "a": area, "t": tipo, "s": subtipo, "g": gerente, "l": lider, "e": etapa, "st": estatus_inicial, "u": ahora, "pr": presupuesto_in, "ro": roi_in})
+                
+                # Insertar bitácora automática de creación
+                new_id = res_ins.fetchone()[0] if res_ins.returns_rows else None
+                if new_id:
+                    conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), 
+                                 {"p_id": new_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": "Creación e inicio de expediente de proyecto."})
+
             limpiar_cache_y_recargar(); st.success("¡Proyecto creado y agregado exitosamente!"); st.rerun()
           else: st.error("Por favor ingresa el nombre de la iniciativa.")
 
@@ -644,9 +668,9 @@ if es_moderador:
                   registros_guardados = 0
                   with engine.begin() as conn:
                       for _, row in df_excel.iterrows():
-                          conn.execute(
+                          res_imp = conn.execute(
                               sqlalchemy.text("""INSERT INTO proyectos (folio, nombre, area_negocio, tipo_proyecto, subtipo, gerente, lider_asignado, etapa_actual, estatus_tiempo, avance_real, ultima_actualizacion, presupuesto, roi_estimado) 
-                                                 VALUES (:f, :n, :a, :t, :s, :g, :l, :e, :st, :av, :u, :pr, :ro)"""),
+                                                 VALUES (:f, :n, :a, :t, :s, :g, :l, :e, :st, :av, :u, :pr, :ro) RETURNING id"""),
                               {
                                   "f": str(row.get("folio", "S/F")),
                                   "n": str(row.get("nombre", "Proyecto Importado")),
@@ -663,6 +687,10 @@ if es_moderador:
                                   "ro": float(row.get("roi_estimado", 0.0))
                               }
                           )
+                          imp_id = res_imp.fetchone()[0] if res_imp.returns_rows else None
+                          if imp_id:
+                              conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), 
+                                           {"p_id": imp_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": "Importación masiva desde plantilla Excel."})
                           registros_guardados += 1
                   limpiar_cache_y_recargar()
                   st.success(f"¡Se importaron con éxito {registros_guardados} proyectos al portafolio!")
@@ -697,7 +725,6 @@ if es_moderador:
       st.dataframe(df_users, use_container_width=True, hide_index=True)
 
     with col_forms:
-      # FORMULARIO 1: EDITAR USUARIO EXISTENTE
       st.markdown("<h4>✏️ Editar Perfil de Usuario</h4>", unsafe_allow_html=True)
       lista_correos_all = df_users_raw["correo"].tolist() if not df_users_raw.empty else []
       u_sel_correo = st.selectbox("Seleccionar Usuario a Modificar", ["Seleccionar..."] + lista_correos_all, key="sel_mod_user")
@@ -719,7 +746,6 @@ if es_moderador:
 
       st.divider()
 
-      # FORMULARIO 2: CREAR NUEVO USUARIO
       with st.form("f_alta"):
         st.markdown("<h4>➕ Crear Nuevo Usuario</h4>", unsafe_allow_html=True)
         n_nom = st.text_input("Nombre Completo")
@@ -734,7 +760,6 @@ if es_moderador:
               limpiar_cache_y_recargar(); st.success("Usuario agregado."); st.rerun()
             except Exception: st.error("El correo ya se encuentra registrado.")
 
-      # FORMULARIO 3: ELIMINAR USUARIO
       with st.form("f_baja"):
         st.markdown("<h4>🗑️ Revocar Acceso</h4>", unsafe_allow_html=True)
         lista_correos = df_users["Correo Corporativo"].tolist()
