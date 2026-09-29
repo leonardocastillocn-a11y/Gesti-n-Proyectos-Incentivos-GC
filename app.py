@@ -4,6 +4,7 @@ import tempfile
 from fpdf import FPDF
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import sqlalchemy
 import streamlit as st
 
@@ -19,7 +20,7 @@ st.set_page_config(
 URL_ROBOT = "https://cdn-icons-png.flaticon.com/512/8943/8943377.png" 
 URL_USER = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
 
-# --- CSS ENTERPRISE SAAS / PERFECT SYMMETRY UX ---
+# --- CSS ENTERPRISE SAAS / EXECUTIVE DASHBOARD UX ---
 st.markdown(
     """
     <style>
@@ -84,6 +85,27 @@ st.markdown(
         color: #0F172A;
         margin-top: 4px;
         letter-spacing: -0.03em;
+    }
+
+    /* CONTENEDOR DASHBOARD EXECUTIVE CARD */
+    .dash-card {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 20px 24px;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.02);
+        margin-bottom: 20px;
+    }
+    .dash-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #0F172A;
+        margin-bottom: 4px;
+    }
+    .dash-sub {
+        font-size: 0.8rem;
+        color: #64748B;
+        margin-bottom: 16px;
     }
     
     /* INPUTS Y FORMULARIOS ELEGANTES */
@@ -152,7 +174,7 @@ st.markdown(
     .stTabs [aria-selected="true"] { border-bottom: 3px solid #2563EB !important; font-weight: 700 !important; color: #2563EB !important; background-color: transparent !important; }
     .stTabs [aria-selected="false"] { color: #64748B !important; font-weight: 600 !important; }
 
-    /* WIDGET FLOTANTE FIJO EXCLUSIVO PROJECT IA (ESQUINA INFERIOR DERECHA) */
+    /* WIDGET FLOTANTE FIJO EXCLUSIVO PROJECT IA */
     .floating-ia-box {
         position: fixed !important;
         bottom: 24px !important;
@@ -438,27 +460,87 @@ if es_moderador:
 else: 
   tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban"])
 
-# PESTAÑA 1: DASHBOARD
+# ==============================================================================
+# PESTAÑA 1: DASHBOARD ANALÍTICO C-LEVEL REDISEÑADO
+# ==============================================================================
 with tabs[0]:
   st.write("")
-  if df.empty: st.info("Agrega algunos proyectos para visualizar los gráficos analíticos.")
+  if df.empty: st.info("Agrega algunos proyectos para visualizar el análisis ejecutivo.")
   else:
-    d_col1, d_col2 = st.columns(2)
-    with d_col1:
-      fig1 = px.pie(df, names="area_negocio", title="Distribución por Área Solicitante", hole=0.45, color_discrete_sequence=px.colors.qualitative.Prism)
-      fig1.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Plus Jakarta Sans"), title_font=dict(size=16, color="#0F172A")); st.plotly_chart(fig1, use_container_width=True)
-    with d_col2:
-      df_status_count = df["estatus_calculado"].value_counts().reset_index(); df_status_count.columns = ["Estatus", "Volumen"]
-      fig2 = px.bar(df_status_count, x="Estatus", y="Volumen", title="Estatus de Salud (Baseline vs. Real)", color="Estatus", color_discrete_map={"En tiempo": "#047857", "Retrasado": "#B91C1C", "Detenido": "#B45309", "Por iniciar": "#94A3B8"})
-      fig2.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Plus Jakarta Sans"), title_font=dict(size=16, color="#0F172A")); st.plotly_chart(fig2, use_container_width=True)
-
-    st.divider()
-    st.markdown("<h4 style='color:#0F172A; margin-bottom:15px;'>Matriz de Carga de Trabajo por Líder Operativo</h4>", unsafe_allow_html=True)
+    # FILA 1: RADAR DE SALUD DEL PORTAFOLIO Y ANÁLISIS FINANCIERO POR ÁREA
+    c_d1, c_d2 = st.columns([1.2, 2])
     
-    carga_df = df.groupby(["lider_asignado", "estatus_calculado"]).size().reset_index(name="Cantidad")
-    fig_carga = px.bar(carga_df, x="lider_asignado", y="Cantidad", color="estatus_calculado", title="", barmode="stack", color_discrete_map={"En tiempo": "#047857", "Retrasado": "#B91C1C", "Detenido": "#B45309", "Por iniciar": "#94A3B8"})
-    fig_carga.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Plus Jakarta Sans"), xaxis_title="Líder", yaxis_title="Número de Iniciativas")
-    st.plotly_chart(fig_carga, use_container_width=True)
+    with c_d1:
+      st.markdown("<div class='dash-card'><div class='dash-title'>Salud del Portafolio</div><div class='dash-sub'>Estado de cumplimiento vs. Baseline</div>", unsafe_allow_html=True)
+      df_salud = df["estatus_calculado"].value_counts().reset_index()
+      df_salud.columns = ["Estatus", "Cantidad"]
+      
+      fig_dona = px.pie(
+          df_salud, values="Cantidad", names="Estatus", hole=0.6,
+          color="Estatus",
+          color_discrete_map={"En tiempo": "#047857", "Retrasado": "#B91C1C", "Detenido": "#B45309", "Por iniciar": "#94A3B8"}
+      )
+      fig_dona.update_traces(textinfo="percent+label", textfont_size=12, marker=dict(line=dict(color='#FFFFFF', width=2)))
+      fig_dona.update_layout(
+          showlegend=False, template="plotly_white", height=240, margin=dict(t=10, b=10, l=10, r=10),
+          font=dict(family="Plus Jakarta Sans")
+      )
+      st.plotly_chart(fig_dona, use_container_width=True)
+      st.markdown("</div>", unsafe_allow_html=True)
+
+    with c_d2:
+      st.markdown("<div class='dash-card'><div class='dash-title'>Inversión & Retorno Proyectado por Área</div><div class='dash-sub'>Comparativa de Presupuesto Asignado vs. Impacto / ROI Estimado ($)</div>", unsafe_allow_html=True)
+      df_fin_area = df.groupby("area_negocio")[["presupuesto", "roi_estimado"]].sum().reset_index()
+      
+      fig_fin = go.Figure()
+      fig_fin.add_trace(go.Bar(x=df_fin_area["area_negocio"], y=df_fin_area["presupuesto"], name="Presupuesto Invertido", marker_color="#0F172A"))
+      fig_fin.add_trace(go.Bar(x=df_fin_area["area_negocio"], y=df_fin_area["roi_estimado"], name="ROI Estimado", marker_color="#2563EB"))
+      
+      fig_fin.update_layout(
+          barmode="group", template="plotly_white", height=240, margin=dict(t=10, b=10, l=10, r=10),
+          font=dict(family="Plus Jakarta Sans"), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+      )
+      st.plotly_chart(fig_fin, use_container_width=True)
+      st.markdown("</div>", unsafe_allow_html=True)
+
+    # FILA 2: MATRIZ DE CARGA DE TRABAJO Y ALERTA DE ATENCIÓN EJECUTIVA
+    c_d3, c_d4 = st.columns([1.8, 1.2])
+    
+    with c_d3:
+      st.markdown("<div class='dash-card'><div class='dash-title'>Matriz de Capacidad y Carga por Líder</div><div class='dash-sub'>Distribución de proyectos asignados por colaborador</div>", unsafe_allow_html=True)
+      carga_df = df.groupby(["lider_asignado", "estatus_calculado"]).size().reset_index(name="Cantidad")
+      
+      fig_carga = px.bar(
+          carga_df, y="lider_asignado", x="Cantidad", color="estatus_calculado", orientation="h",
+          color_discrete_map={"En tiempo": "#047857", "Retrasado": "#B91C1C", "Detenido": "#B45309", "Por iniciar": "#94A3B8"}
+      )
+      fig_carga.update_layout(
+          template="plotly_white", height=260, margin=dict(t=10, b=10, l=10, r=10),
+          font=dict(family="Plus Jakarta Sans"), xaxis_title="Número de Proyectos", yaxis_title="",
+          legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+      )
+      st.plotly_chart(fig_carga, use_container_width=True)
+      st.markdown("</div>", unsafe_allow_html=True)
+
+    with c_d4:
+      st.markdown("<div class='dash-card'><div class='dash-title'>Atención Directiva Requerida</div><div class='dash-sub'>Proyectos en retraso o estancados</div>", unsafe_allow_html=True)
+      df_riesgo = df[df["estatus_calculado"].isin(["Retrasado", "Detenido"]) | df["es_estancado"]]
+      
+      if df_riesgo.empty:
+          st.success("🟢 **Portafolio Saludable:** No hay proyectos con desviación crítica en este momento.")
+      else:
+          for _, r_row in df_riesgo.head(4).iterrows():
+              badge_r = "status-red" if r_row['estatus_calculado'] == "Retrasado" else "status-yellow"
+              st.markdown(f"""
+              <div style='background-color:#F8FAFC; border:1px solid #E2E8F0; border-left:4px solid #B91C1C; padding:10px 14px; border-radius:10px; margin-bottom:8px;'>
+                  <div style='display:flex; justify-content:space-between; align-items:center;'>
+                      <b style='font-size:0.85rem; color:#0F172A;'>[{r_row['folio'] or 'S/F'}] {r_row['nombre'][:24]}...</b>
+                      <span class='status-badge {badge_r}'>{r_row['estatus_calculado']}</span>
+                  </div>
+                  <div style='font-size:0.75rem; color:#64748B; margin-top:4px;'>👤 {r_row['lider_asignado']} | 📍 {r_row['etapa_actual']}</div>
+              </div>
+              """, unsafe_allow_html=True)
+      st.markdown("</div>", unsafe_allow_html=True)
 
 # PESTAÑA 2: SEGUIMIENTO DE PROYECTOS
 with tabs[1]:
@@ -866,7 +948,7 @@ if es_moderador:
             </div>
             """, unsafe_allow_html=True)
 
-  # PESTAÑA 6: DIRECTORIO Y GESTIÓN DE USUARIOS (SIMETRÍA PERFECTA)
+  # PESTAÑA 6: DIRECTORIO Y GESTIÓN DE USUARIOS
   with tabs[5]:
     st.write("")
     df_users = df_users_raw.copy()
