@@ -9,34 +9,36 @@ import streamlit as st
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
-    page_title="Heading 360 | Project Steering Engine",
+    page_title="Heading 360 | Executive Dashboard",
     page_icon="💼",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# --- AVATARES PREMIUM ---
+# --- AVATARES Y ASSETS ---
 URL_ROBOT = "https://cdn-icons-png.flaticon.com/512/8943/8943377.png" 
 URL_USER = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
 
-# --- CSS UX FRIENDLY & SAAS PREMIUM ---
+# --- CSS ENTERPRISE SAAS / MODERN UX ---
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
     html, body, [class*="css"], .stApp { 
-        font-family: 'Inter', sans-serif !important; 
-        background-color: #F4F6F9 !important; 
-        color: #1E293B !important; 
+        font-family: 'Plus Jakarta Sans', sans-serif !important; 
+        background-color: #F8FAFC !important; 
+        color: #0F172A !important; 
     }
     
+    /* SIDEBAR MODERNO */
     [data-testid="stSidebar"] { 
         background-color: #FFFFFF !important; 
         border-right: 1px solid #E2E8F0 !important; 
-        box-shadow: 2px 0 10px rgba(0,0,0,0.02) !important;
+        box-shadow: 4px 0 24px rgba(15, 23, 42, 0.02) !important;
     }
     
+    /* ENCABEZADOS Y JERARQUÍA */
     h1, h2, h3, h4, h5, h6 { 
         color: #0F172A !important; 
         font-weight: 700 !important; 
@@ -46,119 +48,129 @@ st.markdown(
     label { 
         color: #64748B !important; 
         font-weight: 600 !important; 
-        font-size: 0.8rem !important; 
+        font-size: 0.75rem !important; 
         text-transform: uppercase; 
-        letter-spacing: 0.03em; 
+        letter-spacing: 0.05em; 
     }
     
-    /* INPUTS LIMPIOS Y REDONDEADOS */
+    /* TARJETAS KPI EXECUTIVE */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .kpi-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 20px 24px;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+    }
+    .kpi-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748B;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .kpi-num {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #0F172A;
+        margin-top: 6px;
+        letter-spacing: -0.03em;
+    }
+    
+    /* INPUTS Y FORMULARIOS ELEGANTES */
     .stTextInput > div > div, .stSelectbox > div > div, .stTextArea > div > div, .stNumberInput > div > div, .stDateInput > div > div { 
-        border-radius: 8px !important; 
+        border-radius: 10px !important; 
         border: 1px solid #CBD5E1 !important; 
-        background-color: #F8FAFC !important; 
-        transition: all 0.2s ease; 
+        background-color: #FFFFFF !important; 
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+        transition: all 0.2s ease !important; 
     }
     .stTextInput > div > div:focus-within, .stSelectbox > div > div:focus-within, .stNumberInput > div > div:focus-within, .stDateInput > div > div:focus-within { 
-        border-color: #05297A !important; 
-        box-shadow: 0 0 0 2px rgba(5, 41, 122, 0.15) !important; 
-        background-color: #FFFFFF !important; 
+        border-color: #2563EB !important; 
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important; 
     }
     
-    /* TARJETAS DE FORMULARIOS */
-    [data-testid="stForm"] {
+    /* CONTENEDORES DE ACORDEÓN / EXPANDERS */
+    div[data-testid="stExpander"] {
         background-color: #FFFFFF !important;
-        border-radius: 12px !important;
+        border-radius: 14px !important;
         border: 1px solid #E2E8F0 !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.02) !important;
-        padding: 24px !important;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02) !important;
+        margin-bottom: 14px !important;
+        overflow: hidden !important;
     }
-
-    /* BOTONES PRIMARIOS */
+    div[data-testid="stExpander"] > summary {
+        padding: 16px 20px !important;
+        font-weight: 700 !important;
+        color: #0F172A !important;
+    }
+    
+    /* BOTONES PRIMARIOS Y SECUNDARIOS */
     div[data-testid="stFormSubmitButton"] button, .stButton > button[kind="primary"] { 
-        background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important; 
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%) !important; 
         color: #FFFFFF !important; 
         border: none !important; 
-        border-radius: 8px !important; 
+        border-radius: 10px !important; 
         font-weight: 600 !important; 
-        padding: 0.5rem 1rem !important; 
-        box-shadow: 0 4px 6px -1px rgba(28, 66, 232, 0.2) !important; 
-        transition: all 0.3s ease !important; 
+        padding: 0.55rem 1.25rem !important; 
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15) !important; 
+        transition: all 0.2s ease !important; 
     }
     div[data-testid="stFormSubmitButton"] button:hover, .stButton > button[kind="primary"]:hover { 
-        transform: translateY(-2px); 
-        box-shadow: 0 8px 15px -3px rgba(28, 66, 232, 0.3) !important; 
+        transform: translateY(-1px); 
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25) !important; 
     }
     
-    /* BOTONES SECUNDARIOS */
     button[data-testid="baseButton-secondary"], .stButton > button[kind="secondary"] { 
         background-color: #FFFFFF !important; 
         border: 1px solid #CBD5E1 !important; 
         color: #334155 !important; 
-        border-radius: 8px !important; 
-        font-weight: 500 !important; 
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03) !important; 
+        border-radius: 10px !important; 
+        font-weight: 600 !important; 
     }
     button[data-testid="baseButton-secondary"]:hover, .stButton > button[kind="secondary"]:hover { 
-        border-color: #05297A !important; 
-        color: #05297A !important; 
+        border-color: #0F172A !important; 
+        color: #0F172A !important; 
         background-color: #F8FAFC !important; 
     }
     
-    /* MÉTRICAS SUAVES */
-    div[data-testid="metric-container"] { 
-        background-color: #FFFFFF !important;
-        border: 1px solid #E2E8F0 !important; 
-        border-top: 4px solid #05297A !important; 
-        padding: 20px 24px !important; 
-        border-radius: 12px !important; 
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03) !important; 
-    }
-    div[data-testid="metric-container"] label { color: #64748B !important; font-size: 0.85rem !important; font-weight: 600 !important; }
-    div[data-testid="metric-container"] [data-testid="stMetricValue"] div { color: #0F172A !important; font-size: 2rem !important; font-weight: 800 !important; letter-spacing: -0.02em; }
-    
-    /* PESTAÑAS AMIGABLES */
-    .stTabs [data-baseweb="tab-list"] { gap: 24px; border-bottom: 2px solid #E2E8F0; }
-    .stTabs [aria-selected="true"] { border-bottom: 3px solid #05297A !important; font-weight: 700 !important; color: #05297A !important; background-color: transparent !important; }
-    .stTabs [aria-selected="false"] { color: #64748B !important; font-weight: 500 !important; }
-    
-    /* ACORDEONES LIMPIOS */
-    .streamlit-expanderHeader { background-color: #FFFFFF !important; color: #0F172A !important; font-weight: 600 !important; border-radius: 10px !important; border: 1px solid #E2E8F0 !important; padding: 1rem !important; box-shadow: 0 2px 4px rgba(0,0,0,0.01) !important; }
-    .streamlit-expanderContent { border: 1px solid #E2E8F0 !important; border-top: none !important; background-color: #FFFFFF !important; padding: 24px !important; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; }
-    
-    /* BADGES STATUS REDONDEADAS */
-    .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; letter-spacing: 0.02em; }
-    .status-green { background-color: #DCFCE7; color: #166534 !important; border: 1px solid #BBF7D0;}
-    .status-yellow { background-color: #FEF9C3; color: #854D0E !important; border: 1px solid #FEF08A;}
-    .status-red { background-color: #FEE2E2; color: #991B1B !important; border: 1px solid #FCA5A5;}
+    /* BADGES DE ESTADO ESTILIZADOS */
+    .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; display: inline-block; letter-spacing: 0.03em; }
+    .status-green { background-color: #ECFDF5; color: #047857 !important; border: 1px solid #A7F3D0;}
+    .status-yellow { background-color: #FFFBEB; color: #B45309 !important; border: 1px solid #FDE68A;}
+    .status-red { background-color: #FEF2F2; color: #B91C1C !important; border: 1px solid #FECACA;}
     .status-gray { background-color: #F1F5F9; color: #475569 !important; border: 1px solid #E2E8F0;}
     
-    /* KANBAN CARDS */
-    .kanban-card { background: #FFFFFF; padding: 16px; border-radius: 12px; border: 1px solid #E2E8F0; border-left: 4px solid #05297A; box-shadow: 0 2px 5px rgba(0,0,0,0.02); margin-bottom: 15px; transition: transform 0.2s; }
-    .kanban-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.05); }
+    /* TABLERO KANBAN PREMIUM */
+    .kanban-card { background: #FFFFFF; padding: 18px; border-radius: 14px; border: 1px solid #E2E8F0; border-top: 4px solid #2563EB; box-shadow: 0 4px 12px rgba(0,0,0,0.02); margin-bottom: 16px; transition: all 0.2s ease; }
+    .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.05); }
     .kanban-title { font-weight: 700; color: #0F172A; font-size: 0.95rem; margin-bottom: 8px; }
     .kanban-meta { font-size: 0.8rem; color: #64748B; margin-bottom: 4px; }
-    
-    /* LOGIN LIMPIO */
-    .login-box { background-color: #FFFFFF; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.03); border: 1px solid #E2E8F0; }
-    
-    /* BOTÓN FLOTANTE "PROJECT IA" */
-    div[data-testid="stPopover"] { position: fixed !important; bottom: 30px !important; right: 30px !important; z-index: 999999 !important; }
+
+    /* PESTAÑAS (TABS) SAAS */
+    .stTabs [data-baseweb="tab-list"] { gap: 28px; border-bottom: 2px solid #E2E8F0; }
+    .stTabs [aria-selected="true"] { border-bottom: 3px solid #2563EB !important; font-weight: 700 !important; color: #2563EB !important; background-color: transparent !important; }
+    .stTabs [aria-selected="false"] { color: #64748B !important; font-weight: 600 !important; }
+
+    /* POPOVER ESTILIZADO */
     div[data-testid="stPopover"] > button { 
-        background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important; 
+        background: #0F172A !important; 
         color: #FFFFFF !important; 
-        border-radius: 50px !important; 
-        padding: 12px 24px !important; 
-        box-shadow: 0 8px 20px rgba(5, 41, 122, 0.3) !important; 
-        border: 2px solid #FFFFFF !important; 
-        font-size: 0.95rem !important; 
+        border-radius: 30px !important; 
+        padding: 10px 20px !important; 
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25) !important; 
         font-weight: 600 !important; 
-        transition: all 0.3s ease !important; 
     }
-    div[data-testid="stPopover"] > button:hover { 
-        transform: scale(1.05) translateY(-3px) !important; 
-        box-shadow: 0 12px 25px rgba(28, 66, 232, 0.4) !important; 
-    }
-    div[data-testid="stPopover"] > button p { color: #FFFFFF !important; font-weight: 600 !important; margin: 0; }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     </style>
@@ -166,7 +178,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- CONSTANTES ---
+# --- CONSTANTES DE CONFIGURACIÓN ---
 OPCIONES_AREAS = ["Incentivos", "Afore", "Banca Empresarial", "Banco", "CAT Cobranza", "CAT P&V", "CEDIS", "Cobranza Domiciliaria", "Credito Automotriz", "Inmobiliaria", "Retail", "Sale Vale"]
 OPCIONES_TIPOS = ["Esquema de Incentivos", "Tecnología", "Estratégicos", "Procesos", "Campañas", "Auditorías"]
 OPCIONES_SUBTIPOS = ["EI-Nuevo incentivo completo", "EI-Actualización completa de incentivo", "EI-Ajuste menor de incentivo", "EI-Ajuste mayor de incentivo", "EI-Casos especiales", "CA-Campaña", "CA-Concurso", "PR-Documentación oficial", "PR-Nuevo proceso", "TE-Software", "TE-Tableros", "Otros"]
@@ -174,7 +186,7 @@ OPCIONES_ETAPAS = ["1. Diseño (EI)", "2. Prueba piloto (EI)", "3. Escalamiento 
 OPCIONES_ESTATUS = ["Por iniciar", "En tiempo", "Retrasado", "Detenido", "Cancelado"]
 OPCIONES_GERENTES = ["Andres Avila", "Eduardo Rodriguez", "Heriberto Vega", "Janik Orozco", "Kurokusi Ochoa", "Noel Aquino", "Yahir Ramirez", "Giovanni Vallejo", "Ruben Rivera"]
 
-# --- BASE DE DATOS Y CACHÉ ---
+# --- CONEXIÓN DE BASE DE DATOS Y MIGRACIONES ---
 @st.cache_resource
 def obtener_engine():
   db_url = st.secrets["postgres"]["url"] if "postgres" in st.secrets else "sqlite:///db_coppel_v5.db"
@@ -197,10 +209,8 @@ def inicializar_db():
       "ALTER TABLE proyectos ADD COLUMN fecha_fin_baseline TEXT"
   ]:
       try:
-          with engine.begin() as conn:
-              conn.execute(sqlalchemy.text(col_sql))
-      except Exception:
-          pass
+          with engine.begin() as conn: conn.execute(sqlalchemy.text(col_sql))
+      except Exception: pass
 
   with engine.begin() as conn:
     res = conn.execute(sqlalchemy.text("SELECT COUNT(*) FROM usuarios")).fetchone()
@@ -266,16 +276,12 @@ def calcular_fechas_tarea_df(df_tareas_proyecto):
   return df_t
 
 def evaluar_estancamiento(fecha_actualizacion_str):
-  if not fecha_actualizacion_str or str(fecha_actualizacion_str).strip() in ["", "None", "N/A"]:
-    return True
+  if not fecha_actualizacion_str or str(fecha_actualizacion_str).strip() in ["", "None", "N/A"]: return True
   try:
     f_act = datetime.strptime(str(fecha_actualizacion_str)[:19], "%Y-%m-%d %H:%M:%S")
-    dias = (datetime.now() - f_act).days
-    return dias > 20
-  except Exception:
-    return False
+    return (datetime.now() - f_act).days > 20
+  except Exception: return False
 
-# --- MOTOR DE CÁLCULO BASELINE VS. REAL ---
 def calcular_metricas_baseline(row):
   f_fin_b_str = row.get("fecha_fin_baseline")
   if not f_fin_b_str or str(f_fin_b_str).strip() in ["", "None", "N/A"]:
@@ -287,48 +293,39 @@ def calcular_metricas_baseline(row):
       f_fin = datetime.strptime(str(f_fin_b_str)[:10], "%Y-%m-%d")
       hoy = datetime.now()
 
-      if hoy <= f_ini:
-          pct_planeado = 0.0
-      elif hoy >= f_fin:
-          pct_planeado = 1.0
-      else:
-          dias_totales = max((f_fin - f_ini).days, 1)
-          dias_transcurridos = (hoy - f_ini).days
-          pct_planeado = min(max(dias_transcurridos / dias_totales, 0.0), 1.0)
+      if hoy <= f_ini: pct_planeado = 0.0
+      elif hoy >= f_fin: pct_planeado = 1.0
+      else: pct_planeado = min(max((hoy - f_ini).days / max((f_fin - f_ini).days, 1), 0.0), 1.0)
 
       avance_real = float(row.get("avance_real") or 0.0)
       desviacion = avance_real - pct_planeado
 
-      if avance_real >= 1.0:
-          estatus = "En tiempo"
-      elif hoy > f_fin and avance_real < 1.0:
-          estatus = "Retrasado"
-      elif desviacion < -0.10:
-          estatus = "Retrasado"
-      else:
-          estatus = row.get("estatus_tiempo", "En tiempo")
+      if avance_real >= 1.0: estatus = "En tiempo"
+      elif hoy > f_fin and avance_real < 1.0: estatus = "Retrasado"
+      elif desviacion < -0.10: estatus = "Retrasado"
+      else: estatus = row.get("estatus_tiempo", "En tiempo")
 
       return {"pct_planeado": pct_planeado, "desviacion": desviacion, "estatus_sugerido": estatus, "tiene_baseline": True, "fecha_fin_baseline": str(f_fin_b_str)[:10]}
   except Exception:
       return {"pct_planeado": 0.0, "desviacion": 0.0, "estatus_sugerido": row.get("estatus_tiempo", "En tiempo"), "tiene_baseline": False}
 
-# --- LOGIN GATEWAY ---
+# --- GATEWAY DE AUTENTICACIÓN ---
 if "autenticado" not in st.session_state:
   st.session_state.autenticado = False; st.session_state.correo_actual = None; st.session_state.nombre_actual = None; st.session_state.rol = None
 
 if not st.session_state.autenticado:
-  col_izq, col_centro, col_der = st.columns([1, 1.4, 1])
+  col_izq, col_centro, col_der = st.columns([1, 1.3, 1])
   with col_centro:
-    st.write(""); st.write(""); st.write("")
-    st.markdown("<h1 style='text-align: center; color:#05297A !important; font-size: 2.5rem; letter-spacing: -1px;'>HEADING 360</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #64748B; margin-bottom: 30px; font-size: 1.1rem; font-weight: 500;'>Project Steering Engine</p>", unsafe_allow_html=True)
+    st.write(""); st.write("")
+    st.markdown("<h1 style='text-align: center; color:#0F172A !important; font-size: 2.6rem; letter-spacing: -1.5px;'>HEADING 360</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #64748B; margin-bottom: 30px; font-size: 1rem; font-weight: 500;'>Project Steering & Governance Platform</p>", unsafe_allow_html=True)
     
     with st.form("login_form"):
-      st.markdown("<h3 style='color:#0F172A !important; font-size: 1.2rem; margin-bottom: 20px; border-bottom: 1px solid #E2E8F0; padding-bottom: 10px;'>Iniciar Sesión</h3>", unsafe_allow_html=True)
+      st.markdown("<h3 style='color:#0F172A !important; font-size: 1.15rem; margin-bottom: 16px;'>Acceso Institucional</h3>", unsafe_allow_html=True)
       correo_input = st.text_input("Correo Institucional", placeholder="tu.nombre@coppel.com")
       password_input = st.text_input("Contraseña", type="password")
       st.write("")
-      if st.form_submit_button("Ingresar al sistema", type="primary", use_container_width=True):
+      if st.form_submit_button("Ingresar a Heading 360", type="primary", use_container_width=True):
         if correo_input.strip() == "": st.warning("Por favor ingresa tu correo.")
         else:
           engine = obtener_engine()
@@ -336,31 +333,20 @@ if not st.session_state.autenticado:
             res = conn.execute(sqlalchemy.text("SELECT password, rol, nombre FROM usuarios WHERE LOWER(correo)=:c"), {"c": correo_input.strip().lower()}).fetchone()
             if res and res[0] == password_input:
               st.session_state.autenticado = True; st.session_state.correo_actual = correo_input.strip().lower(); st.session_state.rol = res[1]; st.session_state.nombre_actual = res[2]; st.rerun()
-            else: st.error("Tus credenciales no coinciden. Intenta de nuevo.")
-    
-    st.write("")
-    if st.button("¿Olvidaste tu contraseña?", type="secondary", use_container_width=True):
-        st.info("🔒 **Seguridad de la cuenta:** Para recuperar tu contraseña, envía un correo al administrador del sistema (Leonardo Castillo) para que te asigne una nueva clave.")
+            else: st.error("Credenciales incorrectas.")
   st.stop()
 
-# --- CARGA DE DATOS EN MEMORIA ---
+# --- CARGA GENERAL DE DATOS ---
 df, df_bitacora, df_tareas_all, df_users_raw, df_solicitudes_baseline = cargar_datos_completos()
 es_moderador = st.session_state.rol == "Moderador"
 lista_lideres_registrados = obtener_lista_usuarios(df_users_raw)
 
-# Identificación de Proyectos Estancados y Evaluación Baseline
 if not df.empty:
   df['es_estancado'] = df['ultima_actualizacion'].apply(evaluar_estancamiento) & (~df['etapa_actual'].str.contains("Cierre", case=False, na=False))
-  proyectos_estancados = df[df['es_estancado']]
-  
   df['info_baseline'] = df.apply(calcular_metricas_baseline, axis=1)
   df['estatus_calculado'] = df.apply(lambda r: r['info_baseline']['estatus_sugerido'], axis=1)
-  
   proyectos_retrasados = df[df["estatus_calculado"].isin(["Retrasado", "Detenido"])]
-  
-  if not proyectos_retrasados.empty and "alerta_mostrada" not in st.session_state:
-    st.toast(f"¡Hola! Tienes {len(proyectos_retrasados)} iniciativas que requieren atención por retraso.", icon="🚨")
-    st.session_state.alerta_mostrada = True
+  proyectos_estancados = df[df['es_estancado']]
 else:
   df['es_estancado'] = False
   df['info_baseline'] = None
@@ -368,24 +354,33 @@ else:
   proyectos_estancados = pd.DataFrame()
   proyectos_retrasados = pd.DataFrame()
 
-# --- SIDEBAR DE USUARIO ---
+# --- SIDEBAR EXECUTIVE ---
 with st.sidebar:
-  st.markdown(f"<div style='background-color:#FFFFFF; padding: 20px; border-radius: 12px; border: 1px solid #E2E8F0; margin-bottom: 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);'><h3 style='margin:0 0 4px 0; font-size:1.1rem; color:#0F172A;'>👤 {st.session_state.nombre_actual}</h3><p style='margin:0 0 10px 0; color:#64748B; font-size:0.85rem;'>{st.session_state.correo_actual}</p><span class='status-badge {'status-green' if es_moderador else 'status-gray'}'>{st.session_state.rol}</span></div>", unsafe_allow_html=True)
-  with st.expander("⚙️ Mi Perfil y Seguridad", expanded=False):
+  st.markdown(f"""
+  <div style='background-color:#FFFFFF; padding: 18px; border-radius: 14px; border: 1px solid #E2E8F0; margin-bottom: 18px;'>
+    <h3 style='margin:0 0 2px 0; font-size:1.05rem; color:#0F172A;'>{st.session_state.nombre_actual}</h3>
+    <p style='margin:0 0 10px 0; color:#64748B; font-size:0.8rem;'>{st.session_state.correo_actual}</p>
+    <span class='status-badge {'status-green' if es_moderador else 'status-gray'}'>{st.session_state.rol}</span>
+  </div>
+  """, unsafe_allow_html=True)
+  
+  with st.expander("⚙️ Perfil & Seguridad", expanded=False):
     with st.form("form_cambio_pass"):
-      nueva_pass = st.text_input("Nueva Contraseña", type="password"); confirmar_pass = st.text_input("Confirmar Contraseña", type="password")
-      if st.form_submit_button("Guardar Cambios", use_container_width=True):
+      nueva_pass = st.text_input("Nueva Contraseña", type="password")
+      confirmar_pass = st.text_input("Confirmar Contraseña", type="password")
+      if st.form_submit_button("Actualizar Clave", use_container_width=True):
         if nueva_pass == confirmar_pass and nueva_pass:
           engine = obtener_engine()
           with engine.begin() as conn: conn.execute(sqlalchemy.text("UPDATE usuarios SET password=:p WHERE correo=:c"), {"p": nueva_pass, "c": st.session_state.correo_actual})
           limpiar_cache_y_recargar(); st.success("¡Contraseña actualizada!")
         else: st.error("Las contraseñas no coinciden.")
+
   st.write("")
-  st.markdown("<h4 style='color:#0F172A; font-size: 0.9rem;'>📥 Exportar Información</h4>", unsafe_allow_html=True)
+  st.markdown("<p style='font-size:0.75rem; font-weight:700; color:#64748B; text-transform:uppercase;'>Exportación de Datos</p>", unsafe_allow_html=True)
   if not df.empty:
     def generar_pdf(dataframe):
-      pdf = FPDF(orientation="L", unit="mm", format="A4"); pdf.set_auto_page_break(auto=True, margin=15); pdf.add_page(); pdf.set_font("Arial", "B", 16); pdf.set_text_color(5, 41, 122)
-      pdf.cell(0, 8, "Heading 360 - Reporte de Portafolio", ln=True, align="L"); pdf.set_font("Arial", "", 9); pdf.set_text_color(100, 100, 100)
+      pdf = FPDF(orientation="L", unit="mm", format="A4"); pdf.set_auto_page_break(auto=True, margin=15); pdf.add_page(); pdf.set_font("Arial", "B", 16); pdf.set_text_color(15, 23, 42)
+      pdf.cell(0, 8, "Heading 360 - Reporte de Portafolio Executive", ln=True, align="L"); pdf.set_font("Arial", "", 9); pdf.set_text_color(100, 100, 100)
       pdf.cell(0, 6, f"Generado el: {datetime.now().strftime('%d/%m/%Y a las %H:%M')}", ln=True, align="L"); pdf.ln(4)
       pdf.set_font("Arial", "B", 8); pdf.set_fill_color(241, 245, 249); pdf.set_text_color(15, 23, 42)
       pdf.cell(22, 8, "Folio", 1, 0, "C", True); pdf.cell(60, 8, "Iniciativa", 1, 0, "L", True); pdf.cell(30, 8, "Area", 1, 0, "L", True); pdf.cell(35, 8, "Responsable", 1, 0, "L", True); pdf.cell(25, 8, "Estatus", 1, 0, "C", True); pdf.cell(18, 8, "Avance", 1, 0, "C", True); pdf.cell(42, 8, "Ult. Act.", 1, 0, "C", True); pdf.cell(45, 8, "Fase Actual", 1, 1, "L", True)
@@ -394,7 +389,7 @@ with st.sidebar:
         pdf.cell(22, 7, str(row["folio"])[:12], 1, 0, "C"); pdf.cell(60, 7, str(row["nombre"])[:35], 1, 0, "L"); pdf.cell(30, 7, str(row["area_negocio"])[:18], 1, 0, "L"); pdf.cell(35, 7, str(row["lider_asignado"])[:22], 1, 0, "L"); pdf.cell(25, 7, str(row["estatus_tiempo"])[:15], 1, 0, "C"); pdf.cell(18, 7, f"{int((row['avance_real'] or 0)*100)}%", 1, 0, "C"); pdf.set_font("Arial", "B", 8); pdf.cell(42, 7, str(row["ultima_actualizacion"])[:19], 1, 0, "C"); pdf.set_font("Arial", "", 8); pdf.cell(45, 7, str(row["etapa_actual"])[:25], 1, 1, "L")
       with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp: pdf.output(tmp.name); return tmp.name
 
-    with open(generar_pdf(df), "rb") as file: st.download_button("Descargar PDF", data=file, file_name=f"Heading360_{datetime.now().strftime('%Y%m%d')}.pdf", use_container_width=True, type="secondary")
+    with open(generar_pdf(df), "rb") as file: st.download_button("Reporte PDF", data=file, file_name=f"Heading360_{datetime.now().strftime('%Y%m%d')}.pdf", use_container_width=True, type="secondary")
     excel_buffer = io.BytesIO()
     with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer: df.to_excel(writer, index=False, sheet_name="Proyectos")
     st.download_button("Exportar a Excel (.xlsx)", data=excel_buffer.getvalue(), file_name=f"Base_Datos_{datetime.now().strftime('%Y%m%d')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, type="secondary")
@@ -402,26 +397,42 @@ with st.sidebar:
   st.write("")
   if st.button("Cerrar Sesión", use_container_width=True): st.session_state.autenticado = False; st.rerun()
 
-# --- HEADER Y MÉTRICAS GENERALES ---
-st.markdown("<h2 style='margin-bottom: 20px; color:#0F172A;'>📊 Visión General del Portafolio</h2>", unsafe_allow_html=True)
-if not df.empty and not proyectos_retrasados.empty:
-  st.markdown(f"<div style='background-color:#FEF2F2; border-left: 5px solid #EF4444; padding: 16px; border-radius: 8px; margin-bottom: 20px;'><p style='color:#991B1B; margin:0; font-weight:600;'>⚠️ Tienes {len(proyectos_retrasados)} iniciativas en Retraso vs Baseline y {len(proyectos_estancados)} estancadas sin movimientos recientes.</p></div>", unsafe_allow_html=True)
+# --- HEADER EXECUTIVE Y TARJETAS KPI REDISEÑADAS ---
+st.markdown("<h2 style='margin-bottom: 4px; color:#0F172A;'>Visión General del Portafolio</h2>", unsafe_allow_html=True)
+st.markdown("<p style='color:#64748B; margin-bottom: 24px; font-size:0.95rem;'>Tablero de control estratégico y gobernanza de proyectos activos.</p>", unsafe_allow_html=True)
 
 total_p = len(df); en_t = len(df[df["estatus_calculado"] == "En tiempo"]) if total_p > 0 else 0; ret = len(proyectos_retrasados) if total_p > 0 else 0
 presupuesto_total = df["presupuesto"].sum() if total_p > 0 else 0.0
 roi_total = df["roi_estimado"].sum() if total_p > 0 else 0.0
 
-m1, m2, m3, m4, m5 = st.columns(5)
-m1.metric("PROYECTOS ACTIVOS", total_p)
-m2.metric("EN TIEMPO", en_t)
-m3.metric("EN RETRASO", ret)
-m4.metric("PRESUPUESTO", f"${presupuesto_total:,.2f}")
-m5.metric("IMPACTO / ROI EST.", f"${roi_total:,.2f}")
-st.write("")
+st.markdown(f"""
+<div class='kpi-grid'>
+    <div class='kpi-card'>
+        <div class='kpi-title'>Proyectos Activos</div>
+        <div class='kpi-num'>{total_p}</div>
+    </div>
+    <div class='kpi-card'>
+        <div class='kpi-title'>En Tiempo (Baseline)</div>
+        <div class='kpi-num' style='color:#047857;'>{en_t}</div>
+    </div>
+    <div class='kpi-card'>
+        <div class='kpi-title'>Retrasados / Riesgo</div>
+        <div class='kpi-num' style='color:#B91C1C;'>{ret}</div>
+    </div>
+    <div class='kpi-card'>
+        <div class='kpi-title'>Presupuesto Invertido</div>
+        <div class='kpi-num'>${presupuesto_total:,.2f}</div>
+    </div>
+    <div class='kpi-card'>
+        <div class='kpi-title'>Impacto / ROI Estimado</div>
+        <div class='kpi-num' style='color:#2563EB;'>${roi_total:,.2f}</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # --- PESTAÑAS CORPORATIVAS CON CONTROL DE ROL ---
 if es_moderador: 
-  tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban", "➕ Nuevo Proyecto", "📜 Bitácora General", "👥 Directorio de Accesos"])
+  tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban", "➕ Nuevo Proyecto", "📜 Bitácora General", "👥 Accesos"])
 else: 
   tabs = st.tabs(["📈 Dashboard Analítico", "🚀 Seguimiento de Proyectos", "📋 Tablero Kanban"])
 
@@ -433,21 +444,21 @@ with tabs[0]:
     d_col1, d_col2 = st.columns(2)
     with d_col1:
       fig1 = px.pie(df, names="area_negocio", title="Distribución por Área Solicitante", hole=0.45, color_discrete_sequence=px.colors.qualitative.Prism)
-      fig1.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", title_font=dict(size=18, family="Inter", color="#0F172A")); st.plotly_chart(fig1, use_container_width=True)
+      fig1.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Plus Jakarta Sans"), title_font=dict(size=16, color="#0F172A")); st.plotly_chart(fig1, use_container_width=True)
     with d_col2:
       df_status_count = df["estatus_calculado"].value_counts().reset_index(); df_status_count.columns = ["Estatus", "Volumen"]
-      fig2 = px.bar(df_status_count, x="Estatus", y="Volumen", title="Estatus de Salud (Baseline vs. Real)", color="Estatus", color_discrete_map={"En tiempo": "#166534", "Retrasado": "#EF4444", "Detenido": "#854D0E", "Por iniciar": "#94A3B8"})
-      fig2.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", title_font=dict(size=18, family="Inter", color="#0F172A")); st.plotly_chart(fig2, use_container_width=True)
+      fig2 = px.bar(df_status_count, x="Estatus", y="Volumen", title="Estatus de Salud (Baseline vs. Real)", color="Estatus", color_discrete_map={"En tiempo": "#047857", "Retrasado": "#B91C1C", "Detenido": "#B45309", "Por iniciar": "#94A3B8"})
+      fig2.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Plus Jakarta Sans"), title_font=dict(size=16, color="#0F172A")); st.plotly_chart(fig2, use_container_width=True)
 
     st.divider()
-    st.markdown("<h4 style='color:#0F172A; margin-bottom:15px;'>👥 Matriz de Carga de Trabajo y Capacidad por Líder</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='color:#0F172A; margin-bottom:15px;'>Matriz de Carga de Trabajo por Líder Operativo</h4>", unsafe_allow_html=True)
     
     carga_df = df.groupby(["lider_asignado", "estatus_calculado"]).size().reset_index(name="Cantidad")
-    fig_carga = px.bar(carga_df, x="lider_asignado", y="Cantidad", color="estatus_calculado", title="Proyectos Asignados por Colaborador", barmode="stack", color_discrete_map={"En tiempo": "#166534", "Retrasado": "#EF4444", "Detenido": "#F59E0B", "Por iniciar": "#94A3B8"})
-    fig_carga.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", xaxis_title="Líder Operativo", yaxis_title="Número de Proyectos")
+    fig_carga = px.bar(carga_df, x="lider_asignado", y="Cantidad", color="estatus_calculado", title="", barmode="stack", color_discrete_map={"En tiempo": "#047857", "Retrasado": "#B91C1C", "Detenido": "#B45309", "Por iniciar": "#94A3B8"})
+    fig_carga.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Plus Jakarta Sans"), xaxis_title="Líder", yaxis_title="Número de Iniciativas")
     st.plotly_chart(fig_carga, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (TARJETAS MINIMALISTAS SIN HISTORIAL INDIVIDUAL)
+# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
@@ -455,8 +466,7 @@ with tabs[1]:
     if es_moderador and not df_solicitudes_baseline.empty:
       sol_pendientes = df_solicitudes_baseline[df_solicitudes_baseline["estado"] == "Pendiente"]
       if not sol_pendientes.empty:
-          st.markdown(f"### 📬 Control de Cambios: Solicitudes de Re-baseline Pendientes ({len(sol_pendientes)})")
-          st.write("Revisa y aprueba o rechaza las modificaciones de fecha de compromiso baseline enviadas por los líderes:")
+          st.markdown(f"### 📬 Control de Cambios: Solicitudes Pendientes ({len(sol_pendientes)})")
           for _, sol in sol_pendientes.iterrows():
               p_rel_df = df[df["id"] == sol["proyecto_id"]]
               p_rel = p_rel_df.iloc[0] if not p_rel_df.empty else None
@@ -477,34 +487,28 @@ with tabs[1]:
                                    {"ap": st.session_state.nombre_actual, "sid": sol['id']})
                       conn.execute(sqlalchemy.text("INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:pid, :usr, :fh, :com)"),
                                    {"pid": sol['proyecto_id'], "usr": st.session_state.nombre_actual, "fh": ahora, "com": f"Aprobación de Re-baseline: Nueva fecha fin comprometida {sol['fecha_fin_propuesta']}."})
-                  limpiar_cache_y_recargar()
-                  st.success("¡Baseline actualizado y notificado!")
-                  st.rerun()
+                  limpiar_cache_y_recargar(); st.success("¡Baseline actualizado!"); st.rerun()
 
               if c_s4.button("❌ Rechazar", key=f"btn_rchz_{sol['id']}"):
                   engine = obtener_engine()
                   with engine.begin() as conn:
                       conn.execute(sqlalchemy.text("UPDATE solicitudes_baseline SET estado = 'Rechazado', aprobador = :ap WHERE id = :sid"),
                                    {"ap": st.session_state.nombre_actual, "sid": sol['id']})
-                  limpiar_cache_y_recargar()
-                  st.info("Solicitud rechazada.")
-                  st.rerun()
+                  limpiar_cache_y_recargar(); st.info("Solicitud rechazada."); st.rerun()
               st.divider()
 
-    # 2. PANEL CENTRAL DE SOLICITUD DE RE-BASELINE
-    with st.expander("📩 Solicitar Cambio de Baseline (Re-baseline)", expanded=False):
-      st.write("Si requieres ajustar la fecha compromiso baseline de una iniciativa, selecciona el proyecto y envía tu solicitud formal a dirección:")
+    # 2. PANEL CENTRAL DE RE-BASELINE
+    with st.expander("📩 Solicitar Ajuste de Fecha Compromiso (Re-baseline)", expanded=False):
       df_mis_proyectos = df if es_moderador else df[df["lider_asignado"] == st.session_state.nombre_actual]
-      if df_mis_proyectos.empty:
-          st.info("No tienes proyectos asignados para solicitar re-baseline.")
+      if df_mis_proyectos.empty: st.info("No tienes proyectos asignados para solicitar re-baseline.")
       else:
           opciones_p_sol = df_mis_proyectos.apply(lambda x: f"{x['id']} - [{x['folio'] or 'S/F'}] {x['nombre']}", axis=1).tolist()
           with st.form("f_sol_baseline_central"):
-              p_sol_elegido = st.selectbox("Proyecto a modificar", opciones_p_sol)
+              p_sol_elegido = st.selectbox("Proyecto a Modificar", opciones_p_sol)
               col_b1, col_b2 = st.columns(2)
               n_f_prop = col_b1.date_input("Nueva Fecha Fin Propuesta")
-              n_motivo = st.text_area("Justificación / Motivo del Ajuste *", placeholder="Ej. Retraso de proveedor externo en entrega de servidores...")
-              if st.form_submit_button("Enviar Solicitud de Re-baseline", type="primary"):
+              n_motivo = st.text_area("Justificación del Ajuste *", placeholder="Motivo de la variación de tiempo...")
+              if st.form_submit_button("Enviar Solicitud a Dirección", type="primary"):
                   if n_motivo.strip() and p_sol_elegido:
                       pid_sol = int(p_sol_elegido.split(" - ")[0])
                       ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -513,19 +517,15 @@ with tabs[1]:
                           conn.execute(sqlalchemy.text("""INSERT INTO solicitudes_baseline (proyecto_id, solicitante, fecha_fin_propuesta, motivo, estado, fecha_solicitud) 
                                                          VALUES (:pid, :sol, :ff, :mot, 'Pendiente', :fsol)"""),
                                        {"pid": pid_sol, "sol": st.session_state.nombre_actual, "ff": str(n_f_prop), "mot": n_motivo.strip(), "fsol": ahora})
-                      limpiar_cache_y_recargar()
-                      st.success("¡Solicitud de Re-baseline enviada para aprobación!")
-                      st.rerun()
-                  else:
-                      st.error("La justificación es obligatoria.")
+                      limpiar_cache_y_recargar(); st.success("¡Solicitud enviada!"); st.rerun()
+                  else: st.error("La justificación es obligatoria.")
 
-    # 3. ELIMINACIÓN MASIVA
+    # 3. ELIMINACIÓN MASIVA MODERADORES
     if es_moderador:
-      with st.expander("🗑️ Eliminación Masiva de Proyectos (Solo Moderadores)", expanded=False):
-        st.write("Selecciona los proyectos que deseas eliminar de forma permanente de la base de datos:")
+      with st.expander("🗑️ Eliminación Masiva de Proyectos", expanded=False):
         opciones_proyectos_borrar = df.apply(lambda x: f"{x['id']} - [{x['folio'] or 'S/F'}] {x['nombre']}", axis=1).tolist()
-        proyectos_a_borrar = st.multiselect("Marcar proyectos para eliminar", opciones_proyectos_borrar)
-        if st.button("🗑️ Eliminar Proyectos Seleccionados", type="secondary"):
+        proyectos_a_borrar = st.multiselect("Marcar proyectos a eliminar", opciones_proyectos_borrar)
+        if st.button("Eliminar Seleccionados", type="secondary"):
             if proyectos_a_borrar:
                 ids_borrar = [int(p.split(" - ")[0]) for p in proyectos_a_borrar]
                 engine = obtener_engine()
@@ -534,27 +534,24 @@ with tabs[1]:
                         conn.execute(sqlalchemy.text("DELETE FROM tareas WHERE proyecto_id = :id"), {"id": pid})
                         conn.execute(sqlalchemy.text("DELETE FROM bitacora WHERE proyecto_id = :id"), {"id": pid})
                         conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id = :id"), {"id": pid})
-                limpiar_cache_y_recargar()
-                st.success(f"¡Se eliminaron {len(ids_borrar)} proyectos correctamente!")
-                st.rerun()
+                limpiar_cache_y_recargar(); st.success("Proyectos eliminados."); st.rerun()
 
-    # 4. FILTROS
-    f_pills1, f_pills2, f_pills3, f_pills4 = st.columns([1.2, 1.2, 1.2, 2.4])
+    # 4. FILTROS RÁPIDOS Y AVANZADOS
+    f_pills1, f_pills2 = st.columns([1.5, 3.5])
     modo_filtro = f_pills1.radio("Filtros Rápidos", ["Ver Todos", "🚨 Solo Retrasados", "⚠️ Estancados (>20d)", "⭐ Mis Proyectos"], horizontal=True)
 
-    st.markdown("<h5 style='color:#334155; margin-top:15px; margin-bottom:15px; font-size:0.9rem;'>Filtros Avanzados</h5>", unsafe_allow_html=True)
-    f_col1, f_col2, f_col3 = st.columns(3)
-    txt_busqueda = f_col1.text_input("Buscar por Nombre o Folio")
-    filtro_area = f_col2.selectbox("Filtrar por Área", ["Todas las Áreas"] + OPCIONES_AREAS)
-    filtro_lider = f_col3.selectbox("Responsable del Proyecto", ["Todos los Responsables"] + lista_lideres_registrados)
+    with st.expander("🔍 Filtros Avanzados del Portafolio", expanded=False):
+        f_col1, f_col2, f_col3 = st.columns(3)
+        txt_busqueda = f_col1.text_input("Buscar Nombre / Folio")
+        filtro_area = f_col2.selectbox("Área Solicitante", ["Todas las Áreas"] + OPCIONES_AREAS)
+        filtro_lider = f_col3.selectbox("Responsable", ["Todos los Responsables"] + lista_lideres_registrados)
 
-    f_col4, f_col5, f_col6 = st.columns(3)
-    filtro_estatus = f_col4.selectbox("Estatus de Ejecución", ["Todos los Estatus"] + OPCIONES_ESTATUS)
-    filtro_gerente = f_col5.selectbox("Gerente Sponsor", ["Todos los Gerentes"] + OPCIONES_GERENTES)
-    filtro_etapa = f_col6.selectbox("Fase Actual", ["Todas las Fases"] + OPCIONES_ETAPAS)
+        f_col4, f_col5, f_col6 = st.columns(3)
+        filtro_estatus = f_col4.selectbox("Estatus de Ejecución", ["Todos los Estatus"] + OPCIONES_ESTATUS)
+        filtro_gerente = f_col5.selectbox("Gerente Sponsor", ["Todos los Gerentes"] + OPCIONES_GERENTES)
+        filtro_etapa = f_col6.selectbox("Fase Actual", ["Todas las Fases"] + OPCIONES_ETAPAS)
 
     df_filtrado = df.copy()
-
     if modo_filtro == "🚨 Solo Retrasados": df_filtrado = df_filtrado[df_filtrado["estatus_calculado"].isin(["Retrasado", "Detenido"])]
     elif modo_filtro == "⚠️ Estancados (>20d)": df_filtrado = df_filtrado[df_filtrado["es_estancado"] == True]
     elif modo_filtro == "⭐ Mis Proyectos": df_filtrado = df_filtrado[df_filtrado["lider_asignado"] == st.session_state.nombre_actual]
@@ -566,21 +563,21 @@ with tabs[1]:
     if filtro_gerente != "Todos los Gerentes": df_filtrado = df_filtrado[df_filtrado["gerente"] == filtro_gerente]
     if filtro_etapa != "Todas las Fases": df_filtrado = df_filtrado[df_filtrado["etapa_actual"] == filtro_etapa]
 
-    st.markdown(f"<p style='color: #64748B; font-size: 0.85rem; margin-top: 15px;'>📌 Mostrando <b>{len(df_filtrado)}</b> de <b>{len(df)}</b> proyectos según tus filtros.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color: #64748B; font-size: 0.85rem; margin-top: 15px;'>📌 Mostrando <b>{len(df_filtrado)}</b> de <b>{len(df)}</b> proyectos.</p>", unsafe_allow_html=True)
 
-    # 5. TARJETAS DE PROYECTO
+    # 5. TARJETAS DE PROYECTO CLEAN & MINIMAL
     for _, row in df_filtrado.iterrows():
       p_id = row["id"]
       info_b = row.get("info_baseline") or calcular_metricas_baseline(row)
       
       badge_status = "status-green" if row["estatus_calculado"] == "En tiempo" else ("status-yellow" if row["estatus_calculado"] == "Detenido" else "status-red")
-      tag_estancado = " <span class='status-badge status-red'>⚠️ Estancado (>20d)</span>" if row.get("es_estancado", False) else ""
+      tag_estancado = " <span class='status-badge status-red'>⚠️ Estancado</span>" if row.get("es_estancado", False) else ""
 
       desviacion_str = ""
       if info_b["tiene_baseline"]:
           desv_pct = int(info_b["desviacion"] * 100)
           signo = "+" if desv_pct >= 0 else ""
-          desviacion_str = f" | Planeado: {int(info_b['pct_planeado']*100)}% ({signo}{desv_pct}% desv)"
+          desviacion_str = f" | Plan: {int(info_b['pct_planeado']*100)}% ({signo}{desv_pct}%)"
 
       es_mi_proyecto = (row["lider_asignado"] == st.session_state.nombre_actual)
       puedo_editar = es_moderador or es_mi_proyecto
@@ -594,24 +591,22 @@ with tabs[1]:
       else:
           avance_display = float(row["avance_real"] or 0.0)
 
-      with st.expander(f"[{row['folio'] or 'S/F'}] {row['nombre']} — Avance Real: {int(avance_display*100)}%{desviacion_str}"):
+      with st.expander(f"[{row['folio'] or 'S/F'}] {row['nombre']} — Avance: {int(avance_display*100)}%{desviacion_str}"):
         st.progress(float(avance_display))
 
-        # RESUMEN DE METADATOS LIMPIO Y ELEGANTE
         st.markdown(f"""
-        <div style='background-color:#F8FAFC; padding:16px; border-radius:10px; border:1px solid #E2E8F0; margin-bottom:15px;'>
-            <div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;'>
-                <div><span style='color:#64748B; font-size:0.8rem;'>RESPONSABLE:</span><br/><b style='color:#0F172A; font-size:0.95rem;'>{row['lider_asignado']}</b></div>
-                <div><span style='color:#64748B; font-size:0.8rem;'>ÁREA:</span><br/><b style='color:#0F172A; font-size:0.95rem;'>{row['area_negocio']}</b></div>
-                <div><span style='color:#64748B; font-size:0.8rem;'>FASE:</span><br/><b style='color:#05297A; font-size:0.95rem;'>{row['etapa_actual']}</b></div>
-                <div><span style='color:#64748B; font-size:0.8rem;'>ESTATUS:</span><br/><span class='status-badge {badge_status}'>{row['estatus_calculado']}</span>{tag_estancado}</div>
-                <div><span style='color:#64748B; font-size:0.8rem;'>FECHA FIN BASELINE:</span><br/><b style='color:#05297A; font-size:0.95rem;'>{info_b.get('fecha_fin_baseline', 'Sin Fecha')}</b></div>
-                <div><span style='color:#64748B; font-size:0.8rem;'>PRESUPUESTO / ROI:</span><br/><b style='color:#166534; font-size:0.95rem;'>${float(row.get('presupuesto', 0.0)):,.2f} / ${float(row.get('roi_estimado', 0.0)):,.2f}</b></div>
+        <div style='background-color:#F8FAFC; padding:18px; border-radius:12px; border:1px solid #E2E8F0; margin-bottom:16px;'>
+            <div style='display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:16px;'>
+                <div><span style='color:#64748B; font-size:0.75rem; font-weight:700;'>RESPONSABLE</span><br/><b style='color:#0F172A; font-size:0.9rem;'>{row['lider_asignado']}</b></div>
+                <div><span style='color:#64748B; font-size:0.75rem; font-weight:700;'>ÁREA</span><br/><b style='color:#0F172A; font-size:0.9rem;'>{row['area_negocio']}</b></div>
+                <div><span style='color:#64748B; font-size:0.75rem; font-weight:700;'>FASE</span><br/><b style='color:#2563EB; font-size:0.9rem;'>{row['etapa_actual']}</b></div>
+                <div><span style='color:#64748B; font-size:0.75rem; font-weight:700;'>ESTATUS</span><br/><span class='status-badge {badge_status}'>{row['estatus_calculado']}</span>{tag_estancado}</div>
+                <div><span style='color:#64748B; font-size:0.75rem; font-weight:700;'>FECHA BASELINE</span><br/><b style='color:#0F172A; font-size:0.9rem;'>{info_b.get('fecha_fin_baseline', 'Sin Fecha')}</b></div>
+                <div><span style='color:#64748B; font-size:0.75rem; font-weight:700;'>PRESUPUESTO / ROI</span><br/><b style='color:#047857; font-size:0.9rem;'>${float(row.get('presupuesto', 0.0)):,.2f} / ${float(row.get('roi_estimado', 0.0)):,.2f}</b></div>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-        # BOTÓN EMERGENTE DE EDICIÓN
         if puedo_editar:
           col_btn_edit, _ = st.columns([1, 4])
           with col_btn_edit:
@@ -619,11 +614,11 @@ with tabs[1]:
               with pop_edit:
                   st.markdown(f"<b>Editar Proyecto [{row['folio'] or 'S/F'}]</b>", unsafe_allow_html=True)
                   with st.form(f"form_pop_edit_{p_id}"):
-                      u_etapa = st.selectbox("Fase del Proyecto", OPCIONES_ETAPAS, index=(OPCIONES_ETAPAS.index(row["etapa_actual"]) if row["etapa_actual"] in OPCIONES_ETAPAS else 0))
+                      u_etapa = st.selectbox("Fase", OPCIONES_ETAPAS, index=(OPCIONES_ETAPAS.index(row["etapa_actual"]) if row["etapa_actual"] in OPCIONES_ETAPAS else 0))
                       u_estatus = st.selectbox("Estatus Declarado", OPCIONES_ESTATUS, index=(OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0))
                       
                       if tiene_tareas:
-                          st.info(f"⚡ Avance auto-sincronizado con Gantt: **{int(avance_calculado_gantt*100)}%**")
+                          st.info(f"Avance auto-sincronizado con Gantt: **{int(avance_calculado_gantt*100)}%**")
                           u_avance = avance_calculado_gantt
                       else:
                           u_avance = st.slider("Progreso General (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
@@ -632,14 +627,14 @@ with tabs[1]:
                       u_presupuesto = f1.number_input("Presupuesto ($)", min_value=0.0, value=float(row.get("presupuesto", 0.0)), step=1000.0)
                       u_roi = f2.number_input("ROI Estimado ($)", min_value=0.0, value=float(row.get("roi_estimado", 0.0)), step=1000.0)
 
-                      u_comentario = st.text_input("Añadir Comentario a Bitácora Global", placeholder="Ej. Avance en fase de pruebas...")
+                      u_comentario = st.text_input("Añadir Comentario a Bitácora Global", placeholder="Ej. Actualización de entregables...")
                       u_carpeta = st.text_input("Carpeta Drive (URL)", row["carpeta_url"] or "")
                       u_plan = st.text_input("Link a Plan Anexo", row["plan_url"] or "")
                       
                       st.write("")
                       if st.form_submit_button("Guardar Cambios", type="primary", use_container_width=True):
                           ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                          texto_bitacora = u_comentario.strip() or f"Actualización general: Estatus '{u_estatus}', Fase '{u_etapa}' y Avance al {int(u_avance*100)}%."
+                          texto_bitacora = u_comentario.strip() or f"Actualización: Estatus '{u_estatus}', Fase '{u_etapa}' y Avance al {int(u_avance*100)}%."
 
                           engine = obtener_engine()
                           with engine.begin() as conn:
@@ -654,26 +649,26 @@ with tabs[1]:
                           with engine.begin() as conn: conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id=:id"), {"id": p_id})
                           limpiar_cache_y_recargar(); st.rerun()
         else:
-          st.info(f"🔒 **Modo Lectura:** Solo el responsable asignado (**{row['lider_asignado']}**) o un Moderador pueden editar este proyecto.")
+          st.info(f"🔒 **Modo Lectura:** Solo **{row['lider_asignado']}** o un Moderador pueden editar este proyecto.")
 
         # DIAGRAMA GANTT INTERCONECTADO
-        st.markdown("<h4 style='color:#0F172A; margin-top: 20px; padding-top: 15px; border-top: 1px dashed #CBD5E1; font-size:1.1rem;'>📅 Plan de Trabajo (Gantt Interconectado)</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color:#0F172A; margin-top: 16px; margin-bottom:12px; font-size:1.05rem;'>Plan de Trabajo (Gantt Interconectado)</h4>", unsafe_allow_html=True)
         df_tareas_calc = calcular_fechas_tarea_df(df_tareas_proj)
 
         if not df_tareas_calc.empty:
           fig = px.timeline(
               df_tareas_calc, x_start="fecha_inicio", x_end="fecha_fin", y="nombre_tarea",
               color="porcentaje_avance", text="avance_txt",
-              color_continuous_scale=[[0, "#E2E8F0"], [0.5, "#3B82F6"], [1, "#05297A"]],
+              color_continuous_scale=[[0, "#E2E8F0"], [0.5, "#3B82F6"], [1, "#0F172A"]],
               range_color=[0, 100], hover_data={"responsable": True, "porcentaje_avance": False, "avance_txt": False}
           )
           fig.update_yaxes(autorange="reversed")
           fig.update_traces(textposition='inside', insidetextanchor='middle', marker_line_color='rgba(0,0,0,0.1)', marker_line_width=1, opacity=0.95, textfont=dict(color='white', size=11, weight='bold'))
-          fig.update_layout(height=160 + (len(df_tareas_calc) * 35), margin=dict(l=0, r=0, t=10, b=0), font=dict(family="Inter"), xaxis=dict(showgrid=True, gridcolor="#F1F5F9"), yaxis=dict(showgrid=False, title=""), coloraxis_colorbar=dict(title="% Avance"))
+          fig.update_layout(height=160 + (len(df_tareas_calc) * 35), margin=dict(l=0, r=0, t=10, b=0), font=dict(family="Plus Jakarta Sans"), xaxis=dict(showgrid=True, gridcolor="#F1F5F9"), yaxis=dict(showgrid=False, title=""), coloraxis_colorbar=dict(title="% Avance"))
           st.plotly_chart(fig, use_container_width=True)
 
           if puedo_editar:
-            st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#05297A;'>✏️ Actualizar Avance por Tarea</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-size:0.8rem; font-weight:700; color:#2563EB;'>EDITAR AVANCE DE TAREA</p>", unsafe_allow_html=True)
             with st.form(f"upd_t_{p_id}", clear_on_submit=True):
               col_sel, col_val, col_btn = st.columns([2, 1, 1])
               opciones_tareas = df_tareas_calc.apply(lambda x: f"{x['id']} - {x['nombre_tarea']}", axis=1).tolist()
@@ -716,7 +711,7 @@ with tabs[1]:
                   auto_sincronizar_avance_proyecto(engine, p_id)
                   limpiar_cache_y_recargar(); st.rerun()
 
-# PESTAÑA 3: VISTA KANBAN
+# PESTAÑA 3: TABLERO KANBAN
 with tabs[2]:
   st.write("")
   if df.empty: st.info("Agrega proyectos para verlos en el tablero.")
@@ -724,7 +719,7 @@ with tabs[2]:
     k_cols = st.columns(len(OPCIONES_ESTATUS))
     for i, status in enumerate(OPCIONES_ESTATUS):
       with k_cols[i]:
-        st.markdown(f"<div style='background-color:#FFFFFF; padding:8px; border-radius:8px; border:1px solid #E2E8F0; border-top:3px solid #05297A; text-align:center; font-weight:700; color:#0F172A; font-size:0.85rem; margin-bottom:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);'>{status.upper()}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='background-color:#FFFFFF; padding:10px; border-radius:10px; border:1px solid #E2E8F0; text-align:center; font-weight:800; color:#0F172A; font-size:0.85rem; margin-bottom:16px;'>{status.upper()}</div>", unsafe_allow_html=True)
         df_k = df[df["estatus_calculado"] == status]
         for _, k_row in df_k.iterrows():
           st.markdown(f"<div class='kanban-card'><div class='kanban-title'>{k_row['nombre']}</div><div class='kanban-meta'>👤 {k_row['lider_asignado']}</div><div class='kanban-meta'>📈 {int((k_row['avance_real'] or 0)*100)}% Completado</div><div class='kanban-meta' style='margin-top:6px;'><i>Folio: {k_row['folio'] or 'S/F'}</i></div></div>", unsafe_allow_html=True)
@@ -738,17 +733,17 @@ if es_moderador:
     
     with sub_tab1:
       with st.form("f_nuevo", clear_on_submit=True):
-        st.markdown("<h3 style='font-size:1.2rem; color:#0F172A; margin-bottom:15px;'>Dar de Alta Nuevo Proyecto</h3>", unsafe_allow_html=True)
+        st.markdown("<h3 style='font-size:1.15rem; color:#0F172A; margin-bottom:15px;'>Dar de Alta Nuevo Proyecto</h3>", unsafe_allow_html=True)
         c1, c2, c3 = st.columns(3); folio = c1.text_input("Folio Interno"); nombre = c2.text_input("Nombre de la Iniciativa *"); lider = c3.selectbox("Responsable del Proyecto *", lista_lideres_registrados)
         c4, c5, c6 = st.columns(3); area = c4.selectbox("Área Solicitante", OPCIONES_AREAS); tipo = c5.selectbox("Categoría Principal", OPCIONES_TIPOS); subtipo = c6.selectbox("Sub-categoría", OPCIONES_SUBTIPOS)
         c7, c8, c9 = st.columns(3); gerente = c7.selectbox("Gerente Sponsor", OPCIONES_GERENTES); etapa = c8.selectbox("Fase de Arranque", OPCIONES_ETAPAS); estatus_inicial = c9.selectbox("Estado Inicial", OPCIONES_ESTATUS, index=0)
         
-        st.markdown("<h5 style='font-size:0.95rem; color:#0F172A; margin-top:10px;'>Fechas Compromiso Baseline</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='font-size:0.9rem; color:#0F172A; margin-top:10px;'>Fechas Compromiso Baseline</h5>", unsafe_allow_html=True)
         cb1, cb2 = st.columns(2)
         f_ini_b = cb1.date_input("Fecha Inicio Baseline", value=datetime.now())
         f_fin_b = cb2.date_input("Fecha Fin Baseline (Compromiso)", value=datetime.now() + timedelta(days=90))
 
-        st.markdown("<h5 style='font-size:0.95rem; color:#0F172A; margin-top:10px;'>Estimación Financiera</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='font-size:0.9rem; color:#0F172A; margin-top:10px;'>Estimación Financiera</h5>", unsafe_allow_html=True)
         cf1, cf2 = st.columns(2)
         presupuesto_in = cf1.number_input("Presupuesto Asignado ($)", min_value=0.0, value=0.0, step=1000.0)
         roi_in = cf2.number_input("Impacto / ROI Estimado ($)", min_value=0.0, value=0.0, step=1000.0)
@@ -766,12 +761,12 @@ if es_moderador:
                     conn.execute(sqlalchemy.text("""INSERT INTO bitacora (proyecto_id, usuario_nombre, fecha_hora, comentario) VALUES (:p_id, :usr, :fh, :com)"""), 
                                  {"p_id": new_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": f"Creación de expediente con Baseline comprometido al {f_fin_b}."})
 
-            limpiar_cache_y_recargar(); st.success("¡Proyecto creado y agregado exitosamente!"); st.rerun()
+            limpiar_cache_y_recargar(); st.success("¡Proyecto creado exitosamente!"); st.rerun()
           else: st.error("Por favor ingresa el nombre de la iniciativa.")
 
     with sub_tab2:
-      st.markdown("<h3 style='font-size:1.2rem; color:#0F172A;'>📥 Cargar Portafolio desde Excel o CSV</h3>", unsafe_allow_html=True)
-      st.write("Sube un archivo de Excel con múltiples iniciativas para importarlas masivamente a la base de datos.")
+      st.markdown("<h3 style='font-size:1.15rem; color:#0F172A;'>📥 Cargar Portafolio desde Excel o CSV</h3>", unsafe_allow_html=True)
+      st.write("Sube un archivo de Excel con múltiples iniciativas para importarlas masivamente.")
       
       df_plantilla = pd.DataFrame([{
           "folio": "INC-101",
@@ -809,10 +804,10 @@ if es_moderador:
               if archivo_subido.name.endswith(".csv"): df_excel = pd.read_csv(archivo_subido)
               else: df_excel = pd.read_excel(archivo_subido)
                   
-              st.markdown("##### 🔍 Previsualización de los Datos a Importar:")
+              st.markdown("##### Previsualización de los Datos a Importar:")
               st.dataframe(df_excel, use_container_width=True)
               
-              if st.button("🚀 Importar Todos los Proyectos a la Base de Datos", type="primary"):
+              if st.button("🚀 Importar Proyectos a la Base de Datos", type="primary"):
                   engine = obtener_engine()
                   ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                   registros_guardados = 0
@@ -845,16 +840,16 @@ if es_moderador:
                                            {"p_id": imp_id, "usr": st.session_state.nombre_actual, "fh": ahora, "com": "Importación masiva desde plantilla Excel."})
                           registros_guardados += 1
                   limpiar_cache_y_recargar()
-                  st.success(f"¡Se importaron con éxito {registros_guardados} proyectos al portafolio!")
+                  st.success(f"¡Se importaron con éxito {registros_guardados} proyectos!")
                   st.rerun()
           except Exception as e:
-              st.error(f"Error al leer el archivo. Asegúrate de usar la plantilla oficial. Detalle: {e}")
+              st.error(f"Error al leer el archivo. Usa la plantilla oficial. Detalle: {e}")
 
-  # PESTAÑA 5: BITÁCORA GLOBAL DE ACTIVIDAD
+  # PESTAÑA 5: BITÁCORA GLOBAL
   with tabs[4]:
     st.write("")
-    st.markdown("<h3 style='color:#0F172A;'>📜 Feed Global de Actividad y Auditoría</h3>", unsafe_allow_html=True)
-    st.write("Historial centralizado en tiempo real de todas las actualizaciones ejecutadas en la plataforma.")
+    st.markdown("<h3 style='color:#0F172A;'>📜 Feed Global de Auditoría y Bitácora</h3>", unsafe_allow_html=True)
+    st.write("Historial centralizado en tiempo real de todas las actualizaciones ejecutadas en el sistema.")
     
     if df_bitacora.empty:
         st.info("Aún no hay movimientos registrados en la bitácora global.")
@@ -863,9 +858,14 @@ if es_moderador:
         for _, b_row in df_bitacora_ext.head(30).iterrows():
             p_nombre = b_row.get("nombre", "Proyecto General")
             p_folio = b_row.get("folio", "S/F")
-            st.markdown(f"<div class='timeline-item'><div class='timeline-date'>{b_row['fecha_hora']} | Autor: <b>{b_row['usuario_nombre']}</b> | Proyecto: <b>[{p_folio}] {p_nombre}</b></div><div class='timeline-text'>{b_row['comentario']}</div></div>", unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style='background-color:#FFFFFF; border:1px solid #E2E8F0; padding:14px 18px; border-radius:12px; margin-bottom:10px;'>
+                <div style='font-size:0.8rem; color:#64748B; font-weight:600;'>{b_row['fecha_hora']} | Autor: <b style='color:#0F172A;'>{b_row['usuario_nombre']}</b> | Proyecto: <b style='color:#2563EB;'>[{p_folio}] {p_nombre}</b></div>
+                <div style='font-size:0.9rem; color:#334155; margin-top:4px;'>{b_row['comentario']}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-  # PESTAÑA 6: USUARIOS
+  # PESTAÑA 6: DIRECTORIO DE USUARIOS
   with tabs[5]:
     st.write("")
     df_users = df_users_raw.copy()
@@ -892,9 +892,7 @@ if es_moderador:
                   with engine.begin() as conn:
                       conn.execute(sqlalchemy.text("UPDATE usuarios SET nombre=:n, password=:p, rol=:r WHERE correo=:c"),
                                    {"n": e_nom, "p": e_pas, "r": e_rol, "c": u_sel_correo})
-                  limpiar_cache_y_recargar()
-                  st.success("¡Perfil actualizado con éxito!")
-                  st.rerun()
+                  limpiar_cache_y_recargar(); st.success("¡Perfil actualizado!"); st.rerun()
 
       st.divider()
 
@@ -952,8 +950,7 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
   for s in ["hola ", "buenos dias ", "buenas tardes ", "por favor ", "dime ", "quiero saber ", "quisiera saber ", "me puedes decir "]:
       if p_analizar.startswith(s): p_analizar = p_analizar[len(s):].strip()
 
-  if dataframe.empty:
-      return "Actualmente no tenemos proyectos registrados en el portafolio."
+  if dataframe.empty: return "Actualmente no tenemos proyectos registrados en el portafolio."
 
   busca_riesgo_predictivo = any(k in p_analizar for k in ["riesgo", "estancado", "cuello de botella", "prediccion", "parado", "peligro"])
   if busca_riesgo_predictivo:
@@ -978,11 +975,9 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       p_tot = dataframe['presupuesto'].sum()
       r_tot = dataframe['roi_estimado'].sum()
       res = f"💰 **Análisis Financiero del Portafolio:**\n\n* **Presupuesto Total Invertido:** `${p_tot:,.2f}`\n* **Impacto / ROI Estimado:** `${r_tot:,.2f}`\n* **Retorno Neto Proyectado:** `${(r_tot - p_tot):,.2f}`\n\n"
-      
       top_p = dataframe.sort_values(by="presupuesto", ascending=False).head(3)
       res += "📌 **Proyectos con Mayor Inversión:**\n"
-      for _, r in top_p.iterrows():
-          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**: `${r['presupuesto']:,.2f}` (ROI: `${r['roi_estimado']:,.2f}`)\n"
+      for _, r in top_p.iterrows(): res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**: `${r['presupuesto']:,.2f}` (ROI: `${r['roi_estimado']:,.2f}`)\n"
       return res
 
   busca_estatus_general = any(k in p_analizar for k in ["estatus", "estado", "etapa", "fase", "como van"])
@@ -993,9 +988,7 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       for _, r in dataframe.iterrows():
           pct = int((r['avance_real'] or 0) * 100)
           badge = "🟢" if r['estatus_calculado'] == "En tiempo" else ("⚠️" if r['estatus_calculado'] in ["Retrasado", "Detenido"] else "⚪")
-          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n"
-          res += f"  * {badge} **Estatus:** `{r['estatus_calculado']}` | 📍 **Fase:** {r['etapa_actual']}\n"
-          res += f"  * 👤 **Líder:** {r['lider_asignado']} | 📈 **Avance:** {pct}%\n\n"
+          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * {badge} **Estatus:** `{r['estatus_calculado']}` | 📍 **Fase:** {r['etapa_actual']}\n  * 👤 **Líder:** {r['lider_asignado']} | 📈 **Avance:** {pct}%\n\n"
       return res
 
   busca_top_lider = any(k in p_analizar for k in ["quien", "quién", "lider", "líder", "responsable", "persona", "encargado", "colaborador"]) and any(k in p_analizar for k in ["mas", "más", "mayor", "top", "tiene", "carga"])
@@ -1003,7 +996,7 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       counts = dataframe["lider_asignado"].value_counts()
       if not counts.empty:
           top_l = counts.index[0]; top_val = counts.iloc[0]
-          res = f"¡Claro! Analizando la base de datos, **{top_l}** es la persona con mayor carga operativa, teniendo **{top_val} iniciativas** bajo su responsabilidad.\n\n📌 **Distribución de proyectos por líder:**\n"
+          res = f"Analizando la base de datos, **{top_l}** es la persona con mayor carga operativa, teniendo **{top_val} iniciativas** asignadas.\n\n📌 **Distribución por líder:**\n"
           for l_name, val in counts.items(): res += f"* **{l_name}**: {val} proyecto(s)\n"
           return res
 
@@ -1012,7 +1005,7 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
       counts = dataframe["area_negocio"].value_counts()
       if not counts.empty:
           top_a = counts.index[0]; top_val = counts.iloc[0]
-          res = f"¡Listo! El área que actualmente concentra más proyectos es **{top_a}**, con **{top_val} iniciativas**.\n\n📌 **Desglose por área:**\n"
+          res = f"El área que concentra más proyectos es **{top_a}**, con **{top_val} iniciativas**.\n\n📌 **Desglose por área:**\n"
           for a_name, val in counts.items(): res += f"* **{a_name}**: {val} proyectos\n"
           return res
 
@@ -1023,53 +1016,38 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
   df_result = dataframe.copy()
   criterios = []
   
-  if area_obj:
-      df_result = df_result[df_result['area_negocio'] == area_obj]
-      criterios.append(f"Área: **{area_obj}**")
-  if persona_obj:
-      df_result = df_result[(df_result["lider_asignado"] == persona_obj) | (df_result["gerente"] == persona_obj)]
-      criterios.append(f"Involucrado: **{persona_obj}**")
-  if busca_retrasos:
-      df_result = df_result[df_result["estatus_calculado"].isin(["Retrasado", "Detenido"])]
-      criterios.append("Estatus: **Retrasado**")
+  if area_obj: df_result = df_result[df_result['area_negocio'] == area_obj]; criterios.append(f"Área: **{area_obj}**")
+  if persona_obj: df_result = df_result[(df_result["lider_asignado"] == persona_obj) | (df_result["gerente"] == persona_obj)]; criterios.append(f"Involucrado: **{persona_obj}**")
+  if busca_retrasos: df_result = df_result[df_result["estatus_calculado"].isin(["Retrasado", "Detenido"])]; criterios.append("Estatus: **Retrasado**")
 
   if len(criterios) > 0:
-      if df_result.empty:
-          return f"🔍 Estuve buscando, pero no encontré proyectos que coincidan con tus filtros: " + " | ".join(criterios)
-      
+      if df_result.empty: return f"🔍 No encontré proyectos con tus filtros: " + " | ".join(criterios)
       res = f"🔍 **Resultados de la búsqueda** (" + " | ".join(criterios) + f"):\n\nEncontré **{len(df_result)}** proyectos:\n\n"
-      for _, r in df_result.iterrows():
-          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 🏢 **Área:** {r['area_negocio']}\n  * 📌 **Estatus:** `{r['estatus_calculado']}` | 📍 **Fase:** {r['etapa_actual']} | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
+      for _, r in df_result.iterrows(): res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 📌 **Estatus:** `{r['estatus_calculado']}` | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
       return res
 
   coincidencias = dataframe[dataframe["nombre"].str.lower().str.contains(p_analizar, na=False) | dataframe["folio"].str.lower().str.contains(p_analizar, na=False)]
   if not coincidencias.empty:
       res = f"🔍 Encontré **{len(coincidencias)} proyectos** asociados a tu consulta:\n\n"
-      for _, r in coincidencias.iterrows():
-          res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 📌 **Estatus:** `{r['estatus_calculado']}` | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
+      for _, r in coincidencias.iterrows(): res += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}**\n  * 👤 **Líder:** {r['lider_asignado']} | 📌 **Estatus:** `{r['estatus_calculado']}` | 📈 **Avance:** {int((r['avance_real'] or 0)*100)}%\n\n"
       return res
 
-  res_general = f"📋 **Aquí está el desglose actual de tus proyectos ({len(dataframe)}):**\n\n"
-  for _, r in dataframe.iterrows():
-      pct = int((r['avance_real'] or 0) * 100)
-      res_general += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}** — `{r['estatus_calculado']}` ({pct}% avance)\n"
+  res_general = f"📋 **Estatus general de tus proyectos ({len(dataframe)}):**\n\n"
+  for _, r in dataframe.iterrows(): res_general += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}** — `{r['estatus_calculado']}` ({int((r['avance_real'] or 0)*100)}% avance)\n"
   return res_general
 
-
-# --- BOTÓN FLOTANTE "PROJECT IA" ---
-with st.popover("🤖 Project IA", help="Haz clic para charlar con tu asistente inteligente"):
+# --- ASISTENTE BOT FLOTANTE ---
+with st.popover("🤖 Project IA", help="Haz clic para consultar con tu asistente analítico"):
   col1, col2 = st.columns([3, 1])
-  with col1:
-      st.markdown("<h3 style='color:#05297A; margin-bottom: 0px; font-weight:800; letter-spacing:-1px;'>🤖 Project IA</h3>", unsafe_allow_html=True)
+  with col1: st.markdown("<h3 style='color:#0F172A; margin-bottom: 0px; font-weight:800;'>🤖 Project IA</h3>", unsafe_allow_html=True)
   with col2:
-      if st.button("🧹 Borrar", help="Limpia la conversación"):
-          st.session_state.chat_history_fast = []
-          st.rerun()
+      if st.button("🧹 Borrar", help="Limpiar conversación"):
+          st.session_state.chat_history_fast = []; st.rerun()
           
   st.caption("Asistente Analítico Heading 360.")
   st.divider()
 
-  mensaje_bienvenida = {"role": "assistant", "content": f"¡Hola **{st.session_state.nombre_actual}**! 👋 Soy **Project IA**, tu asistente en Heading 360. ¿Qué te gustaría consultar del portafolio hoy?"}
+  mensaje_bienvenida = {"role": "assistant", "content": f"¡Hola **{st.session_state.nombre_actual}**! 👋 Soy **Project IA**. ¿Qué te gustaría consultar del portafolio hoy?"}
 
   if "chat_history_fast" not in st.session_state or len(st.session_state.chat_history_fast) == 0:
     st.session_state.chat_history_fast = [mensaje_bienvenida]
@@ -1087,5 +1065,4 @@ with st.popover("🤖 Project IA", help="Haz clic para charlar con tu asistente 
   with chat_box:
     for msg in st.session_state.chat_history_fast:
       avatar_img = URL_ROBOT if msg["role"] == "assistant" else URL_USER
-      with st.chat_message(msg["role"], avatar=avatar_img):
-        st.markdown(msg["content"])
+      with st.chat_message(msg["role"], avatar=avatar_img): st.markdown(msg["content"])
