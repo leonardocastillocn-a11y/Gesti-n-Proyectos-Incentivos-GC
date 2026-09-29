@@ -20,7 +20,7 @@ st.set_page_config(
 URL_ROBOT = "https://cdn-icons-png.flaticon.com/512/8943/8943377.png" 
 URL_USER = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
 
-# --- CSS ENTERPRISE SAAS / EXECUTIVE DASHBOARD UX ---
+# --- CSS ENTERPRISE SAAS / PERFECT SYMMETRY UX ---
 st.markdown(
     """
     <style>
@@ -164,17 +164,29 @@ st.markdown(
     .status-red { background-color: #FEF2F2; color: #B91C1C !important; border: 1px solid #FECACA;}
     .status-gray { background-color: #F1F5F9; color: #475569 !important; border: 1px solid #E2E8F0;}
     
-    /* TABLERO KANBAN PREMIUM */
-    .kanban-card { background: #FFFFFF; padding: 18px; border-radius: 14px; border: 1px solid #E2E8F0; border-top: 4px solid #2563EB; box-shadow: 0 4px 12px rgba(0,0,0,0.02); margin-bottom: 16px; }
-    .kanban-title { font-weight: 700; color: #0F172A; font-size: 0.95rem; margin-bottom: 8px; }
-    .kanban-meta { font-size: 0.8rem; color: #64748B; margin-bottom: 4px; }
+    /* TABLERO KANBAN PREMIUM STYLE JIRA/LINEAR */
+    .kanban-card { 
+        background: #FFFFFF; 
+        padding: 16px; 
+        border-radius: 12px; 
+        border: 1px solid #E2E8F0; 
+        box-shadow: 0 2px 8px rgba(15,23,42,0.03); 
+        margin-bottom: 14px; 
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .kanban-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(15,23,42,0.06);
+    }
+    .kanban-title { font-weight: 700; color: #0F172A; font-size: 0.92rem; margin-top: 4px; margin-bottom: 8px; line-height: 1.3; }
+    .kanban-meta { font-size: 0.78rem; color: #64748B; margin-bottom: 4px; }
 
     /* PESTAÑAS (TABS) SAAS */
     .stTabs [data-baseweb="tab-list"] { gap: 28px; border-bottom: 2px solid #E2E8F0; }
     .stTabs [aria-selected="true"] { border-bottom: 3px solid #2563EB !important; font-weight: 700 !important; color: #2563EB !important; background-color: transparent !important; }
     .stTabs [aria-selected="false"] { color: #64748B !important; font-weight: 600 !important; }
 
-    /* WIDGET FLOTANTE FIJO EXCLUSIVO PROJECT IA */
+    /* WIDGET FLOTANTE FIJO EXCLUSIVO PROJECT IA (ESQUINA INFERIOR DERECHA) */
     .floating-ia-box {
         position: fixed !important;
         bottom: 24px !important;
@@ -360,10 +372,16 @@ if not st.session_state.autenticado:
             else: st.error("Credenciales incorrectas.")
   st.stop()
 
-# --- CARGA GENERAL DE DATOS ---
+# --- CARGA GENERAL Y SINCRONIZACIÓN GLOBAL DE DATOS ---
 df, df_bitacora, df_tareas_all, df_users_raw, df_solicitudes_baseline = cargar_datos_completos()
 es_moderador = st.session_state.rol == "Moderador"
 lista_lideres_registrados = obtener_lista_usuarios(df_users_raw)
+
+# MOTOR DE INTERCONEXIÓN GLOBAL DE AVANCE (GANTT -> PROYECTOS EN TIEMPO REAL)
+if not df.empty and not df_tareas_all.empty:
+  tareas_promedios = df_tareas_all.groupby("proyecto_id")["porcentaje_avance"].mean() / 100.0
+  for pid_v, avg_v in tareas_promedios.items():
+    df.loc[df["id"] == pid_v, "avance_real"] = round(avg_v, 4)
 
 if not df.empty:
   df['es_estancado'] = df['ultima_actualizacion'].apply(evaluar_estancamiento) & (~df['etapa_actual'].str.contains("Cierre", case=False, na=False))
@@ -467,7 +485,6 @@ with tabs[0]:
   st.write("")
   if df.empty: st.info("Agrega algunos proyectos para visualizar el análisis ejecutivo.")
   else:
-    # FILA 1: RADAR DE SALUD DEL PORTAFOLIO Y ANÁLISIS FINANCIERO POR ÁREA
     c_d1, c_d2 = st.columns([1.2, 2])
     
     with c_d1:
@@ -503,7 +520,6 @@ with tabs[0]:
       st.plotly_chart(fig_fin, use_container_width=True)
       st.markdown("</div>", unsafe_allow_html=True)
 
-    # FILA 2: MATRIZ DE CARGA DE TRABAJO Y ALERTA DE ATENCIÓN EJECUTIVA
     c_d3, c_d4 = st.columns([1.8, 1.2])
     
     with c_d3:
@@ -546,7 +562,6 @@ with tabs[0]:
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
-    # 1. APROBACIONES PENDIENTES DE RE-BASELINE
     if es_moderador and not df_solicitudes_baseline.empty:
       sol_pendientes = df_solicitudes_baseline[df_solicitudes_baseline["estado"] == "Pendiente"]
       if not sol_pendientes.empty:
@@ -581,7 +596,6 @@ with tabs[1]:
                   limpiar_cache_y_recargar(); st.info("Solicitud rechazada."); st.rerun()
               st.divider()
 
-    # 2. BARRA SUPERIOR DE ACCIONES
     col_hdr1, col_hdr2, col_hdr3 = st.columns([2.5, 1, 1])
     with col_hdr1:
         st.markdown("<h3 style='margin:0;'>Seguimiento Operativo</h3>", unsafe_allow_html=True)
@@ -629,7 +643,6 @@ with tabs[1]:
 
     st.write("")
 
-    # 3. BÚSQUEDA Y FILTROS LIMPIOS
     c_f1, c_f2, c_f3 = st.columns([2, 1.2, 1.2])
     txt_busqueda = c_f1.text_input("🔍 Buscar por Nombre o Folio...", label_visibility="collapsed", placeholder="🔍 Buscar por Nombre o Folio...")
     filtro_area = c_f2.selectbox("Área", ["Todas las Áreas"] + OPCIONES_AREAS, label_visibility="collapsed")
@@ -648,7 +661,6 @@ with tabs[1]:
 
     st.markdown(f"<p style='color: #64748B; font-size: 0.8rem; margin-top: 10px; margin-bottom: 20px;'>📌 Mostrando <b>{len(df_filtrado)}</b> de <b>{len(df)}</b> iniciativas.</p>", unsafe_allow_html=True)
 
-    # 4. TARJETAS DE PROYECTO
     for _, row in df_filtrado.iterrows():
       p_id = row["id"]
       info_b = row.get("info_baseline") or calcular_metricas_baseline(row)
@@ -668,13 +680,9 @@ with tabs[1]:
       df_tareas_proj = df_tareas_all[df_tareas_all["proyecto_id"] == p_id]
       tiene_tareas = not df_tareas_proj.empty
 
-      if tiene_tareas:
-          avance_calculado_gantt = round(float(df_tareas_proj["porcentaje_avance"].mean() / 100.0), 4)
-          avance_display = avance_calculado_gantt
-      else:
-          avance_display = float(row["avance_real"] or 0.0)
+      avance_display = float(row["avance_real"] or 0.0)
 
-      with st.expander(f"[{row['folio'] or 'S/F'}] {row['nombre']} — Avance: {int(avance_display*100)}%{desviacion_str}"):
+      with st.expander(f"[{row['folio'] or 'S/F'}] {row['nombre']} — Avance Real: {int(avance_display*100)}%{desviacion_str}"):
         st.progress(float(avance_display))
 
         st.markdown(f"""
@@ -701,8 +709,8 @@ with tabs[1]:
                       u_estatus = st.selectbox("Estatus Declarado", OPCIONES_ESTATUS, index=(OPCIONES_ESTATUS.index(row["estatus_tiempo"]) if row["estatus_tiempo"] in OPCIONES_ESTATUS else 0))
                       
                       if tiene_tareas:
-                          st.info(f"Avance auto-sincronizado con Gantt: **{int(avance_calculado_gantt*100)}%**")
-                          u_avance = avance_calculado_gantt
+                          st.info(f"⚡ Avance auto-sincronizado con Gantt: **{int(avance_display*100)}%**")
+                          u_avance = avance_display
                       else:
                           u_avance = st.slider("Progreso General (%)", 0.0, 1.0, float(row["avance_real"] or 0.0), 0.05)
                       
@@ -794,7 +802,9 @@ with tabs[1]:
                   auto_sincronizar_avance_proyecto(engine, p_id)
                   limpiar_cache_y_recargar(); st.rerun()
 
-# PESTAÑA 3: TABLERO KANBAN
+# ==============================================================================
+# PESTAÑA 3: TABLERO KANBAN REDISEÑADO CON BARRAS DE PROGRESO Y BASELINES
+# ==============================================================================
 with tabs[2]:
   st.write("")
   if df.empty: st.info("Agrega proyectos para verlos en el tablero.")
@@ -805,7 +815,28 @@ with tabs[2]:
         st.markdown(f"<div style='background-color:#FFFFFF; padding:10px; border-radius:10px; border:1px solid #E2E8F0; text-align:center; font-weight:800; color:#0F172A; font-size:0.85rem; margin-bottom:16px;'>{status.upper()}</div>", unsafe_allow_html=True)
         df_k = df[df["estatus_calculado"] == status]
         for _, k_row in df_k.iterrows():
-          st.markdown(f"<div class='kanban-card'><div class='kanban-title'>{k_row['nombre']}</div><div class='kanban-meta'>👤 {k_row['lider_asignado']}</div><div class='kanban-meta'>📈 {int((k_row['avance_real'] or 0)*100)}% Completado</div><div class='kanban-meta' style='margin-top:6px;'><i>Folio: {k_row['folio'] or 'S/F'}</i></div></div>", unsafe_allow_html=True)
+          pct_val = int((k_row['avance_real'] or 0) * 100)
+          info_k_b = k_row.get("info_baseline") or calcular_metricas_baseline(k_row)
+          f_fin_k_str = info_k_b.get("fecha_fin_baseline", "Sin Fecha")
+          
+          st.markdown(f"""
+          <div class='kanban-card'>
+              <div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;'>
+                  <span style='font-size:0.75rem; font-weight:700; color:#64748B;'>{k_row['folio'] or 'S/F'}</span>
+                  <span style='font-size:0.72rem; font-weight:700; color:#2563EB;'>{k_row['area_negocio']}</span>
+              </div>
+              <div class='kanban-title'>{k_row['nombre']}</div>
+              <div class='kanban-meta'>👤 Responsable: <b>{k_row['lider_asignado']}</b></div>
+              <div class='kanban-meta'>📅 Baseline: <b>{f_fin_k_str}</b></div>
+              <div style='margin-top:10px; margin-bottom:4px; display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; color:#0F172A;'>
+                  <span>Progreso Gantt:</span>
+                  <span>{pct_val}%</span>
+              </div>
+              <div style='background-color:#E2E8F0; border-radius:10px; height:6px; width:100%; overflow:hidden;'>
+                  <div style='background-color:#2563EB; height:100%; width:{pct_val}%; border-radius:10px;'></div>
+              </div>
+          </div>
+          """, unsafe_allow_html=True)
 
 # PESTAÑAS ADMINISTRATIVAS (SOLO MODERADORES)
 if es_moderador:
@@ -928,7 +959,9 @@ if es_moderador:
           except Exception as e:
               st.error(f"Error al leer el archivo. Usa la plantilla oficial. Detalle: {e}")
 
-  # PESTAÑA 5: BITÁCORA GLOBAL
+  # ==============================================================================
+  # PESTAÑA 5: BITÁCORA GLOBAL CON BUSCADOR DE AUDITORÍA
+  # ==============================================================================
   with tabs[4]:
     st.write("")
     st.markdown("<h3 style='color:#0F172A;'>📜 Feed Global de Auditoría y Bitácora</h3>", unsafe_allow_html=True)
@@ -937,8 +970,17 @@ if es_moderador:
     if df_bitacora.empty:
         st.info("Aún no hay movimientos registrados en la bitácora global.")
     else:
+        txt_auditoria = st.text_input("🔍 Buscar en la auditoría (Proyecto o Usuario)...", placeholder="Escribe el nombre del proyecto o usuario...")
         df_bitacora_ext = df_bitacora.merge(df[["id", "nombre", "folio"]], left_on="proyecto_id", right_on="id", how="left")
-        for _, b_row in df_bitacora_ext.head(30).iterrows():
+        
+        if txt_auditoria.strip():
+            df_bitacora_ext = df_bitacora_ext[
+                df_bitacora_ext["nombre"].str.lower().str.contains(txt_auditoria.lower(), na=False) |
+                df_bitacora_ext["usuario_nombre"].str.lower().str.contains(txt_auditoria.lower(), na=False) |
+                df_bitacora_ext["comentario"].str.lower().str.contains(txt_auditoria.lower(), na=False)
+            ]
+
+        for _, b_row in df_bitacora_ext.head(40).iterrows():
             p_nombre = b_row.get("nombre", "Proyecto General")
             p_folio = b_row.get("folio", "S/F")
             st.markdown(f"""
@@ -948,7 +990,9 @@ if es_moderador:
             </div>
             """, unsafe_allow_html=True)
 
+  # ==============================================================================
   # PESTAÑA 6: DIRECTORIO Y GESTIÓN DE USUARIOS
+  # ==============================================================================
   with tabs[5]:
     st.write("")
     df_users = df_users_raw.copy()
@@ -971,7 +1015,6 @@ if es_moderador:
 
     with col_forms:
       st.markdown("<h4 style='margin-bottom:12px; font-size:1.1rem;'>⚙️ Gestión de Accesos</h4>", unsafe_allow_html=True)
-      
       sub_u1, sub_u2, sub_u3 = st.tabs(["✏️ Editar Perfil", "➕ Nuevo Usuario", "🗑️ Revocar"])
       
       with sub_u1:
