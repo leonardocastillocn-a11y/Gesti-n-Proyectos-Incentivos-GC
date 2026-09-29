@@ -9,7 +9,7 @@ import streamlit as st
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
-    page_title="Heading 360 | Executive Dashboard",
+    page_title="Heading 360 | Project Steering Engine",
     page_icon="💼",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -19,7 +19,7 @@ st.set_page_config(
 URL_ROBOT = "https://cdn-icons-png.flaticon.com/512/8943/8943377.png" 
 URL_USER = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
 
-# --- CSS ENTERPRISE SAAS / MODERN UX ---
+# --- CSS ENTERPRISE CLEAN UX ---
 st.markdown(
     """
     <style>
@@ -56,7 +56,7 @@ st.markdown(
     /* TARJETAS KPI EXECUTIVE */
     .kpi-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 16px;
         margin-bottom: 24px;
     }
@@ -64,26 +64,25 @@ st.markdown(
         background: #FFFFFF;
         border: 1px solid #E2E8F0;
         border-radius: 16px;
-        padding: 20px 24px;
+        padding: 18px 22px;
         box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        transition: transform 0.2s ease;
     }
     .kpi-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
     }
     .kpi-title {
-        font-size: 0.75rem;
+        font-size: 0.72rem;
         font-weight: 700;
         color: #64748B;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
     .kpi-num {
-        font-size: 1.8rem;
+        font-size: 1.7rem;
         font-weight: 800;
         color: #0F172A;
-        margin-top: 6px;
+        margin-top: 4px;
         letter-spacing: -0.03em;
     }
     
@@ -93,26 +92,19 @@ st.markdown(
         border: 1px solid #CBD5E1 !important; 
         background-color: #FFFFFF !important; 
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
-        transition: all 0.2s ease !important; 
     }
-    .stTextInput > div > div:focus-within, .stSelectbox > div > div:focus-within, .stNumberInput > div > div:focus-within, .stDateInput > div > div:focus-within { 
+    .stTextInput > div > div:focus-within, .stSelectbox > div > div:focus-within { 
         border-color: #2563EB !important; 
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important; 
     }
     
-    /* CONTENEDORES DE ACORDEÓN / EXPANDERS */
+    /* ACORDEONES LIMPIOS */
     div[data-testid="stExpander"] {
         background-color: #FFFFFF !important;
         border-radius: 14px !important;
         border: 1px solid #E2E8F0 !important;
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02) !important;
-        margin-bottom: 14px !important;
-        overflow: hidden !important;
-    }
-    div[data-testid="stExpander"] > summary {
-        padding: 16px 20px !important;
-        font-weight: 700 !important;
-        color: #0F172A !important;
+        margin-bottom: 12px !important;
     }
     
     /* BOTONES PRIMARIOS Y SECUNDARIOS */
@@ -122,13 +114,8 @@ st.markdown(
         border: none !important; 
         border-radius: 10px !important; 
         font-weight: 600 !important; 
-        padding: 0.55rem 1.25rem !important; 
+        padding: 0.5rem 1.2rem !important; 
         box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15) !important; 
-        transition: all 0.2s ease !important; 
-    }
-    div[data-testid="stFormSubmitButton"] button:hover, .stButton > button[kind="primary"]:hover { 
-        transform: translateY(-1px); 
-        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25) !important; 
     }
     
     button[data-testid="baseButton-secondary"], .stButton > button[kind="secondary"] { 
@@ -137,11 +124,6 @@ st.markdown(
         color: #334155 !important; 
         border-radius: 10px !important; 
         font-weight: 600 !important; 
-    }
-    button[data-testid="baseButton-secondary"]:hover, .stButton > button[kind="secondary"]:hover { 
-        border-color: #0F172A !important; 
-        color: #0F172A !important; 
-        background-color: #F8FAFC !important; 
     }
     
     /* BADGES DE ESTADO ESTILIZADOS */
@@ -152,8 +134,7 @@ st.markdown(
     .status-gray { background-color: #F1F5F9; color: #475569 !important; border: 1px solid #E2E8F0;}
     
     /* TABLERO KANBAN PREMIUM */
-    .kanban-card { background: #FFFFFF; padding: 18px; border-radius: 14px; border: 1px solid #E2E8F0; border-top: 4px solid #2563EB; box-shadow: 0 4px 12px rgba(0,0,0,0.02); margin-bottom: 16px; transition: all 0.2s ease; }
-    .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,0,0,0.05); }
+    .kanban-card { background: #FFFFFF; padding: 18px; border-radius: 14px; border: 1px solid #E2E8F0; border-top: 4px solid #2563EB; box-shadow: 0 4px 12px rgba(0,0,0,0.02); margin-bottom: 16px; }
     .kanban-title { font-weight: 700; color: #0F172A; font-size: 0.95rem; margin-bottom: 8px; }
     .kanban-meta { font-size: 0.8rem; color: #64748B; margin-bottom: 4px; }
 
@@ -162,14 +143,16 @@ st.markdown(
     .stTabs [aria-selected="true"] { border-bottom: 3px solid #2563EB !important; font-weight: 700 !important; color: #2563EB !important; background-color: transparent !important; }
     .stTabs [aria-selected="false"] { color: #64748B !important; font-weight: 600 !important; }
 
-    /* POPOVER ESTILIZADO */
-    div[data-testid="stPopover"] > button { 
-        background: #0F172A !important; 
-        color: #FFFFFF !important; 
-        border-radius: 30px !important; 
-        padding: 10px 20px !important; 
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25) !important; 
-        font-weight: 600 !important; 
+    /* TOOLBAR SUPERIOR */
+    .toolbar-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #FFFFFF;
+        padding: 12px 20px;
+        border-radius: 12px;
+        border: 1px solid #E2E8F0;
+        margin-bottom: 20px;
     }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
@@ -186,7 +169,7 @@ OPCIONES_ETAPAS = ["1. Diseño (EI)", "2. Prueba piloto (EI)", "3. Escalamiento 
 OPCIONES_ESTATUS = ["Por iniciar", "En tiempo", "Retrasado", "Detenido", "Cancelado"]
 OPCIONES_GERENTES = ["Andres Avila", "Eduardo Rodriguez", "Heriberto Vega", "Janik Orozco", "Kurokusi Ochoa", "Noel Aquino", "Yahir Ramirez", "Giovanni Vallejo", "Ruben Rivera"]
 
-# --- CONEXIÓN DE BASE DE DATOS Y MIGRACIONES ---
+# --- CONEXIÓN DE BASE DE DATOS Y CACHÉ ---
 @st.cache_resource
 def obtener_engine():
   db_url = st.secrets["postgres"]["url"] if "postgres" in st.secrets else "sqlite:///db_coppel_v5.db"
@@ -318,7 +301,7 @@ if not st.session_state.autenticado:
   with col_centro:
     st.write(""); st.write("")
     st.markdown("<h1 style='text-align: center; color:#0F172A !important; font-size: 2.6rem; letter-spacing: -1.5px;'>HEADING 360</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #64748B; margin-bottom: 30px; font-size: 1rem; font-weight: 500;'>Project Steering & Governance Platform</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #64748B; margin-bottom: 30px; font-size: 1rem; font-weight: 500;'>Project Steering Platform</p>", unsafe_allow_html=True)
     
     with st.form("login_form"):
       st.markdown("<h3 style='color:#0F172A !important; font-size: 1.15rem; margin-bottom: 16px;'>Acceso Institucional</h3>", unsafe_allow_html=True)
@@ -397,7 +380,7 @@ with st.sidebar:
   st.write("")
   if st.button("Cerrar Sesión", use_container_width=True): st.session_state.autenticado = False; st.rerun()
 
-# --- HEADER EXECUTIVE Y TARJETAS KPI REDISEÑADAS ---
+# --- HEADER EXECUTIVE Y TARJETAS KPI ---
 st.markdown("<h2 style='margin-bottom: 4px; color:#0F172A;'>Visión General del Portafolio</h2>", unsafe_allow_html=True)
 st.markdown("<p style='color:#64748B; margin-bottom: 24px; font-size:0.95rem;'>Tablero de control estratégico y gobernanza de proyectos activos.</p>", unsafe_allow_html=True)
 
@@ -458,11 +441,11 @@ with tabs[0]:
     fig_carga.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Plus Jakarta Sans"), xaxis_title="Líder", yaxis_title="Número de Iniciativas")
     st.plotly_chart(fig_carga, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS
+# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (HERRAMIENTAS EN BARRAS LIMPIAS / SINCRO POP-OVERS)
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
-    # 1. PANEL DE APROBACIONES PENDIENTES
+    # 1. APROBACIONES PENDIENTES DE RE-BASELINE (SI EXISTEN)
     if es_moderador and not df_solicitudes_baseline.empty:
       sol_pendientes = df_solicitudes_baseline[df_solicitudes_baseline["estado"] == "Pendiente"]
       if not sol_pendientes.empty:
@@ -497,75 +480,75 @@ with tabs[1]:
                   limpiar_cache_y_recargar(); st.info("Solicitud rechazada."); st.rerun()
               st.divider()
 
-    # 2. PANEL CENTRAL DE RE-BASELINE
-    with st.expander("📩 Solicitar Ajuste de Fecha Compromiso (Re-baseline)", expanded=False):
-      df_mis_proyectos = df if es_moderador else df[df["lider_asignado"] == st.session_state.nombre_actual]
-      if df_mis_proyectos.empty: st.info("No tienes proyectos asignados para solicitar re-baseline.")
-      else:
-          opciones_p_sol = df_mis_proyectos.apply(lambda x: f"{x['id']} - [{x['folio'] or 'S/F'}] {x['nombre']}", axis=1).tolist()
-          with st.form("f_sol_baseline_central"):
-              p_sol_elegido = st.selectbox("Proyecto a Modificar", opciones_p_sol)
-              col_b1, col_b2 = st.columns(2)
-              n_f_prop = col_b1.date_input("Nueva Fecha Fin Propuesta")
-              n_motivo = st.text_area("Justificación del Ajuste *", placeholder="Motivo de la variación de tiempo...")
-              if st.form_submit_button("Enviar Solicitud a Dirección", type="primary"):
-                  if n_motivo.strip() and p_sol_elegido:
-                      pid_sol = int(p_sol_elegido.split(" - ")[0])
-                      ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                      engine = obtener_engine()
-                      with engine.begin() as conn:
-                          conn.execute(sqlalchemy.text("""INSERT INTO solicitudes_baseline (proyecto_id, solicitante, fecha_fin_propuesta, motivo, estado, fecha_solicitud) 
-                                                         VALUES (:pid, :sol, :ff, :mot, 'Pendiente', :fsol)"""),
-                                       {"pid": pid_sol, "sol": st.session_state.nombre_actual, "ff": str(n_f_prop), "mot": n_motivo.strip(), "fsol": ahora})
-                      limpiar_cache_y_recargar(); st.success("¡Solicitud enviada!"); st.rerun()
-                  else: st.error("La justificación es obligatoria.")
+    # 2. BARRA SUPERIOR DE ACCIONES (SIN ACORDEONES BUROCRÁTICOS)
+    col_hdr1, col_hdr2, col_hdr3 = st.columns([2.5, 1, 1])
+    with col_hdr1:
+        st.markdown("<h3 style='margin:0;'>Seguimiento Operativo</h3>", unsafe_allow_html=True)
+    with col_hdr2:
+        pop_rebase = st.popover("📩 Solicitar Re-baseline", use_container_width=True)
+        with pop_rebase:
+            st.markdown("<b>Solicitar Ajuste de Fecha Compromiso</b>", unsafe_allow_html=True)
+            df_mis_proyectos = df if es_moderador else df[df["lider_asignado"] == st.session_state.nombre_actual]
+            if df_mis_proyectos.empty: st.info("No tienes proyectos asignados.")
+            else:
+                opciones_p_sol = df_mis_proyectos.apply(lambda x: f"{x['id']} - [{x['folio'] or 'S/F'}] {x['nombre']}", axis=1).tolist()
+                with st.form("f_sol_baseline_central"):
+                    p_sol_elegido = st.selectbox("Iniciativa", opciones_p_sol)
+                    n_f_prop = st.date_input("Nueva Fecha Fin Propuesta")
+                    n_motivo = st.text_area("Justificación del Ajuste *", placeholder="Motivo de la variación de tiempo...")
+                    if st.form_submit_button("Enviar Solicitud", type="primary", use_container_width=True):
+                        if n_motivo.strip() and p_sol_elegido:
+                            pid_sol = int(p_sol_elegido.split(" - ")[0])
+                            ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            engine = obtener_engine()
+                            with engine.begin() as conn:
+                                conn.execute(sqlalchemy.text("""INSERT INTO solicitudes_baseline (proyecto_id, solicitante, fecha_fin_propuesta, motivo, estado, fecha_solicitud) 
+                                                               VALUES (:pid, :sol, :ff, :mot, 'Pendiente', :fsol)"""),
+                                             {"pid": pid_sol, "sol": st.session_state.nombre_actual, "ff": str(n_f_prop), "mot": n_motivo.strip(), "fsol": ahora})
+                            limpiar_cache_y_recargar(); st.success("¡Solicitud enviada!"); st.rerun()
+                        else: st.error("La justificación es obligatoria.")
 
-    # 3. ELIMINACIÓN MASIVA MODERADORES
-    if es_moderador:
-      with st.expander("🗑️ Eliminación Masiva de Proyectos", expanded=False):
-        opciones_proyectos_borrar = df.apply(lambda x: f"{x['id']} - [{x['folio'] or 'S/F'}] {x['nombre']}", axis=1).tolist()
-        proyectos_a_borrar = st.multiselect("Marcar proyectos a eliminar", opciones_proyectos_borrar)
-        if st.button("Eliminar Seleccionados", type="secondary"):
-            if proyectos_a_borrar:
-                ids_borrar = [int(p.split(" - ")[0]) for p in proyectos_a_borrar]
-                engine = obtener_engine()
-                with engine.begin() as conn:
-                    for pid in ids_borrar:
-                        conn.execute(sqlalchemy.text("DELETE FROM tareas WHERE proyecto_id = :id"), {"id": pid})
-                        conn.execute(sqlalchemy.text("DELETE FROM bitacora WHERE proyecto_id = :id"), {"id": pid})
-                        conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id = :id"), {"id": pid})
-                limpiar_cache_y_recargar(); st.success("Proyectos eliminados."); st.rerun()
+    with col_hdr3:
+        if es_moderador:
+            pop_del = st.popover("🗑️ Borrado Masivo", use_container_width=True)
+            with pop_del:
+                st.markdown("<b>Eliminación Masiva de Proyectos</b>", unsafe_allow_html=True)
+                opciones_proyectos_borrar = df.apply(lambda x: f"{x['id']} - [{x['folio'] or 'S/F'}] {x['nombre']}", axis=1).tolist()
+                proyectos_a_borrar = st.multiselect("Marcar proyectos", opciones_proyectos_borrar)
+                if st.button("Confirmar Borrado", type="primary", use_container_width=True):
+                    if proyectos_a_borrar:
+                        ids_borrar = [int(p.split(" - ")[0]) for p in proyectos_a_borrar]
+                        engine = obtener_engine()
+                        with engine.begin() as conn:
+                            for pid in ids_borrar:
+                                conn.execute(sqlalchemy.text("DELETE FROM tareas WHERE proyecto_id = :id"), {"id": pid})
+                                conn.execute(sqlalchemy.text("DELETE FROM bitacora WHERE proyecto_id = :id"), {"id": pid})
+                                conn.execute(sqlalchemy.text("DELETE FROM proyectos WHERE id = :id"), {"id": pid})
+                        limpiar_cache_y_recargar(); st.success("Proyectos eliminados."); st.rerun()
 
-    # 4. FILTROS RÁPIDOS Y AVANZADOS
-    f_pills1, f_pills2 = st.columns([1.5, 3.5])
-    modo_filtro = f_pills1.radio("Filtros Rápidos", ["Ver Todos", "🚨 Solo Retrasados", "⚠️ Estancados (>20d)", "⭐ Mis Proyectos"], horizontal=True)
+    st.write("")
 
-    with st.expander("🔍 Filtros Avanzados del Portafolio", expanded=False):
-        f_col1, f_col2, f_col3 = st.columns(3)
-        txt_busqueda = f_col1.text_input("Buscar Nombre / Folio")
-        filtro_area = f_col2.selectbox("Área Solicitante", ["Todas las Áreas"] + OPCIONES_AREAS)
-        filtro_lider = f_col3.selectbox("Responsable", ["Todos los Responsables"] + lista_lideres_registrados)
+    # 3. BÚSQUEDA Y FILTROS LIMPIOS (INLINE SEARCH)
+    c_f1, c_f2, c_f3 = st.columns([2, 1.2, 1.2])
+    txt_busqueda = c_f1.text_input("🔍 Buscar por Nombre o Folio...", label_visibility="collapsed", placeholder="🔍 Buscar por Nombre o Folio...")
+    filtro_area = c_f2.selectbox("Área", ["Todas las Áreas"] + OPCIONES_AREAS, label_visibility="collapsed")
+    filtro_lider = c_f3.selectbox("Responsable", ["Todos los Responsables"] + lista_lideres_registrados, label_visibility="collapsed")
 
-        f_col4, f_col5, f_col6 = st.columns(3)
-        filtro_estatus = f_col4.selectbox("Estatus de Ejecución", ["Todos los Estatus"] + OPCIONES_ESTATUS)
-        filtro_gerente = f_col5.selectbox("Gerente Sponsor", ["Todos los Gerentes"] + OPCIONES_GERENTES)
-        filtro_etapa = f_col6.selectbox("Fase Actual", ["Todas las Fases"] + OPCIONES_ETAPAS)
+    # FILTROS RÁPIDOS (PÍLDORAS O BARRAS LIMPIAS)
+    modo_filtro = st.pills("Filtro Rápido:", ["Todos", "🚨 Retrasados", "⚠️ Estancados (>20d)", "⭐ Mis Proyectos"], default="Todos")
 
     df_filtrado = df.copy()
-    if modo_filtro == "🚨 Solo Retrasados": df_filtrado = df_filtrado[df_filtrado["estatus_calculado"].isin(["Retrasado", "Detenido"])]
+    if modo_filtro == "🚨 Retrasados": df_filtrado = df_filtrado[df_filtrado["estatus_calculado"].isin(["Retrasado", "Detenido"])]
     elif modo_filtro == "⚠️ Estancados (>20d)": df_filtrado = df_filtrado[df_filtrado["es_estancado"] == True]
     elif modo_filtro == "⭐ Mis Proyectos": df_filtrado = df_filtrado[df_filtrado["lider_asignado"] == st.session_state.nombre_actual]
 
     if txt_busqueda.strip(): df_filtrado = df_filtrado[df_filtrado["nombre"].str.lower().str.contains(txt_busqueda.lower(), na=False) | df_filtrado["folio"].str.lower().str.contains(txt_busqueda.lower(), na=False)]
     if filtro_area != "Todas las Áreas": df_filtrado = df_filtrado[df_filtrado["area_negocio"] == filtro_area]
     if filtro_lider != "Todos los Responsables": df_filtrado = df_filtrado[df_filtrado["lider_asignado"] == filtro_lider]
-    if filtro_estatus != "Todos los Estatus": df_filtrado = df_filtrado[df_filtrado["estatus_tiempo"] == filtro_estatus]
-    if filtro_gerente != "Todos los Gerentes": df_filtrado = df_filtrado[df_filtrado["gerente"] == filtro_gerente]
-    if filtro_etapa != "Todas las Fases": df_filtrado = df_filtrado[df_filtrado["etapa_actual"] == filtro_etapa]
 
-    st.markdown(f"<p style='color: #64748B; font-size: 0.85rem; margin-top: 15px;'>📌 Mostrando <b>{len(df_filtrado)}</b> de <b>{len(df)}</b> proyectos.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color: #64748B; font-size: 0.8rem; margin-top: 10px; margin-bottom: 20px;'>📌 Mostrando <b>{len(df_filtrado)}</b> de <b>{len(df)}</b> iniciativas.</p>", unsafe_allow_html=True)
 
-    # 5. TARJETAS DE PROYECTO CLEAN & MINIMAL
+    # 4. TARJETAS DE PROYECTO EJECUTIVAS
     for _, row in df_filtrado.iterrows():
       p_id = row["id"]
       info_b = row.get("info_baseline") or calcular_metricas_baseline(row)
