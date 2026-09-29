@@ -19,7 +19,7 @@ st.set_page_config(
 URL_ROBOT = "https://cdn-icons-png.flaticon.com/512/8943/8943377.png" 
 URL_USER = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
 
-# --- CSS ENTERPRISE CLEAN UX ---
+# --- CSS ENTERPRISE CLEAN UX & FIXED IA BOT ---
 st.markdown(
     """
     <style>
@@ -143,16 +143,26 @@ st.markdown(
     .stTabs [aria-selected="true"] { border-bottom: 3px solid #2563EB !important; font-weight: 700 !important; color: #2563EB !important; background-color: transparent !important; }
     .stTabs [aria-selected="false"] { color: #64748B !important; font-weight: 600 !important; }
 
-    /* TOOLBAR SUPERIOR */
-    .toolbar-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: #FFFFFF;
-        padding: 12px 20px;
-        border-radius: 12px;
-        border: 1px solid #E2E8F0;
-        margin-bottom: 20px;
+    /* AISLAMIENTO EXCLUSIVO PARA WIDGET FLOTANTE PROJECT IA */
+    .floating-ia-wrapper {
+        position: fixed !important;
+        bottom: 28px !important;
+        right: 28px !important;
+        z-index: 999999 !important;
+    }
+    .floating-ia-wrapper div[data-testid="stPopover"] > button {
+        background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important;
+        color: #FFFFFF !important;
+        border-radius: 50px !important;
+        padding: 12px 24px !important;
+        box-shadow: 0 8px 24px rgba(28, 66, 232, 0.35) !important;
+        border: 2px solid #FFFFFF !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+        transition: transform 0.2s ease !important;
+    }
+    .floating-ia-wrapper div[data-testid="stPopover"] > button:hover {
+        transform: scale(1.04) translateY(-2px) !important;
     }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
@@ -441,7 +451,7 @@ with tabs[0]:
     fig_carga.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Plus Jakarta Sans"), xaxis_title="Líder", yaxis_title="Número de Iniciativas")
     st.plotly_chart(fig_carga, use_container_width=True)
 
-# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS (HERRAMIENTAS EN BARRAS LIMPIAS / SINCRO POP-OVERS)
+# PESTAÑA 2: SEGUIMIENTO DE PROYECTOS
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
@@ -480,7 +490,7 @@ with tabs[1]:
                   limpiar_cache_y_recargar(); st.info("Solicitud rechazada."); st.rerun()
               st.divider()
 
-    # 2. BARRA SUPERIOR DE ACCIONES (SIN ACORDEONES BUROCRÁTICOS)
+    # 2. BARRA SUPERIOR DE ACCIONES
     col_hdr1, col_hdr2, col_hdr3 = st.columns([2.5, 1, 1])
     with col_hdr1:
         st.markdown("<h3 style='margin:0;'>Seguimiento Operativo</h3>", unsafe_allow_html=True)
@@ -534,7 +544,7 @@ with tabs[1]:
     filtro_area = c_f2.selectbox("Área", ["Todas las Áreas"] + OPCIONES_AREAS, label_visibility="collapsed")
     filtro_lider = c_f3.selectbox("Responsable", ["Todos los Responsables"] + lista_lideres_registrados, label_visibility="collapsed")
 
-    # FILTROS RÁPIDOS (PÍLDORAS O BARRAS LIMPIAS)
+    # FILTROS RÁPIDOS EN PÍLDORAS
     modo_filtro = st.pills("Filtro Rápido:", ["Todos", "🚨 Retrasados", "⚠️ Estancados (>20d)", "⭐ Mis Proyectos"], default="Todos")
 
     df_filtrado = df.copy()
@@ -1019,7 +1029,8 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
   for _, r in dataframe.iterrows(): res_general += f"* **[{r['folio'] or 'S/F'}] {r['nombre']}** — `{r['estatus_calculado']}` ({int((r['avance_real'] or 0)*100)}% avance)\n"
   return res_general
 
-# --- ASISTENTE BOT FLOTANTE ---
+# --- WIDGET FLOTANTE FIJO EXCLUSIVO PROJECT IA (BOTTOM-RIGHT) ---
+st.markdown('<div class="floating-ia-wrapper">', unsafe_allow_html=True)
 with st.popover("🤖 Project IA", help="Haz clic para consultar con tu asistente analítico"):
   col1, col2 = st.columns([3, 1])
   with col1: st.markdown("<h3 style='color:#0F172A; margin-bottom: 0px; font-weight:800;'>🤖 Project IA</h3>", unsafe_allow_html=True)
@@ -1049,3 +1060,4 @@ with st.popover("🤖 Project IA", help="Haz clic para consultar con tu asistent
     for msg in st.session_state.chat_history_fast:
       avatar_img = URL_ROBOT if msg["role"] == "assistant" else URL_USER
       with st.chat_message(msg["role"], avatar=avatar_img): st.markdown(msg["content"])
+st.markdown('</div>', unsafe_allow_html=True)
