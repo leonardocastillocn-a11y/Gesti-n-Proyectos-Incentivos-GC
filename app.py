@@ -9,7 +9,7 @@ import streamlit as st
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
-    page_title="Heading 360 | Project Steering Engine",
+    page_title="Heading 360 | Executive Steering Engine",
     page_icon="💼",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -19,7 +19,7 @@ st.set_page_config(
 URL_ROBOT = "https://cdn-icons-png.flaticon.com/512/8943/8943377.png" 
 URL_USER = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
 
-# --- CSS ENTERPRISE CLEAN UX & FIXED IA BOT ---
+# --- CSS ENTERPRISE SAAS / PERFECT SYMMETRY UX ---
 st.markdown(
     """
     <style>
@@ -98,6 +98,15 @@ st.markdown(
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important; 
     }
     
+    /* TARJETAS DE FORMULARIOS UNIFICADAS */
+    [data-testid="stForm"] {
+        background-color: #FFFFFF !important;
+        border-radius: 14px !important;
+        border: 1px solid #E2E8F0 !important;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02) !important;
+        padding: 20px !important;
+    }
+
     /* ACORDEONES LIMPIOS */
     div[data-testid="stExpander"] {
         background-color: #FFFFFF !important;
@@ -143,14 +152,14 @@ st.markdown(
     .stTabs [aria-selected="true"] { border-bottom: 3px solid #2563EB !important; font-weight: 700 !important; color: #2563EB !important; background-color: transparent !important; }
     .stTabs [aria-selected="false"] { color: #64748B !important; font-weight: 600 !important; }
 
-    /* AISLAMIENTO EXCLUSIVO PARA WIDGET FLOTANTE PROJECT IA */
-    .floating-ia-wrapper {
+    /* WIDGET FLOTANTE FIJO EXCLUSIVO PROJECT IA (ESQUINA INFERIOR DERECHA) */
+    .floating-ia-box {
         position: fixed !important;
-        bottom: 28px !important;
-        right: 28px !important;
+        bottom: 24px !important;
+        right: 24px !important;
         z-index: 999999 !important;
     }
-    .floating-ia-wrapper div[data-testid="stPopover"] > button {
+    .floating-ia-box div[data-testid="stPopover"] > button {
         background: linear-gradient(135deg, #05297A 0%, #1C42E8 100%) !important;
         color: #FFFFFF !important;
         border-radius: 50px !important;
@@ -161,7 +170,7 @@ st.markdown(
         font-size: 0.95rem !important;
         transition: transform 0.2s ease !important;
     }
-    .floating-ia-wrapper div[data-testid="stPopover"] > button:hover {
+    .floating-ia-box div[data-testid="stPopover"] > button:hover {
         transform: scale(1.04) translateY(-2px) !important;
     }
 
@@ -455,7 +464,7 @@ with tabs[0]:
 with tabs[1]:
   if df.empty: st.info("No hay proyectos registrados todavía.")
   else:
-    # 1. APROBACIONES PENDIENTES DE RE-BASELINE (SI EXISTEN)
+    # 1. APROBACIONES PENDIENTES DE RE-BASELINE
     if es_moderador and not df_solicitudes_baseline.empty:
       sol_pendientes = df_solicitudes_baseline[df_solicitudes_baseline["estado"] == "Pendiente"]
       if not sol_pendientes.empty:
@@ -538,13 +547,12 @@ with tabs[1]:
 
     st.write("")
 
-    # 3. BÚSQUEDA Y FILTROS LIMPIOS (INLINE SEARCH)
+    # 3. BÚSQUEDA Y FILTROS LIMPIOS
     c_f1, c_f2, c_f3 = st.columns([2, 1.2, 1.2])
     txt_busqueda = c_f1.text_input("🔍 Buscar por Nombre o Folio...", label_visibility="collapsed", placeholder="🔍 Buscar por Nombre o Folio...")
     filtro_area = c_f2.selectbox("Área", ["Todas las Áreas"] + OPCIONES_AREAS, label_visibility="collapsed")
     filtro_lider = c_f3.selectbox("Responsable", ["Todos los Responsables"] + lista_lideres_registrados, label_visibility="collapsed")
 
-    # FILTROS RÁPIDOS EN PÍLDORAS
     modo_filtro = st.pills("Filtro Rápido:", ["Todos", "🚨 Retrasados", "⚠️ Estancados (>20d)", "⭐ Mis Proyectos"], default="Todos")
 
     df_filtrado = df.copy()
@@ -558,7 +566,7 @@ with tabs[1]:
 
     st.markdown(f"<p style='color: #64748B; font-size: 0.8rem; margin-top: 10px; margin-bottom: 20px;'>📌 Mostrando <b>{len(df_filtrado)}</b> de <b>{len(df)}</b> iniciativas.</p>", unsafe_allow_html=True)
 
-    # 4. TARJETAS DE PROYECTO EJECUTIVAS
+    # 4. TARJETAS DE PROYECTO
     for _, row in df_filtrado.iterrows():
       p_id = row["id"]
       info_b = row.get("info_baseline") or calcular_metricas_baseline(row)
@@ -858,61 +866,73 @@ if es_moderador:
             </div>
             """, unsafe_allow_html=True)
 
-  # PESTAÑA 6: DIRECTORIO DE USUARIOS
+  # PESTAÑA 6: DIRECTORIO Y GESTIÓN DE USUARIOS (SIMETRÍA PERFECTA)
   with tabs[5]:
     st.write("")
     df_users = df_users_raw.copy()
     df_users.columns = ["Colaborador", "Correo Corporativo", "Contraseña", "Nivel de Acceso"]
 
-    col_table, col_forms = st.columns([1.5, 1])
+    col_table, col_forms = st.columns([1.3, 1])
     with col_table:
-      st.markdown("<h4>Directorio de Usuarios</h4>", unsafe_allow_html=True)
-      st.dataframe(df_users, use_container_width=True, hide_index=True)
+      st.markdown("<h4 style='margin-bottom:12px; font-size:1.1rem;'>👥 Directorio de Usuarios Activos</h4>", unsafe_allow_html=True)
+      st.dataframe(
+          df_users,
+          use_container_width=True,
+          hide_index=True,
+          column_config={
+              "Colaborador": st.column_config.TextColumn("Colaborador", width="medium"),
+              "Correo Corporativo": st.column_config.TextColumn("Correo Corporativo", width="large"),
+              "Contraseña": st.column_config.TextColumn("Contraseña", width="small"),
+              "Nivel de Acceso": st.column_config.TextColumn("Rol", width="small"),
+          }
+      )
 
     with col_forms:
-      st.markdown("<h4>✏️ Editar Perfil de Usuario</h4>", unsafe_allow_html=True)
-      lista_correos_all = df_users_raw["correo"].tolist() if not df_users_raw.empty else []
-      u_sel_correo = st.selectbox("Seleccionar Usuario a Modificar", ["Seleccionar..."] + lista_correos_all, key="sel_mod_user")
+      st.markdown("<h4 style='margin-bottom:12px; font-size:1.1rem;'>⚙️ Gestión de Accesos</h4>", unsafe_allow_html=True)
       
-      if u_sel_correo != "Seleccionar...":
-          u_info = df_users_raw[df_users_raw["correo"] == u_sel_correo].iloc[0]
-          with st.form("f_edit_user"):
-              e_nom = st.text_input("Nombre Completo", value=u_info["nombre"])
-              e_pas = st.text_input("Contraseña", value=u_info["password"])
-              e_rol = st.selectbox("Perfil de Seguridad", ["Usuario", "Moderador"], index=0 if u_info["rol"]=="Usuario" else 1)
-              if st.form_submit_button("Guardar Cambios de Perfil", type="primary"):
-                  engine = obtener_engine()
-                  with engine.begin() as conn:
-                      conn.execute(sqlalchemy.text("UPDATE usuarios SET nombre=:n, password=:p, rol=:r WHERE correo=:c"),
-                                   {"n": e_nom, "p": e_pas, "r": e_rol, "c": u_sel_correo})
-                  limpiar_cache_y_recargar(); st.success("¡Perfil actualizado!"); st.rerun()
+      sub_u1, sub_u2, sub_u3 = st.tabs(["✏️ Editar Perfil", "➕ Nuevo Usuario", "🗑️ Revocar"])
+      
+      with sub_u1:
+        lista_correos_all = df_users_raw["correo"].tolist() if not df_users_raw.empty else []
+        u_sel_correo = st.selectbox("Seleccionar Usuario", ["Seleccionar..."] + lista_correos_all, key="sel_mod_user")
+        
+        if u_sel_correo != "Seleccionar...":
+            u_info = df_users_raw[df_users_raw["correo"] == u_sel_correo].iloc[0]
+            with st.form("f_edit_user"):
+                e_nom = st.text_input("Nombre Completo", value=u_info["nombre"])
+                e_pas = st.text_input("Contraseña", value=u_info["password"])
+                e_rol = st.selectbox("Perfil de Seguridad", ["Usuario", "Moderador"], index=0 if u_info["rol"]=="Usuario" else 1)
+                if st.form_submit_button("Guardar Cambios", type="primary", use_container_width=True):
+                    engine = obtener_engine()
+                    with engine.begin() as conn:
+                        conn.execute(sqlalchemy.text("UPDATE usuarios SET nombre=:n, password=:p, rol=:r WHERE correo=:c"),
+                                     {"n": e_nom, "p": e_pas, "r": e_rol, "c": u_sel_correo})
+                    limpiar_cache_y_recargar(); st.success("¡Perfil actualizado!"); st.rerun()
 
-      st.divider()
+      with sub_u2:
+        with st.form("f_alta"):
+          n_nom = st.text_input("Nombre Completo")
+          n_cor = st.text_input("Correo (@coppel.com)")
+          n_pas = st.text_input("Contraseña Inicial")
+          n_rol = st.selectbox("Perfil de Seguridad", ["Usuario", "Moderador"])
+          if st.form_submit_button("Registrar Usuario", type="primary", use_container_width=True):
+            if n_cor and n_pas and n_nom:
+              try:
+                engine = obtener_engine()
+                with engine.begin() as conn: conn.execute(sqlalchemy.text("INSERT INTO usuarios VALUES (:c, :p, :r, :n)"), {"c": n_cor.strip().lower(), "p": n_pas, "r": n_rol, "n": n_nom})
+                limpiar_cache_y_recargar(); st.success("Usuario agregado."); st.rerun()
+              except Exception: st.error("El correo ya se encuentra registrado.")
 
-      with st.form("f_alta"):
-        st.markdown("<h4>➕ Crear Nuevo Usuario</h4>", unsafe_allow_html=True)
-        n_nom = st.text_input("Nombre Completo")
-        n_cor = st.text_input("Correo Institucional (@coppel.com)")
-        n_pas = st.text_input("Contraseña Inicial")
-        n_rol = st.selectbox("Perfil de Seguridad", ["Usuario", "Moderador"])
-        if st.form_submit_button("Registrar Usuario", type="primary"):
-          if n_cor and n_pas and n_nom:
-            try:
+      with sub_u3:
+        with st.form("f_baja"):
+          lista_correos = df_users["Correo Corporativo"].tolist()
+          if st.session_state.correo_actual in lista_correos: lista_correos.remove(st.session_state.correo_actual)
+          correo_borrar = st.selectbox("Seleccionar a Eliminar:", ["Seleccionar..."] + lista_correos)
+          if st.form_submit_button("Eliminar Acceso", type="secondary", use_container_width=True):
+            if correo_borrar != "Seleccionar...":
               engine = obtener_engine()
-              with engine.begin() as conn: conn.execute(sqlalchemy.text("INSERT INTO usuarios VALUES (:c, :p, :r, :n)"), {"c": n_cor.strip().lower(), "p": n_pas, "r": n_rol, "n": n_nom})
-              limpiar_cache_y_recargar(); st.success("Usuario agregado."); st.rerun()
-            except Exception: st.error("El correo ya se encuentra registrado.")
-
-      with st.form("f_baja"):
-        st.markdown("<h4>🗑️ Revocar Acceso</h4>", unsafe_allow_html=True)
-        lista_correos = df_users["Correo Corporativo"].tolist()
-        if st.session_state.correo_actual in lista_correos: lista_correos.remove(st.session_state.correo_actual)
-        correo_borrar = st.selectbox("Seleccionar Usuario a Eliminar:", ["Seleccionar..."] + lista_correos)
-        if st.form_submit_button("Eliminar Usuario", type="secondary"):
-          if correo_borrar != "Seleccionar...":
-            engine = obtener_engine()
-            with engine.begin() as conn: conn.execute(sqlalchemy.text("DELETE FROM usuarios WHERE correo=:c"), {"c": correo_borrar})
-            limpiar_cache_y_recargar(); st.success("Acceso revocado."); st.rerun()
+              with engine.begin() as conn: conn.execute(sqlalchemy.text("DELETE FROM usuarios WHERE correo=:c"), {"c": correo_borrar})
+              limpiar_cache_y_recargar(); st.success("Acceso revocado."); st.rerun()
 
 
 # ==============================================================================
@@ -1030,7 +1050,7 @@ def consultar_ia_ultra_rapido(prompt, dataframe, usuario_nombre="Colaborador"):
   return res_general
 
 # --- WIDGET FLOTANTE FIJO EXCLUSIVO PROJECT IA (BOTTOM-RIGHT) ---
-st.markdown('<div class="floating-ia-wrapper">', unsafe_allow_html=True)
+st.markdown('<div class="floating-ia-box">', unsafe_allow_html=True)
 with st.popover("🤖 Project IA", help="Haz clic para consultar con tu asistente analítico"):
   col1, col2 = st.columns([3, 1])
   with col1: st.markdown("<h3 style='color:#0F172A; margin-bottom: 0px; font-weight:800;'>🤖 Project IA</h3>", unsafe_allow_html=True)
